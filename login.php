@@ -1,12 +1,64 @@
 <?php
 // login.php
 session_start();
-// If already logged in, send to user dashboard
+require_once 'db.php'; // PDO $pdo connection
+
+// If already logged in, send to the correct dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: user_dashboard.php');
-    exit;
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+        header('Location: admin_dashboard.php');
+        exit;
+    } else {
+        header('Location: user_dashboard.php');
+        exit;
+    }
+}
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email    = trim($_POST['email'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+
+    if ($email === '' || $password === '') {
+        $error = 'Please enter both email and password.';
+    } else {
+        try {
+            // IMPORTANT: use password_hash column from your database
+            $stmt = $pdo->prepare("
+                SELECT id, full_name, password_hash, role 
+                FROM users 
+                WHERE email = :email 
+                LIMIT 1
+            ");
+            $stmt->execute([':email' => $email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Check user exists AND verify hashed password
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Login success
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['role']      = $user['role'] ?? 'user';
+
+                // Redirect based on role
+                if ($user['role'] === 'admin') {
+                    header('Location: admin_dashboard.php');
+                    exit();
+                } else {
+                    header('Location: user_dashboard.php');
+                    exit();
+                }
+            } else {
+                $error = 'Invalid email or password.';
+            }
+        } catch (PDOException $e) {
+            $error = 'Database error: ' . $e->getMessage();
+        }
+    }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,8 +94,8 @@ if (isset($_SESSION['user_id'])) {
   <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { 
-      font-family: Inter, sans-serif; 
+    body {
+      font-family: Inter, sans-serif;
       background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
       min-height: 100vh;
     }
@@ -144,8 +196,15 @@ if (isset($_SESSION['user_id'])) {
         </p>
       </div>
 
+      <!-- Error message -->
+      <?php if ($error): ?>
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-lg">
+          <?= htmlspecialchars($error) ?>
+        </div>
+      <?php endif; ?>
+
       <!-- Form -->
-      <form method="POST" action="login_action.php" class="space-y-5">
+      <form method="POST" action="" class="space-y-5">
         
         <div class="form-group">
           <label class="block text-sm font-semibold text-ink mb-2">Email Address</label>
