@@ -1,6 +1,6 @@
 <?php
 // guest_dashboard.php
-// Premium TravelEase Guest Dashboard with Light Theme & Enhanced Asian Destinations
+// Premium TravelEase Guest Dashboard with Enhanced Features & Device Responsiveness
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,7 +47,10 @@
             'zoom-in': 'zoomIn 0.8s ease-out',
             'float': 'float 6s ease-in-out infinite',
             'gradient-shift': 'gradientShift 3s ease infinite',
-            'parallax': 'parallax 20s linear infinite'
+            'parallax': 'parallax 20s linear infinite',
+            'pulse-slow': 'pulse 3s ease-in-out infinite',
+            'bounce-slow': 'bounce 2s ease-in-out infinite',
+            'spin-slow': 'spin 3s linear infinite'
           },
           keyframes: {
             fadeInUp: {
@@ -81,6 +84,10 @@
           },
           backgroundSize: {
             '200%': '200% 200%'
+          },
+          screens: {
+            'xs': '475px',
+            '3xl': '1600px'
           }
         }
       }
@@ -99,6 +106,7 @@
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: linear-gradient(135deg, #ffffff 0%, #fef7e5 50%, #fef3c7 100%);
       color: #1f2937;
+      overflow-x: hidden;
     }
     .premium-font { font-family: "Playfair Display", serif; }
     .glass-effect {
@@ -139,19 +147,155 @@
     .shadow-gold {
       box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);
     }
+    .mobile-menu {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+    .mobile-menu.open {
+      transform: translateX(0);
+    }
+    .backdrop-blur-xl {
+      backdrop-filter: blur(24px);
+    }
+    
+    /* Enhanced responsive design */
+    @media (max-width: 768px) {
+      .hero-headline {
+        font-size: 2.5rem;
+        line-height: 1.2;
+      }
+      .destination-card {
+        min-height: 300px;
+      }
+      .experience-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (max-width: 640px) {
+      .hero-headline {
+        font-size: 2rem;
+      }
+      .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+      .cta-buttons a {
+        width: 100%;
+        text-align: center;
+      }
+    }
+    
+    /* Loading animations */
+    .loading-bar {
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b);
+      background-size: 200% 100%;
+      animation: loading 2s infinite;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #fef7e5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body class="min-h-screen">
 
-  <!-- Premium Navigation -->
-  <header class="fixed top-0 w-full z-50 glass-effect border-b border-amber-100 shadow-sm">
+  <!-- Loading Bar -->
+  <div class="loading-bar fixed top-0 left-0 z-50"></div>
+
+  <!-- Enhanced Mobile Menu -->
+  <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
+    <div class="fixed top-0 left-0 h-full w-80 max-w-full bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
+      <div class="p-6">
+        <!-- Mobile Header -->
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center gap-3">
+            <div class="h-12 w-12 rounded-2xl gold-gradient flex items-center justify-center">
+              <div class="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-black text-amber-600 text-xs">TE</div>
+            </div>
+            <span class="premium-font font-black text-xl text-gray-900">TravelEase</span>
+          </div>
+          <button id="mobile-menu-close" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Mobile Navigation -->
+        <nav class="space-y-4">
+          <a href="#hero" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+            <i class="fas fa-star w-6 text-center"></i>
+            Premium
+          </a>
+          <a href="#destinations" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+            <i class="fas fa-map-marked-alt w-6 text-center"></i>
+            Destinations
+          </a>
+          <a href="#experiences" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+            <i class="fas fa-gem w-6 text-center"></i>
+            Experiences
+          </a>
+          <a href="#testimonials" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+            <i class="fas fa-comment-alt w-6 text-center"></i>
+            Testimonials
+          </a>
+        </nav>
+
+        <!-- Mobile CTA Buttons -->
+        <div class="mt-8 space-y-4">
+          <a href="login.php" class="block w-full text-center px-6 py-3 rounded-2xl glass-effect text-gray-700 hover:bg-amber-50 transition-all font-semibold border border-amber-100">
+            Sign In
+          </a>
+          <a href="create_account.php" class="block w-full text-center px-6 py-3 rounded-2xl gold-gradient text-white hover:shadow-2xl hover:shadow-amber-500/25 transition-all font-bold shadow-gold">
+            Join Premium
+          </a>
+        </div>
+
+        <!-- Mobile Contact Info -->
+        <div class="mt-8 pt-8 border-t border-amber-100">
+          <div class="space-y-3 text-sm text-gray-600">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-phone-alt text-amber-500"></i>
+              <span>+1 (555) 123-4567</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="fas fa-envelope text-amber-500"></i>
+              <span>concierge@travelease.com</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="fas fa-clock text-amber-500"></i>
+              <span>24/7 Concierge</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Premium Navigation -->
+  <header class="fixed top-0 left-0 right-0 z-30 glass-effect border-b border-amber-100/50 backdrop-blur-xl">
     <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex h-20 items-center justify-between">
-        <!-- Premium Logo -->
+      <div class="flex items-center justify-between h-20">
+        <!-- Logo -->
         <div class="flex items-center gap-3">
           <a href="guest_dashboard.php" class="flex items-center gap-3 group">
-            <div class="h-12 w-12 rounded-2xl gold-gradient flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 shadow-gold">
-              <div class="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-black text-amber-600 text-sm">TE</div>
+            <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
+              <img src="img/Logo.png" alt="TravelEase Logo" class="w-full h-full object-cover">
             </div>
             <div class="flex flex-col leading-tight">
               <span class="premium-font font-black text-xl tracking-tight text-gray-900">
@@ -199,7 +343,7 @@
           </a>
         </div>
 
-        <!-- Mobile Menu -->
+        <!-- Enhanced Mobile Menu Button -->
         <button id="mobile-menu-button" class="lg:hidden inline-flex items-center justify-center p-3 rounded-2xl text-gray-700 hover:bg-amber-50 transition-colors">
           <i class="fas fa-bars text-lg"></i>
         </button>
@@ -207,47 +351,58 @@
     </nav>
   </header>
 
-  <!-- Premium Hero Section -->
+  <!-- Enhanced Premium Hero Section -->
   <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
     <!-- Animated Background -->
     <div class="absolute inset-0">
       <div class="absolute inset-0 bg-white/80 z-10"></div>
       <div class="parallax-bg absolute inset-0 animate-parallax"></div>
       <div class="absolute inset-0 bg-gradient-to-br from-amber-200/30 via-transparent to-yellow-100/30 z-20"></div>
+      
+      <!-- Floating Elements -->
+      <div class="absolute top-20 left-10 animate-float">
+        <div class="w-8 h-8 rounded-full bg-amber-400/30 backdrop-blur-sm"></div>
+      </div>
+      <div class="absolute top-40 right-20 animate-float" style="animation-delay: 1s;">
+        <div class="w-6 h-6 rounded-full bg-yellow-500/40 backdrop-blur-sm"></div>
+      </div>
+      <div class="absolute bottom-40 left-20 animate-float" style="animation-delay: 2s;">
+        <div class="w-10 h-10 rounded-full bg-amber-300/50 backdrop-blur-sm"></div>
+      </div>
     </div>
 
     <div class="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <div class="animate-fade-in-up">
         <!-- Premium Badge -->
         <div class="inline-flex items-center gap-3 glass-effect px-6 py-3 rounded-2xl mb-8 border border-amber-200 shadow-gold">
-          <i class="fas fa-crown text-amber-500"></i>
+          <i class="fas fa-crown text-amber-500 animate-pulse-slow"></i>
           <span class="text-sm font-semibold text-amber-600">LUXURY ASIA TRAVEL CURATED</span>
         </div>
 
         <!-- Main Headline -->
-        <h1 class="premium-font text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight">
+        <h1 class="premium-font hero-headline text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight">
           <span class="text-gray-900">Discover</span>
           <span class="text-gradient block mt-2">Asian Elegance</span>
         </h1>
 
         <!-- Subheadline -->
-        <p class="text-xl sm:text-2xl text-gray-700 max-w-4xl mx-auto mb-8 leading-relaxed">
+        <p class="text-lg sm:text-xl lg:text-2xl text-gray-700 max-w-4xl mx-auto mb-8 leading-relaxed">
           Experience Asia's most exclusive destinations with bespoke itineraries, 
           luxury accommodations, and unparalleled service.
         </p>
 
         <!-- Enhanced CTA Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 cta-buttons">
           <a href="create_account.php"
-             class="group px-12 py-4 rounded-2xl gold-gradient text-lg font-bold text-white hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 transform hover:scale-105 shadow-gold">
-            <span class="flex items-center gap-3">
+             class="group px-8 sm:px-12 py-4 rounded-2xl gold-gradient text-base sm:text-lg font-bold text-white hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 transform hover:scale-105 shadow-gold w-full sm:w-auto">
+            <span class="flex items-center gap-3 justify-center">
               Begin Luxury Journey
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
             </span>
           </a>
           <a href="#destinations"
-             class="group px-12 py-4 rounded-2xl glass-effect text-lg font-semibold text-gray-700 border border-amber-200 hover:bg-amber-50 hover:border-amber-300 transition-all duration-300 shadow-sm">
-            <span class="flex items-center gap-3">
+             class="group px-8 sm:px-12 py-4 rounded-2xl glass-effect text-base sm:text-lg font-semibold text-gray-700 border border-amber-200 hover:bg-amber-50 hover:border-amber-300 transition-all duration-300 shadow-sm w-full sm:w-auto">
+            <span class="flex items-center gap-3 justify-center">
               Explore Destinations
               <i class="fas fa-compass group-hover:rotate-90 transition-transform"></i>
             </span>
@@ -255,55 +410,55 @@
         </div>
 
         <!-- Premium Stats -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-2xl mx-auto">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-2xl mx-auto">
           <div class="text-center">
-            <div class="text-2xl font-black text-amber-600 mb-1">15K+</div>
-            <div class="text-sm text-gray-600">Luxury Travelers</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1">15K+</div>
+            <div class="text-xs sm:text-sm text-gray-600">Luxury Travelers</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-black text-amber-600 mb-1">4.9★</div>
-            <div class="text-sm text-gray-600">Premium Rating</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1">4.9★</div>
+            <div class="text-xs sm:text-sm text-gray-600">Premium Rating</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-black text-amber-600 mb-1">50+</div>
-            <div class="text-sm text-gray-600">Destinations</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1">50+</div>
+            <div class="text-xs sm:text-sm text-gray-600">Destinations</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-black text-amber-600 mb-1">24/7</div>
-            <div class="text-sm text-gray-600">Concierge</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1">24/7</div>
+            <div class="text-xs sm:text-sm text-gray-600">Concierge</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Scroll Indicator -->
-    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 animate-bounce">
+    <!-- Enhanced Scroll Indicator -->
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow">
       <a href="#destinations" class="text-amber-500 hover:text-amber-600 transition-colors">
         <i class="fas fa-chevron-down text-2xl"></i>
       </a>
     </div>
   </section>
 
-  <!-- Premium Destinations Section -->
-  <section id="destinations" class="py-20 relative">
+  <!-- Enhanced Premium Destinations Section -->
+  <section id="destinations" class="py-16 sm:py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Section Header -->
-      <div class="text-center mb-16 animate-fade-in-up">
-        <h2 class="premium-font text-4xl sm:text-5xl font-black mb-6">
+      <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
+        <h2 class="premium-font text-3xl sm:text-4xl lg:text-5xl font-black mb-6">
           <span class="text-gray-900">Curated</span>
           <span class="text-gradient block">Luxury Destinations</span>
         </h2>
-        <p class="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+        <p class="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
           Handpicked luxury experiences across Asia's most captivating destinations. 
           Each journey is meticulously crafted for the discerning traveler.
         </p>
       </div>
 
       <!-- Premium Destination Cards -->
-      <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-4">
         <!-- Japan Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1540959733332-4ab8c8a34c9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Japan Luxury"
@@ -314,11 +469,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">Japan</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">Japan</h3>
               <p class="text-amber-600 text-sm font-semibold">From $8,500</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Kyoto · Tokyo · Osaka</span>
@@ -336,8 +491,8 @@
         </div>
 
         <!-- Bali Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Bali Luxury"
@@ -348,11 +503,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">Bali</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">Bali</h3>
               <p class="text-amber-600 text-sm font-semibold">From $6,200</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Ubud · Seminyak · Nusa Dua</span>
@@ -370,8 +525,8 @@
         </div>
 
         <!-- Thailand Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Thailand Luxury"
@@ -382,11 +537,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">Thailand</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">Thailand</h3>
               <p class="text-amber-600 text-sm font-semibold">From $7,800</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Bangkok · Phuket · Chiang Mai</span>
@@ -404,8 +559,8 @@
         </div>
 
         <!-- Vietnam Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Vietnam Luxury"
@@ -416,11 +571,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">Vietnam</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">Vietnam</h3>
               <p class="text-amber-600 text-sm font-semibold">From $5,900</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Halong Bay · Hoi An · Saigon</span>
@@ -439,10 +594,10 @@
       </div>
 
       <!-- Additional Destinations Row -->
-      <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-4 mt-8">
+      <div class="grid gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-4 mt-6 sm:mt-8">
         <!-- Sri Lanka Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1559668612-8f8f9d254b1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Sri Lanka Luxury"
@@ -453,11 +608,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">Sri Lanka</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">Sri Lanka</h3>
               <p class="text-amber-600 text-sm font-semibold">From $5,500</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Kandy · Ella · Galle</span>
@@ -475,8 +630,8 @@
         </div>
 
         <!-- Maldives Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1514282401047-d79a71a590e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Maldives Luxury"
@@ -487,11 +642,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">Maldives</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">Maldives</h3>
               <p class="text-amber-600 text-sm font-semibold">From $9,500</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Private Islands</span>
@@ -509,8 +664,8 @@
         </div>
 
         <!-- South Korea Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1534274867514-d5b47ef89ed7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="South Korea Luxury"
@@ -521,11 +676,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">South Korea</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">South Korea</h3>
               <p class="text-amber-600 text-sm font-semibold">From $7,200</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Seoul · Busan · Jeju Island</span>
@@ -543,8 +698,8 @@
         </div>
 
         <!-- India Card -->
-        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-80 overflow-hidden">
+        <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold destination-card">
+          <div class="relative h-64 sm:h-80 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1524492412937-b28074a5d7da?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="India Luxury"
@@ -555,11 +710,11 @@
               <span class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">PREMIUM</span>
             </div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-2xl font-black text-gray-900 mb-2">India</h3>
+              <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">India</h3>
               <p class="text-amber-600 text-sm font-semibold">From $6,800</p>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
               <i class="fas fa-star text-amber-500 text-sm"></i>
               <span class="text-sm text-gray-600">Rajasthan · Kerala · Goa</span>
@@ -579,23 +734,23 @@
     </div>
   </section>
 
-  <!-- Waterfalls & Natural Wonders Section -->
-  <section class="py-20 relative bg-gradient-to-b from-amber-50 to-white">
+  <!-- Enhanced Waterfalls & Natural Wonders Section -->
+  <section class="py-16 sm:py-20 relative bg-gradient-to-b from-amber-50 to-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16 animate-fade-in-up">
-        <h2 class="premium-font text-4xl sm:text-5xl font-black mb-6">
+      <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
+        <h2 class="premium-font text-3xl sm:text-4xl lg:text-5xl font-black mb-6">
           <span class="text-gray-900">Asia's Natural</span>
           <span class="text-gradient block">Wonders</span>
         </h2>
-        <p class="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+        <p class="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
           Discover breathtaking waterfalls, pristine landscapes, and natural marvels across Asia's diverse terrain.
         </p>
       </div>
 
-      <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div class="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
         <!-- Kawasan Falls, Philippines -->
         <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-64 overflow-hidden">
+          <div class="relative h-56 sm:h-64 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Kawasan Falls, Philippines"
@@ -603,7 +758,7 @@
             >
             <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent"></div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-xl font-black text-gray-900">Kawasan Falls</h3>
+              <h3 class="text-lg sm:text-xl font-black text-gray-900">Kawasan Falls</h3>
               <p class="text-amber-600 text-sm font-semibold">Philippines</p>
             </div>
           </div>
@@ -611,7 +766,7 @@
 
         <!-- Kuang Si Falls, Laos -->
         <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-64 overflow-hidden">
+          <div class="relative h-56 sm:h-64 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1591277720113-9e08e2340fb8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Kuang Si Falls, Laos"
@@ -619,7 +774,7 @@
             >
             <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent"></div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-xl font-black text-gray-900">Kuang Si Falls</h3>
+              <h3 class="text-lg sm:text-xl font-black text-gray-900">Kuang Si Falls</h3>
               <p class="text-amber-600 text-sm font-semibold">Laos</p>
             </div>
           </div>
@@ -627,7 +782,7 @@
 
         <!-- Detian Falls, Vietnam/China -->
         <div class="group relative overflow-hidden rounded-3xl hover-lift glass-effect border border-amber-100 shadow-gold">
-          <div class="relative h-64 overflow-hidden">
+          <div class="relative h-56 sm:h-64 overflow-hidden">
             <img 
               src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Detian Falls, Vietnam/China"
@@ -635,7 +790,7 @@
             >
             <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent"></div>
             <div class="absolute bottom-4 left-4">
-              <h3 class="text-xl font-black text-gray-900">Detian Falls</h3>
+              <h3 class="text-lg sm:text-xl font-black text-gray-900">Detian Falls</h3>
               <p class="text-amber-600 text-sm font-semibold">Vietnam/China</p>
             </div>
           </div>
@@ -644,17 +799,17 @@
     </div>
   </section>
 
-  <!-- Premium Experiences Section -->
-  <section id="experiences" class="py-20 relative">
+  <!-- Enhanced Premium Experiences Section -->
+  <section id="experiences" class="py-16 sm:py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-16 items-center">
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <!-- Left Content -->
         <div class="animate-fade-in-up">
-          <h2 class="premium-font text-4xl sm:text-5xl font-black mb-6">
+          <h2 class="premium-font text-3xl sm:text-4xl lg:text-5xl font-black mb-6">
             <span class="text-gray-900">Exclusive</span>
             <span class="text-gradient block">Travel Experiences</span>
           </h2>
-          <p class="text-xl text-gray-700 mb-8 leading-relaxed">
+          <p class="text-lg sm:text-xl text-gray-700 mb-8 leading-relaxed">
             Our premium experiences are designed for travelers who seek more than just a vacation. 
             Each journey is a masterpiece of luxury, culture, and adventure.
           </p>
@@ -695,12 +850,12 @@
 
         <!-- Right: Experience Showcase -->
         <div class="relative animate-zoom-in">
-          <div class="glass-effect rounded-3xl p-8 border border-amber-100 shadow-gold">
-            <div class="grid gap-6">
+          <div class="glass-effect rounded-3xl p-6 sm:p-8 border border-amber-100 shadow-gold">
+            <div class="grid gap-4 sm:gap-6 experience-grid">
               <!-- Experience 1 -->
               <div class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 hover:bg-amber-100 transition-all duration-300">
-                <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-                  <i class="fas fa-utensils text-white text-xl"></i>
+                <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+                  <i class="fas fa-utensils text-white text-lg sm:text-xl"></i>
                 </div>
                 <div>
                   <h4 class="font-semibold text-gray-900 mb-1">Private Dining Experiences</h4>
@@ -710,8 +865,8 @@
 
               <!-- Experience 2 -->
               <div class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 hover:bg-amber-100 transition-all duration-300">
-                <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-                  <i class="fas fa-spa text-white text-xl"></i>
+                <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+                  <i class="fas fa-spa text-white text-lg sm:text-xl"></i>
                 </div>
                 <div>
                   <h4 class="font-semibold text-gray-900 mb-1">Wellness Retreats</h4>
@@ -721,8 +876,8 @@
 
               <!-- Experience 3 -->
               <div class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 hover:bg-amber-100 transition-all duration-300">
-                <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-                  <i class="fas fa-helicopter text-white text-xl"></i>
+                <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+                  <i class="fas fa-helicopter text-white text-lg sm:text-xl"></i>
                 </div>
                 <div>
                   <h4 class="font-semibold text-gray-900 mb-1">Helicopter Tours</h4>
@@ -732,8 +887,8 @@
 
               <!-- Experience 4 -->
               <div class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 hover:bg-amber-100 transition-all duration-300">
-                <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-                  <i class="fas fa-gem text-white text-xl"></i>
+                <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+                  <i class="fas fa-gem text-white text-lg sm:text-xl"></i>
                 </div>
                 <div>
                   <h4 class="font-semibold text-gray-900 mb-1">Cultural Immersion</h4>
@@ -747,25 +902,25 @@
     </div>
   </section>
 
-  <!-- Premium Testimonials -->
-  <section id="testimonials" class="py-20 relative bg-gradient-to-b from-white to-amber-50">
+  <!-- Enhanced Premium Testimonials -->
+  <section id="testimonials" class="py-16 sm:py-20 relative bg-gradient-to-b from-white to-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16 animate-fade-in-up">
-        <h2 class="premium-font text-4xl sm:text-5xl font-black mb-6">
+      <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
+        <h2 class="premium-font text-3xl sm:text-4xl lg:text-5xl font-black mb-6">
           <span class="text-gray-900">Elite</span>
           <span class="text-gradient block">Traveler Stories</span>
         </h2>
-        <p class="text-xl text-gray-700 max-w-3xl mx-auto">
+        <p class="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto">
           Discover why discerning travelers choose TravelEase for their most memorable journeys.
         </p>
       </div>
 
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         <!-- Testimonial 1 -->
-        <div class="group glass-effect rounded-3xl p-8 border border-amber-100 hover-lift shadow-gold">
+        <div class="group glass-effect rounded-3xl p-6 sm:p-8 border border-amber-100 hover-lift shadow-gold">
           <div class="flex items-center gap-4 mb-6">
-            <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-              <span class="font-black text-white">SR</span>
+            <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+              <span class="font-black text-white text-sm sm:text-base">SR</span>
             </div>
             <div>
               <h4 class="font-semibold text-gray-900">Sarah & Robert</h4>
@@ -788,10 +943,10 @@
         </div>
 
         <!-- Testimonial 2 -->
-        <div class="group glass-effect rounded-3xl p-8 border border-amber-100 hover-lift shadow-gold">
+        <div class="group glass-effect rounded-3xl p-6 sm:p-8 border border-amber-100 hover-lift shadow-gold">
           <div class="flex items-center gap-4 mb-6">
-            <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-              <span class="font-black text-white">MJ</span>
+            <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+              <span class="font-black text-white text-sm sm:text-base">MJ</span>
             </div>
             <div>
               <h4 class="font-semibold text-gray-900">Michael Johnson</h4>
@@ -814,10 +969,10 @@
         </div>
 
         <!-- Testimonial 3 -->
-        <div class="group glass-effect rounded-3xl p-8 border border-amber-100 hover-lift shadow-gold">
+        <div class="group glass-effect rounded-3xl p-6 sm:p-8 border border-amber-100 hover-lift shadow-gold">
           <div class="flex items-center gap-4 mb-6">
-            <div class="h-16 w-16 rounded-2xl gold-gradient flex items-center justify-center">
-              <span class="font-black text-white">EC</span>
+            <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl gold-gradient flex items-center justify-center">
+              <span class="font-black text-white text-sm sm:text-base">EC</span>
             </div>
             <div>
               <h4 class="font-semibold text-gray-900">Emma Chen</h4>
@@ -842,35 +997,35 @@
     </div>
   </section>
 
-  <!-- Final Premium CTA -->
-  <section class="py-20 relative">
+  <!-- Enhanced Final Premium CTA -->
+  <section class="py-16 sm:py-20 relative">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <div class="glass-effect rounded-3xl p-12 border border-amber-200 relative overflow-hidden shadow-gold">
+      <div class="glass-effect rounded-3xl p-8 sm:p-12 border border-amber-200 relative overflow-hidden shadow-gold">
         <!-- Background Elements -->
         <div class="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-amber-200/50 blur-3xl"></div>
         <div class="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-yellow-200/50 blur-3xl"></div>
         
         <div class="relative z-10">
-          <h2 class="premium-font text-4xl sm:text-5xl font-black mb-6">
+          <h2 class="premium-font text-3xl sm:text-4xl lg:text-5xl font-black mb-6">
             Ready for Your
             <span class="text-gradient block">Luxury Journey?</span>
           </h2>
-          <p class="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+          <p class="text-lg sm:text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
             Join our community of elite travelers and experience Asia like never before. 
             Your bespoke luxury adventure awaits.
           </p>
           
           <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a href="create_account.php"
-               class="group px-12 py-4 rounded-2xl gold-gradient text-lg font-bold text-white hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 transform hover:scale-105 shadow-gold">
-              <span class="flex items-center gap-3">
+               class="group px-8 sm:px-12 py-4 rounded-2xl gold-gradient text-base sm:text-lg font-bold text-white hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 transform hover:scale-105 shadow-gold w-full sm:w-auto">
+              <span class="flex items-center gap-3 justify-center">
                 Begin Your Journey
                 <i class="fas fa-gem group-hover:rotate-180 transition-transform"></i>
               </span>
             </a>
             <a href="login.php"
-               class="group px-12 py-4 rounded-2xl glass-effect text-lg font-semibold text-gray-700 border border-amber-200 hover:bg-amber-50 hover:border-amber-300 transition-all duration-300 shadow-sm">
-              <span class="flex items-center gap-3">
+               class="group px-8 sm:px-12 py-4 rounded-2xl glass-effect text-base sm:text-lg font-semibold text-gray-700 border border-amber-200 hover:bg-amber-50 hover:border-amber-300 transition-all duration-300 shadow-sm w-full sm:w-auto">
+              <span class="flex items-center gap-3 justify-center">
                 Sign In to Account
                 <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
               </span>
@@ -886,7 +1041,7 @@
     </div>
   </section>
 
-  <!-- Premium Footer -->
+  <!-- Enhanced Premium Footer -->
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid gap-8 md:grid-cols-4 mb-8">
@@ -958,16 +1113,30 @@
 
   <!-- Enhanced JavaScript -->
   <script>
-    // Mobile menu functionality
+    // Enhanced Mobile menu functionality
     const menuButton = document.getElementById('mobile-menu-button');
-    if (menuButton) {
-      menuButton.addEventListener('click', () => {
-        // Add mobile menu implementation
-        console.log('Mobile menu clicked');
-      });
+    const mobileMenu = document.getElementById('mobile-menu');
+    const mobileMenuClose = document.getElementById('mobile-menu-close');
+    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+
+    function toggleMobileMenu() {
+      mobileMenu.classList.toggle('open');
+      document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
     }
 
-    // Scroll animations
+    if (menuButton) {
+      menuButton.addEventListener('click', toggleMobileMenu);
+    }
+
+    if (mobileMenuClose) {
+      mobileMenuClose.addEventListener('click', toggleMobileMenu);
+    }
+
+    if (mobileMenuBackdrop) {
+      mobileMenuBackdrop.addEventListener('click', toggleMobileMenu);
+    }
+
+    // Enhanced scroll animations
     const observerOptions = {
       threshold: 0.1,
       rootMargin: '0px 0px -50px 0px'
@@ -990,7 +1159,7 @@
       observer.observe(el);
     });
 
-    // Parallax effect for hero background
+    // Enhanced Parallax effect for hero background
     window.addEventListener('scroll', () => {
       const scrolled = window.pageYOffset;
       const parallax = document.querySelector('.parallax-bg');
@@ -1003,6 +1172,69 @@
     document.querySelectorAll('.gold-gradient').forEach((el, index) => {
       el.style.animationDelay = `${index * 0.2}s`;
     });
+
+    // Enhanced loading bar
+    window.addEventListener('load', () => {
+      const loadingBar = document.querySelector('.loading-bar');
+      if (loadingBar) {
+        loadingBar.style.opacity = '0';
+        setTimeout(() => {
+          loadingBar.remove();
+        }, 500);
+      }
+    });
+
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Enhanced touch interactions for mobile
+    let touchStartY = 0;
+    let touchEndY = 0;
+
+    document.addEventListener('touchstart', e => {
+      touchStartY = e.changedTouches[0].screenY;
+    });
+
+    document.addEventListener('touchend', e => {
+      touchEndY = e.changedTouches[0].screenY;
+      handleSwipe();
+    });
+
+    function handleSwipe() {
+      const swipeDistance = touchStartY - touchEndY;
+      if (Math.abs(swipeDistance) > 50) {
+        // Add swipe functionality if needed
+      }
+    }
+
+    // Performance optimization: Lazy loading for images
+    if ('IntersectionObserver' in window) {
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove('lazy');
+            imageObserver.unobserve(img);
+          }
+        });
+      });
+
+      document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+      });
+    }
   </script>
 </body>
 </html>
