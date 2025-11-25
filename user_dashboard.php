@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Colombo'); // ensure consistent display timezone
 require_once 'db.php';
 
 // Check login
@@ -21,8 +22,8 @@ if ($hour >= 5 && $hour < 12) {
     $timeGreeting = 'Good evening';
 }
 
-// Last login from session (set this in login.php)
-$lastLogin = $_SESSION['last_login'] ?? null;
+// Last login display (from DB, not session)
+$lastLoginDisplay = null;
 
 // Default badge (will adjust after counts)
 $badgeLabel = 'Traveler';
@@ -40,6 +41,20 @@ $recentTrips           = [];  // NEW: recent trip history
 $dbError               = '';
 
 try {
+    // NEW: get last_login from users table
+    $stmt = $pdo->prepare("SELECT last_login FROM users WHERE id = :uid");
+    $stmt->execute([':uid' => $userId]);
+    $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($userRow && !empty($userRow['last_login'])) {
+        $ts = strtotime($userRow['last_login']);
+        if ($ts !== false) {
+            // Example: 25 Nov 2025, 4:18 PM
+            $lastLoginDisplay = date('d M Y, g:i A', $ts);
+        } else {
+            $lastLoginDisplay = $userRow['last_login'];
+        }
+    }
+
     // Saved tours count (wishlist)
     $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM saved_tours WHERE user_id = :uid");
     $stmt->execute([':uid' => $userId]);
@@ -209,7 +224,7 @@ try {
                 <a href="user_dashboard.php" class="text-yellow-500">Dashboard</a>
                 <a href="packages.php" class="text-gray-700 hover:text-yellow-500 transition">Packages</a>
                 <a href="countries.php" class="text-gray-700 hover:text-yellow-500 transition">Countries</a>
-                <a href="profile.php" class="text-gray-700 hover:text-yellow-500 transition">Profile</a>
+                <a href="user_profile.php" class="text-gray-700 hover:text-yellow-500 transition">Profile</a>
             </nav>
 
             <div class="flex items-center gap-4">
@@ -264,17 +279,10 @@ try {
                             </span>
 
                             <!-- Last login info -->
-                            <?php if ($lastLogin): ?>
+                            <?php if (!empty($lastLoginDisplay)): ?>
                                 <span class="text-xs text-gray-500">
                                     Last login:
-                                    <?php
-                                        $ts = strtotime($lastLogin);
-                                        if ($ts !== false) {
-                                            echo date('d M Y, g:i A', $ts);
-                                        } else {
-                                            echo htmlspecialchars($lastLogin);
-                                        }
-                                    ?>
+                                    <?php echo htmlspecialchars($lastLoginDisplay); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="text-xs text-gray-500">
@@ -289,7 +297,7 @@ try {
                            class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-yellow-500 text-white text-sm font-semibold hover:bg-yellow-600 transition">
                             🔍 Find New Packages
                         </a>
-                        <a href="profile.php"
+                        <a href="user_profile.php"
                            class="inline-flex items-center justify-center px-4 py-2 rounded-full border border-gray-200 text-xs text-gray-700 hover:border-yellow-500 hover:text-yellow-600 transition">
                             ⚙️ Edit Profile
                         </a>
@@ -542,8 +550,7 @@ try {
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-900">Recent Trip History</h2>
                 <a href="my_trips.php" class="text-xs font-semibold text-yellow-600 hover:text-yellow-700">
-                    Manage all trips →
-                </a>
+                    Manage all trips →</a>
             </div>
 
             <div class="space-y-3 text-sm">
