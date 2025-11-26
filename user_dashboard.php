@@ -25,6 +25,9 @@ if ($hour >= 5 && $hour < 12) {
 // Last login display (from DB, not session)
 $lastLoginDisplay = null;
 
+// Profile image URL (default)
+$profileImageUrl = 'img/default-avatar.png';
+
 // Default badge (will adjust after counts)
 $badgeLabel = 'Traveler';
 
@@ -36,22 +39,29 @@ $wishlistCount         = 0;
 $upcomingTrips         = [];
 $recommendedPkgs       = [];
 $savedTours            = [];
-$countriesVisitedCount = 0;   // NEW: distinct completed-trip countries
-$recentTrips           = [];  // NEW: recent trip history
+$countriesVisitedCount = 0;   // distinct completed-trip countries
+$recentTrips           = [];  // recent trip history
 $dbError               = '';
 
 try {
-    // NEW: get last_login from users table
-    $stmt = $pdo->prepare("SELECT last_login FROM users WHERE id = :uid");
+    // Get last_login + profile_image from users table
+    $stmt = $pdo->prepare("SELECT last_login, profile_image FROM users WHERE id = :uid");
     $stmt->execute([':uid' => $userId]);
     $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($userRow && !empty($userRow['last_login'])) {
-        $ts = strtotime($userRow['last_login']);
-        if ($ts !== false) {
-            // Example: 25 Nov 2025, 4:18 PM
-            $lastLoginDisplay = date('d M Y, g:i A', $ts);
-        } else {
-            $lastLoginDisplay = $userRow['last_login'];
+    if ($userRow) {
+        // last_login
+        if (!empty($userRow['last_login'])) {
+            $ts = strtotime($userRow['last_login']);
+            if ($ts !== false) {
+                $lastLoginDisplay = date('d M Y, g:i A', $ts);
+            } else {
+                $lastLoginDisplay = $userRow['last_login'];
+            }
+        }
+
+        // profile_image
+        if (!empty($userRow['profile_image'])) {
+            $profileImageUrl = 'uploads/profile_pics/' . $userRow['profile_image'];
         }
     }
 
@@ -117,7 +127,7 @@ try {
     $stmt->execute([':uid' => $userId]);
     $savedTours = $stmt->fetchAll();
 
-    // NEW: distinct countries visited (completed trips)
+    // Distinct countries visited (completed trips)
     $stmt = $pdo->prepare("
         SELECT COUNT(DISTINCT c.id) AS cnt
         FROM trips t
@@ -129,7 +139,7 @@ try {
     $stmt->execute([':uid' => $userId]);
     $countriesVisitedCount = (int)($stmt->fetch()['cnt'] ?? 0);
 
-    // NEW: recent trip history (last 5, any status)
+    // Recent trip history (last 5, any status)
     $stmt = $pdo->prepare("
         SELECT t.start_date,
                t.end_date,
@@ -146,7 +156,7 @@ try {
     $stmt->execute([':uid' => $userId]);
     $recentTrips = $stmt->fetchAll();
 
-    // ---------- Badge logic ----------
+    // Badge logic
     if ($tripsCount >= 5 || $savedCount >= 10 || $countriesVisitedCount >= 5) {
         $badgeLabel = 'VIP Explorer';
     } elseif ($tripsCount >= 2 || $savedCount >= 5 || $countriesVisitedCount >= 2) {
@@ -227,10 +237,18 @@ try {
                 <a href="user_profile.php" class="text-gray-700 hover:text-yellow-500 transition">Profile</a>
             </nav>
 
-            <div class="flex items-center gap-4">
-                <span class="hidden sm:inline text-sm font-bold text-gray-900">
-                    <?php echo htmlspecialchars($userName); ?>
-                </span>
+            <div class="flex items-center gap-3">
+                <!-- User avatar -->
+                <a href="user_profile.php" class="flex items-center gap-2">
+                    <img
+                        src="<?= htmlspecialchars($profileImageUrl); ?>"
+                        alt="Profile Picture"
+                        class="w-9 h-9 rounded-full object-cover border border-gray-200"
+                    >
+                    <span class="hidden sm:inline text-sm font-bold text-gray-900">
+                        <?= htmlspecialchars($userName); ?>
+                    </span>
+                </a>
 
                 <a href="logout.php"
                    class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition">
@@ -243,7 +261,7 @@ try {
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <?php if (!empty($dbError)): ?>
             <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-                Database error: <?php echo htmlspecialchars($dbError); ?>
+                Database error: <?= htmlspecialchars($dbError); ?>
             </div>
         <?php endif; ?>
 
@@ -256,9 +274,9 @@ try {
                         <!-- Time-based greeting (JS will adjust using local time) -->
                         <p id="time-greeting-text"
                            class="text-sm font-semibold text-yellow-500 uppercase tracking-wide welcome-animate"
-                           data-php-greeting="<?php echo htmlspecialchars($timeGreeting); ?>">
-                            <?php echo htmlspecialchars($timeGreeting); ?>,
-                            <span class="text-gray-900"><?php echo htmlspecialchars($userName); ?></span>
+                           data-php-greeting="<?= htmlspecialchars($timeGreeting); ?>">
+                            <?= htmlspecialchars($timeGreeting); ?>,
+                            <span class="text-gray-900"><?= htmlspecialchars($userName); ?></span>
                         </p>
 
                         <div class="mt-1 welcome-animate">
@@ -275,14 +293,14 @@ try {
                         <div class="mt-3 flex flex-wrap items-center gap-3 welcome-animate">
                             <!-- Badge -->
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
-                                ✨ <?php echo htmlspecialchars($badgeLabel); ?>
+                                ✨ <?= htmlspecialchars($badgeLabel); ?>
                             </span>
 
                             <!-- Last login info -->
                             <?php if (!empty($lastLoginDisplay)): ?>
                                 <span class="text-xs text-gray-500">
                                     Last login:
-                                    <?php echo htmlspecialchars($lastLoginDisplay); ?>
+                                    <?= htmlspecialchars($lastLoginDisplay); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="text-xs text-gray-500">
@@ -305,21 +323,21 @@ try {
                 </div>
             </div>
 
-            <!-- Quick stats (now 4 cards incl. countries visited) -->
+            <!-- Quick stats -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-2 gap-3">
                 <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col justify-between">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Saved Tours</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo $savedCount; ?></p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?= $savedCount; ?></p>
                     <p class="text-xs text-green-600 mt-1">Your wishlist</p>
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col justify-between">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Booked Trips</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo $tripsCount; ?></p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?= $tripsCount; ?></p>
                     <p class="text-xs text-blue-600 mt-1">Plan & manage</p>
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col justify-between col-span-2 sm:col-span-1 lg:col-span-2 xl:col-span-2">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Countries Visited</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo $countriesVisitedCount; ?></p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?= $countriesVisitedCount; ?></p>
                     <p class="text-xs text-purple-600 mt-1">Completed trip destinations</p>
                 </div>
             </div>
@@ -425,24 +443,22 @@ try {
                             <div class="border rounded-xl p-3 flex flex-col gap-1">
                                 <div class="flex items-center justify-between">
                                     <p class="font-semibold text-gray-900">
-                                        <?php echo htmlspecialchars($trip['package_title']); ?>
+                                        <?= htmlspecialchars($trip['package_title']); ?>
                                     </p>
                                     <span class="text-xs px-2 py-1 rounded-full
-                                        <?php echo $trip['status'] === 'Confirmed'
+                                        <?= $trip['status'] === 'Confirmed'
                                             ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
                                             : 'bg-gray-50 text-gray-700 border-gray-200 border'; ?>">
-                                        <?php echo htmlspecialchars($trip['status']); ?>
+                                        <?= htmlspecialchars($trip['status']); ?>
                                     </span>
                                 </div>
                                 <p class="text-xs text-gray-500">
-                                    <?php echo htmlspecialchars($trip['country_name']); ?>
+                                    <?= htmlspecialchars($trip['country_name']); ?>
                                 </p>
                                 <p class="text-xs text-gray-500 mt-1">
                                     📅
-                                    <?php
-                                    echo htmlspecialchars($trip['start_date']) . ' – ' .
-                                         htmlspecialchars($trip['end_date']);
-                                    ?>
+                                    <?= htmlspecialchars($trip['start_date']); ?> –
+                                    <?= htmlspecialchars($trip['end_date']); ?>
                                 </p>
                             </div>
                         <?php endforeach; ?>
@@ -474,25 +490,25 @@ try {
                     <?php else: ?>
                         <?php foreach ($recommendedPkgs as $pkg): ?>
                             <div class="border rounded-2xl p-4 flex flex-col gap-2"
-                                 data-package-country="<?php echo htmlspecialchars($pkg['country_name']); ?>">
+                                 data-package-country="<?= htmlspecialchars($pkg['country_name']); ?>">
                                 <p class="text-xs font-semibold text-yellow-500 uppercase tracking-wide">
-                                    <?php echo htmlspecialchars($pkg['country_name']); ?>
+                                    <?= htmlspecialchars($pkg['country_name']); ?>
                                 </p>
                                 <h3 class="font-semibold text-gray-900">
-                                    <?php echo htmlspecialchars($pkg['title']); ?>
+                                    <?= htmlspecialchars($pkg['title']); ?>
                                 </h3>
                                 <p class="text-xs text-gray-500">
-                                    <?php echo htmlspecialchars($pkg['short_description']); ?>
+                                    <?= htmlspecialchars($pkg['short_description']); ?>
                                 </p>
                                 <div class="flex items-center justify-between mt-2">
                                     <p class="text-sm font-bold text-gray-900">
-                                        $<?php echo htmlspecialchars($pkg['price']); ?>
+                                        $<?= htmlspecialchars($pkg['price']); ?>
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        <?php echo (int)$pkg['duration_days'] . 'D / ' . (int)$pkg['duration_nights'] . 'N'; ?>
+                                        <?= (int)$pkg['duration_days'] . 'D / ' . (int)$pkg['duration_nights'] . 'N'; ?>
                                     </p>
                                 </div>
-                                <a href="package_details.php?id=<?php echo (int)$pkg['id']; ?>"
+                                <a href="package_details.php?id=<?= (int)$pkg['id']; ?>"
                                    class="mt-2 inline-flex items-center justify-center px-3 py-2 rounded-full text-xs font-semibold bg-yellow-500 text-white hover:bg-yellow-600 transition">
                                     View details
                                 </a>
@@ -521,12 +537,12 @@ try {
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="font-semibold text-gray-900 text-sm">
-                                        <?php echo htmlspecialchars($tour['title']); ?>
+                                        <?= htmlspecialchars($tour['title']); ?>
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        <?php echo htmlspecialchars($tour['country_name']); ?>
+                                        <?= htmlspecialchars($tour['country_name']); ?>
                                         •
-                                        <?php echo (int)$tour['duration_days'] . 'D / ' . (int)$tour['duration_nights'] . 'N'; ?>
+                                        <?= (int)$tour['duration_days'] . 'D / ' . (int)$tour['duration_nights'] . 'N'; ?>
                                     </p>
                                 </div>
                                 <a href="packages.php"
@@ -545,7 +561,7 @@ try {
             </div>
         </section>
 
-        <!-- NEW: Recent Trip History -->
+        <!-- Recent Trip History -->
         <section class="bg-white rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-900">Recent Trip History</h2>
@@ -563,13 +579,13 @@ try {
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-xl p-3">
                             <div>
                                 <p class="font-semibold text-gray-900">
-                                    <?php echo htmlspecialchars($trip['package_title']); ?>
+                                    <?= htmlspecialchars($trip['package_title']); ?>
                                 </p>
                                 <p class="text-xs text-gray-500">
-                                    <?php echo htmlspecialchars($trip['country_name']); ?>
+                                    <?= htmlspecialchars($trip['country_name']); ?>
                                     •
-                                    📅 <?php echo htmlspecialchars($trip['start_date']); ?>
-                                    – <?php echo htmlspecialchars($trip['end_date']); ?>
+                                    📅 <?= htmlspecialchars($trip['start_date']); ?>
+                                    – <?= htmlspecialchars($trip['end_date']); ?>
                                 </p>
                             </div>
                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold
@@ -582,11 +598,11 @@ try {
                                         echo 'bg-red-50 text-red-700 border border-red-200';
                                         break;
                                     default:
-                                        echo 'bg-gray-50 text-gray-700 border border-gray-200';
+                                        echo 'bg-gray-50 text-gray-700 border-gray-200';
                                         break;
                                 }
                                 ?>">
-                                <?php echo htmlspecialchars($trip['status']); ?>
+                                <?= htmlspecialchars($trip['status']); ?>
                             </span>
                         </div>
                     <?php endforeach; ?>
@@ -598,7 +614,7 @@ try {
     <!-- Footer -->
     <footer class="mt-8 border-t border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
-            <p>© <?php echo date('Y'); ?> TravelEase · Full Asia Travel Experience</p>
+            <p>© <?= date('Y'); ?> TravelEase · Full Asia Travel Experience</p>
             <div class="flex items-center gap-4">
                 <a href="#" class="hover:text-yellow-600">Support</a>
                 <a href="#" class="hover:text-yellow-600">Terms</a>
