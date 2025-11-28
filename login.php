@@ -268,7 +268,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    class="rounded border-yellow-300 text-primary focus:ring-primary h-4 w-4">
             <label for="remember" class="text-inkMuted">Remember me</label>
           </div>
-          <span class="text-xs text-inkMuted italic cursor-not-allowed">Forgot password? (coming soon)</span>
+          <a href="forgot_password.php" 
+            class="text-xs text-primary font-medium hover:underline">
+            Forgot password?
+          </a>
+
         </div>
 
         <!-- Submit Button -->

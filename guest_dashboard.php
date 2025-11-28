@@ -1,6 +1,6 @@
 <?php
 // guest_dashboard.php
-// Premium TravelEase Guest Dashboard with Enhanced Features & Device Responsiveness
+// Premium TravelEase Guest Dashboard (Merged Advanced + Enhanced Features)
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -9,6 +9,12 @@
   <title>Guest Dashboard | TravelEase - Premium Asia Travel Experiences</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Premium Asia travel experiences with TravelEase. Curated luxury trips across South, East, Southeast, Central & West Asia.">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#f59e0b"/>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -50,7 +56,11 @@
             'parallax': 'parallax 20s linear infinite',
             'pulse-slow': 'pulse 3s ease-in-out infinite',
             'bounce-slow': 'bounce 2s ease-in-out infinite',
-            'spin-slow': 'spin 3s linear infinite'
+            'spin-slow': 'spin 3s linear infinite',
+            'morph': 'morph 8s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'text-shimmer': 'textShimmer 3s ease infinite',
+            'tilt': 'tilt 10s infinite linear'
           },
           keyframes: {
             fadeInUp: {
@@ -80,14 +90,37 @@
             parallax: {
               '0%': { transform: 'translateY(0)' },
               '100%': { transform: 'translateY(-50%)' }
+            },
+            morph: {
+              '0%': { borderRadius: '60% 40% 30% 70%/60% 30% 70% 40%' },
+              '50%': { borderRadius: '30% 60% 70% 40%/50% 60% 30% 60%' },
+              '100%': { borderRadius: '60% 40% 30% 70%/60% 30% 70% 40%' }
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 20px rgba(245, 158, 11, 0.3)' },
+              '100%': { boxShadow: '0 0 30px rgba(245, 158, 11, 0.6), 0 0 40px rgba(245, 158, 11, 0.3)' }
+            },
+            textShimmer: {
+              '0%': { backgroundPosition: '-200% center' },
+              '100%': { backgroundPosition: '200% center' }
+            },
+            tilt: {
+              '0%, 50%, 100%': { transform: 'rotate(0deg)' },
+              '25%': { transform: 'rotate(1deg)' },
+              '75%': { transform: 'rotate(-1deg)' }
             }
           },
           backgroundSize: {
-            '200%': '200% 200%'
+            '200%': '200% 200%',
+            '300%': '300% 300%'
           },
           screens: {
             'xs': '475px',
-            '3xl': '1600px'
+            '3xl': '1600px',
+            '4xl': '1920px'
+          },
+          backdropBlur: {
+            'xs': '2px',
           }
         }
       }
@@ -102,6 +135,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
+    :root {
+      --primary-gold: #f59e0b;
+      --gradient-start: #f59e0b;
+      --gradient-end: #fbbf24;
+    }
+    
     body { 
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: linear-gradient(135deg, #ffffff 0%, #fef7e5 50%, #fef3c7 100%);
@@ -138,6 +177,14 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+    .text-shimmer {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b, #fbbf24);
+      background-size: 300% 100%;
+      animation: textShimmer 3s ease infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
     .parallax-bg {
       background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
       background-attachment: fixed;
@@ -158,6 +205,60 @@
       backdrop-filter: blur(24px);
     }
     
+    /* Advanced 3D Card Effects */
+    .card-3d {
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    .card-3d-inner {
+      transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+      transform-style: preserve-3d;
+    }
+    .card-3d:hover .card-3d-inner {
+      transform: rotateY(10deg) rotateX(5deg) translateZ(20px);
+    }
+    
+    /* Gradient Border Effect */
+    .gradient-border {
+      position: relative;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      padding: 2px;
+      border-radius: 24px;
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      background: white;
+      border-radius: 22px;
+      z-index: 1;
+    }
+    .gradient-border > * {
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Morphing Background */
+    .morph-bg {
+      animation: morph 8s ease-in-out infinite;
+      background: linear-gradient(45deg, #f59e0b, #fbbf24, #fcd34d);
+      filter: blur(60px);
+      opacity: 0.3;
+    }
+    
+    /* Advanced Loading Animation */
+    .advanced-loader {
+      width: 60px;
+      aspect-ratio: 1;
+      display: grid;
+      border-radius: 50%;
+      background: conic-gradient(#0000 10%,#f59e0b);
+      -webkit-mask: radial-gradient(farthest-side, rgba(0,0,0,0) calc(100% - 8px), #000 0);
+      mask: radial-gradient(farthest-side, rgba(0,0,0,0) calc(100% - 8px), #000 0);
+      animation: l20 1s infinite linear;
+    }
+    @keyframes l20 {to{transform: rotate(1turn)}}
+    
     /* Enhanced responsive design */
     @media (max-width: 768px) {
       .hero-headline {
@@ -169,6 +270,9 @@
       }
       .experience-grid {
         grid-template-columns: 1fr;
+      }
+      .card-3d:hover .card-3d-inner {
+        transform: none;
       }
     }
     
@@ -211,12 +315,76 @@
       background: linear-gradient(135deg, #f59e0b, #fbbf24);
       border-radius: 10px;
     }
+    
+    /* Advanced Typing Animation */
+    .typing-animation {
+      overflow: hidden;
+      border-right: 2px solid #f59e0b;
+      white-space: nowrap;
+      animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+    }
+    
+    @keyframes typing {
+      from { width: 0 }
+      to { width: 100% }
+    }
+    
+    @keyframes blink-caret {
+      from, to { border-color: transparent }
+      50% { border-color: #f59e0b }
+    }
+    
+    /* Particle System */
+    .particles-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .particle {
+      position: absolute;
+      background: radial-gradient(circle, #f59e0b, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    
+    /* Advanced Hover Effects */
+    .magnetic-element {
+      transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    
+    .magnetic-element:hover {
+      transform: scale(1.05);
+    }
+    
+    /* Gradient Text Animation */
+    .animated-gradient-text {
+      background: linear-gradient(-45deg, #f59e0b, #fbbf24, #d97706, #f59e0b);
+      background-size: 300% 300%;
+      animation: gradientShift 3s ease infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   </style>
 </head>
 <body class="min-h-screen">
 
-  <!-- Loading Bar -->
-  <div class="loading-bar fixed top-0 left-0 z-50"></div>
+  <!-- Advanced Loading Screen -->
+  <div id="advanced-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-500">
+    <div class="text-center">
+      <div class="advanced-loader mx-auto mb-6"></div>
+      <div class="premium-font text-2xl font-black text-gradient">TravelEase</div>
+      <p class="text-gray-600 mt-2">Loading Premium Experience...</p>
+    </div>
+  </div>
+
+  <!-- Particle System -->
+  <div class="particles-container" id="particles-container"></div>
 
   <!-- Enhanced Mobile Menu -->
   <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden">
@@ -238,19 +406,19 @@
 
         <!-- Mobile Navigation -->
         <nav class="space-y-4">
-          <a href="#hero" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+          <a href="#hero" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold magnetic-element">
             <i class="fas fa-star w-6 text-center"></i>
             Premium
           </a>
-          <a href="#destinations" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="#destinations" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold magnetic-element">
             <i class="fas fa-map-marked-alt w-6 text-center"></i>
             Destinations
           </a>
-          <a href="#experiences" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="#experiences" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold magnetic-element">
             <i class="fas fa-gem w-6 text-center"></i>
             Experiences
           </a>
-          <a href="#testimonials" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="#testimonials" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold magnetic-element">
             <i class="fas fa-comment-alt w-6 text-center"></i>
             Testimonials
           </a>
@@ -258,10 +426,10 @@
 
         <!-- Mobile CTA Buttons -->
         <div class="mt-8 space-y-4">
-          <a href="login.php" class="block w-full text-center px-6 py-3 rounded-2xl glass-effect text-gray-700 hover:bg-amber-50 transition-all font-semibold border border-amber-100">
+          <a href="login.php" class="block w-full text-center px-6 py-3 rounded-2xl glass-effect text-gray-700 hover:bg-amber-50 transition-all font-semibold border border-amber-100 magnetic-element">
             Sign In
           </a>
-          <a href="create_account.php" class="block w-full text-center px-6 py-3 rounded-2xl gold-gradient text-white hover:shadow-2xl hover:shadow-amber-500/25 transition-all font-bold shadow-gold">
+          <a href="create_account.php" class="block w-full text-center px-6 py-3 rounded-2xl gold-gradient text-white hover:shadow-2xl hover:shadow-amber-500/25 transition-all font-bold shadow-gold magnetic-element">
             Join Premium
           </a>
         </div>
@@ -293,9 +461,11 @@
       <div class="flex items-center justify-between h-20">
         <!-- Logo -->
         <div class="flex items-center gap-3">
-          <a href="guest_dashboard.php" class="flex items-center gap-3 group">
-            <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
-              <img src="img/Logo.png" alt="TravelEase Logo" class="w-full h-full object-cover">
+          <a href="guest_dashboard.php" class="flex items-center gap-3 group magnetic-element">
+            <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300 card-3d">
+              <div class="card-3d-inner">
+                <img src="img/Logo.png" alt="TravelEase Logo" class="w-full h-full object-cover">
+              </div>
             </div>
             <div class="flex flex-col leading-tight">
               <span class="premium-font font-black text-xl tracking-tight text-gray-900">
@@ -310,22 +480,22 @@
 
         <!-- Center Navigation -->
         <div class="hidden lg:flex items-center gap-8 text-sm font-semibold">
-          <a href="#hero" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="#hero" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group magnetic-element">
             <span class="flex items-center gap-2">
               <i class="fas fa-star text-xs text-amber-500"></i>
               Premium
             </span>
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="#destinations" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="#destinations" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group magnetic-element">
             Destinations
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="#experiences" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="#experiences" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group magnetic-element">
             Experiences
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="#testimonials" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="#testimonials" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group magnetic-element">
             Testimonials
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
@@ -334,17 +504,17 @@
         <!-- CTA Buttons -->
         <div class="hidden lg:flex items-center gap-4">
           <a href="login.php"
-             class="px-6 py-2.5 rounded-xl glass-effect text-sm font-semibold text-gray-700 hover:text-amber-600 hover:bg-amber-50 transition-all duration-300 border border-amber-100">
+             class="px-6 py-2.5 rounded-xl glass-effect text-sm font-semibold text-gray-700 hover:text-amber-600 hover:bg-amber-50 transition-all duration-300 border border-amber-100 magnetic-element">
             Sign In
           </a>
           <a href="create_account.php"
-             class="px-6 py-2.5 rounded-xl gold-gradient text-sm font-bold text-white hover:shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 shadow-gold">
+             class="px-6 py-2.5 rounded-xl gold-gradient text-sm font-bold text-white hover:shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 shadow-gold magnetic-element">
             Join Premium
           </a>
         </div>
 
         <!-- Enhanced Mobile Menu Button -->
-        <button id="mobile-menu-button" class="lg:hidden inline-flex items-center justify-center p-3 rounded-2xl text-gray-700 hover:bg-amber-50 transition-colors">
+        <button id="mobile-menu-button" class="lg:hidden inline-flex items-center justify-center p-3 rounded-2xl text-gray-700 hover:bg-amber-50 transition-colors magnetic-element">
           <i class="fas fa-bars text-lg"></i>
         </button>
       </div>
@@ -353,11 +523,15 @@
 
   <!-- Enhanced Premium Hero Section -->
   <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-    <!-- Animated Background -->
+    <!-- Advanced Animated Background -->
     <div class="absolute inset-0">
       <div class="absolute inset-0 bg-white/80 z-10"></div>
       <div class="parallax-bg absolute inset-0 animate-parallax"></div>
       <div class="absolute inset-0 bg-gradient-to-br from-amber-200/30 via-transparent to-yellow-100/30 z-20"></div>
+      
+      <!-- Morphing Background Elements -->
+      <div class="absolute top-1/4 left-1/4 w-96 h-96 morph-bg"></div>
+      <div class="absolute bottom-1/4 right-1/4 w-80 h-80 morph-bg" style="animation-delay: -4s;"></div>
       
       <!-- Floating Elements -->
       <div class="absolute top-20 left-10 animate-float">
@@ -373,16 +547,16 @@
 
     <div class="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <div class="animate-fade-in-up">
-        <!-- Premium Badge -->
+        <!-- Premium Badge with Advanced Animation -->
         <div class="inline-flex items-center gap-3 glass-effect px-6 py-3 rounded-2xl mb-8 border border-amber-200 shadow-gold">
           <i class="fas fa-crown text-amber-500 animate-pulse-slow"></i>
           <span class="text-sm font-semibold text-amber-600">LUXURY ASIA TRAVEL CURATED</span>
         </div>
 
-        <!-- Main Headline -->
+        <!-- Main Headline with Typing Effect -->
         <h1 class="premium-font hero-headline text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight">
           <span class="text-gray-900">Discover</span>
-          <span class="text-gradient block mt-2">Asian Elegance</span>
+        <span class="text-shimmer block mt-2 typing-animation">Asian Elegance</span>
         </h1>
 
         <!-- Subheadline -->
@@ -391,17 +565,19 @@
           luxury accommodations, and unparalleled service.
         </p>
 
-        <!-- Enhanced CTA Buttons -->
+        <!-- Enhanced CTA Buttons with 3D Effect -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 cta-buttons">
           <a href="create_account.php"
-             class="group px-8 sm:px-12 py-4 rounded-2xl gold-gradient text-base sm:text-lg font-bold text-white hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 transform hover:scale-105 shadow-gold w-full sm:w-auto">
-            <span class="flex items-center gap-3 justify-center">
-              Begin Luxury Journey
-              <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-            </span>
+             class="group px-8 sm:px-12 py-4 rounded-2xl gold-gradient text-base sm:text-lg font-bold text-white hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 transform hover:scale-105 shadow-gold w-full sm:w-auto magnetic-element card-3d">
+             <div class="card-3d-inner">
+              <span class="flex items-center gap-3 justify-center">
+                Begin Luxury Journey
+                <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+              </span>
+             </div>
           </a>
           <a href="#destinations"
-             class="group px-8 sm:px-12 py-4 rounded-2xl glass-effect text-base sm:text-lg font-semibold text-gray-700 border border-amber-200 hover:bg-amber-50 hover:border-amber-300 transition-all duration-300 shadow-sm w-full sm:w-auto">
+             class="group px-8 sm:px-12 py-4 rounded-2xl glass-effect text-base sm:text-lg font-semibold text-gray-700 border border-amber-200 hover:bg-amber-50 hover:border-amber-300 transition-all duration-300 shadow-sm w-full sm:w-auto magnetic-element">
             <span class="flex items-center gap-3 justify-center">
               Explore Destinations
               <i class="fas fa-compass group-hover:rotate-90 transition-transform"></i>
@@ -409,10 +585,10 @@
           </a>
         </div>
 
-        <!-- Premium Stats -->
+        <!-- Premium Stats with Counter Animation -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-2xl mx-auto">
           <div class="text-center">
-            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1">15K+</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1 counter" data-target="15000">15K+</div>
             <div class="text-xs sm:text-sm text-gray-600">Luxury Travelers</div>
           </div>
           <div class="text-center">
@@ -420,7 +596,7 @@
             <div class="text-xs sm:text-sm text-gray-600">Premium Rating</div>
           </div>
           <div class="text-center">
-            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1">50+</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 mb-1 counter" data-target="50">50+</div>
             <div class="text-xs sm:text-sm text-gray-600">Destinations</div>
           </div>
           <div class="text-center">
@@ -433,13 +609,13 @@
 
     <!-- Enhanced Scroll Indicator -->
     <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow">
-      <a href="#destinations" class="text-amber-500 hover:text-amber-600 transition-colors">
+      <a href="#destinations" class="text-amber-500 hover:text-amber-600 transition-colors magnetic-element">
         <i class="fas fa-chevron-down text-2xl"></i>
       </a>
     </div>
   </section>
 
-  <!-- Enhanced Premium Destinations Section -->
+  <!-- ====== DESTINATIONS (from first file) ====== -->
   <section id="destinations" class="py-16 sm:py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Section Header -->
@@ -734,7 +910,7 @@
     </div>
   </section>
 
-  <!-- Enhanced Waterfalls & Natural Wonders Section -->
+  <!-- ====== ASIA'S NATURAL WONDERS (from first file) ====== -->
   <section class="py-16 sm:py-20 relative bg-gradient-to-b from-amber-50 to-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
@@ -799,7 +975,7 @@
     </div>
   </section>
 
-  <!-- Enhanced Premium Experiences Section -->
+  <!-- ====== PREMIUM EXPERIENCES (from first file) ====== -->
   <section id="experiences" class="py-16 sm:py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -902,7 +1078,7 @@
     </div>
   </section>
 
-  <!-- Enhanced Premium Testimonials -->
+  <!-- ====== TESTIMONIALS (from first file) ====== -->
   <section id="testimonials" class="py-16 sm:py-20 relative bg-gradient-to-b from-white to-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
@@ -997,7 +1173,7 @@
     </div>
   </section>
 
-  <!-- Enhanced Final Premium CTA -->
+  <!-- ====== FINAL PREMIUM CTA (from first file) ====== -->
   <section class="py-16 sm:py-20 relative">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <div class="glass-effect rounded-3xl p-8 sm:p-12 border border-amber-200 relative overflow-hidden shadow-gold">
@@ -1041,7 +1217,7 @@
     </div>
   </section>
 
-  <!-- Enhanced Premium Footer -->
+  <!-- ====== FOOTER (from first file) ====== -->
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid gap-8 md:grid-cols-4 mb-8">
@@ -1111,70 +1287,21 @@
     </div>
   </footer>
 
-  <!-- Enhanced JavaScript -->
+  <!-- ====== COMBINED JAVASCRIPT ====== -->
   <script>
-    // Enhanced Mobile menu functionality
-    const menuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const mobileMenuClose = document.getElementById('mobile-menu-close');
-    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
-
-    function toggleMobileMenu() {
-      mobileMenu.classList.toggle('open');
-      document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
-    }
-
-    if (menuButton) {
-      menuButton.addEventListener('click', toggleMobileMenu);
-    }
-
-    if (mobileMenuClose) {
-      mobileMenuClose.addEventListener('click', toggleMobileMenu);
-    }
-
-    if (mobileMenuBackdrop) {
-      mobileMenuBackdrop.addEventListener('click', toggleMobileMenu);
-    }
-
-    // Enhanced scroll animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = 1;
-          entry.target.style.transform = 'translateY(0)';
-        }
-      });
-    }, observerOptions);
-
-    // Observe elements for animation
-    document.querySelectorAll('.animate-fade-in-up, .animate-fade-in-down, .animate-slide-in-right, .animate-zoom-in').forEach(el => {
-      el.style.opacity = 0;
-      el.style.transform = 'translateY(30px)';
-      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-      observer.observe(el);
-    });
-
-    // Enhanced Parallax effect for hero background
-    window.addEventListener('scroll', () => {
-      const scrolled = window.pageYOffset;
-      const parallax = document.querySelector('.parallax-bg');
-      if (parallax) {
-        parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+    // Advanced loading screen
+    window.addEventListener('load', function() {
+      const advancedLoader = document.getElementById('advanced-loader');
+      if (advancedLoader) {
+        setTimeout(() => {
+          advancedLoader.style.opacity = '0';
+          setTimeout(() => {
+            advancedLoader.style.display = 'none';
+          }, 500);
+        }, 1000);
       }
-    });
 
-    // Add floating animation to premium elements
-    document.querySelectorAll('.gold-gradient').forEach((el, index) => {
-      el.style.animationDelay = `${index * 0.2}s`;
-    });
-
-    // Enhanced loading bar
-    window.addEventListener('load', () => {
+      // Loading bar fade-out (if present)
       const loadingBar = document.querySelector('.loading-bar');
       if (loadingBar) {
         loadingBar.style.opacity = '0';
@@ -1184,21 +1311,144 @@
       }
     });
 
-    // Smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
+    // Particle System
+    function createParticles() {
+      const container = document.getElementById('particles-container');
+      if (!container) return;
+      
+      const particleCount = 30;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        const size = Math.random() * 4 + 2;
+        const posX = Math.random() * 100;
+        const posY = Math.random() * 100;
+        const delay = Math.random() * 5;
+        const duration = Math.random() * 10 + 10;
+        
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${posX}%`;
+        particle.style.top = `${posY}%`;
+        particle.style.opacity = Math.random() * 0.3 + 0.1;
+        particle.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+        
+        container.appendChild(particle);
+      }
+    }
+
+    // Magnetic effect for elements
+    function initMagneticEffect() {
+      const magneticElements = document.querySelectorAll('.magnetic-element');
+      
+      magneticElements.forEach(element => {
+        element.addEventListener('mousemove', function(e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+          
+          const angleX = (y - centerY) / centerY * 10;
+          const angleY = (centerX - x) / centerX * 10;
+          
+          this.style.transform = `perspective(1000px) rotateX(${angleX}deg) rotateY(${angleY}deg) scale3d(1.05, 1.05, 1.05)`;
+        });
+        
+        element.addEventListener('mouseleave', function() {
+          this.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+        });
+      });
+    }
+
+    // Counter animation
+    function initCounters() {
+      const counters = document.querySelectorAll('.counter');
+      
+      counters.forEach(counter => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        const increment = target / 100;
+        let current = 0;
+        
+        const updateCounter = () => {
+          if (current < target) {
+            current += increment;
+            counter.innerText = Math.ceil(current).toLocaleString() + '+';
+            setTimeout(updateCounter, 20);
+          } else {
+            counter.innerText = target.toLocaleString() + '+';
+          }
+        };
+        
+        // Start counter when element is in viewport
+        const counterObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              updateCounter();
+              counterObserver.unobserve(entry.target);
+            }
+          });
+        });
+        
+        counterObserver.observe(counter);
+      });
+    }
+
+    // Advanced intersection observer for "advanced-animate" (optional hook)
+    const advancedObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = 1;
+          entry.target.style.transform = 'translateY(0) scale(1)';
+          
+          // Stagger animation for children
+          const children = entry.target.querySelectorAll('.stagger-animate');
+          children.forEach((child, index) => {
+            child.style.animationDelay = `${index * 0.1}s`;
+            child.classList.add('animate-fade-in-up');
           });
         }
       });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
     });
 
-    // Enhanced touch interactions for mobile
+    // Original scroll animations for .animate-fade-in-* etc. (renamed observer to avoid conflicts)
+    const scrollObserverOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = 1;
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, scrollObserverOptions);
+
+    // Parallax effect for hero background
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const parallax = document.querySelector('.parallax-bg');
+      if (parallax) {
+        parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+      }
+    });
+
+    // Add floating animation delay to premium elements
+    function initGoldGradientDelays() {
+      document.querySelectorAll('.gold-gradient').forEach((el, index) => {
+        el.style.animationDelay = `${index * 0.2}s`;
+      });
+    }
+
+    // Touch interactions (placeholder)
     let touchStartY = 0;
     let touchEndY = 0;
 
@@ -1214,11 +1464,11 @@
     function handleSwipe() {
       const swipeDistance = touchStartY - touchEndY;
       if (Math.abs(swipeDistance) > 50) {
-        // Add swipe functionality if needed
+        // Swipe detected – extend if needed
       }
     }
 
-    // Performance optimization: Lazy loading for images
+    // Lazy loading for images with data-src (optional; safe if unused)
     if ('IntersectionObserver' in window) {
       const imageObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
@@ -1226,7 +1476,7 @@
             const img = entry.target;
             img.src = img.dataset.src;
             img.classList.remove('lazy');
-            imageObserver.unobserve(img);
+            observer.unobserve(img);
           }
         });
       });
@@ -1235,6 +1485,80 @@
         imageObserver.observe(img);
       });
     }
+
+    // Initialize all advanced features
+    document.addEventListener('DOMContentLoaded', function() {
+      createParticles();
+      initMagneticEffect();
+      initCounters();
+      initGoldGradientDelays();
+      
+      // Observe elements for advanced animations (if you use .advanced-animate anywhere)
+      document.querySelectorAll('.advanced-animate').forEach(el => {
+        el.style.opacity = 0;
+        el.style.transform = 'translateY(30px) scale(0.95)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        advancedObserver.observe(el);
+      });
+
+      // Scroll animations for animate-fade-in-*, etc.
+      document.querySelectorAll('.animate-fade-in-up, .animate-fade-in-down, .animate-slide-in-right, .animate-zoom-in').forEach(el => {
+        el.style.opacity = 0;
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        scrollObserver.observe(el);
+      });
+
+      // Enhanced mobile menu functionality
+      const menuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileMenuClose = document.getElementById('mobile-menu-close');
+      const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+
+      function toggleMobileMenu() {
+        mobileMenu.classList.toggle('open');
+        document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+      }
+
+      if (menuButton) menuButton.addEventListener('click', toggleMobileMenu);
+      if (mobileMenuClose) mobileMenuClose.addEventListener('click', toggleMobileMenu);
+      if (mobileMenuBackdrop) mobileMenuBackdrop.addEventListener('click', toggleMobileMenu);
+
+      // Smooth scrolling for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+          const href = this.getAttribute('href');
+          if (!href || href === '#') return;
+          const target = document.querySelector(href);
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+    });
+
+    // Service Worker Registration for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(function(err) {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+
+    // Advanced performance monitoring
+    const perfObserver = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        console.log(`${entry.name}: ${entry.startTime}`);
+      });
+    });
+
+    perfObserver.observe({entryTypes: ['navigation', 'paint', 'largest-contentful-paint']});
   </script>
 </body>
 </html>
