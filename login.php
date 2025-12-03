@@ -1,6 +1,8 @@
 <?php
 // login.php
 session_start();
+date_default_timezone_set('Asia/Colombo'); // ✅ Make times match your local timezone
+
 require_once 'db.php'; // PDO $pdo connection
 
 // If already logged in, send to the correct dashboard
@@ -24,9 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter both email and password.';
     } else {
         try {
-            // IMPORTANT: use password_hash column from your database
+            // Now we also fetch last_login from DB
             $stmt = $pdo->prepare("
-                SELECT id, full_name, password_hash, role 
+                SELECT id, full_name, password_hash, role, last_login
                 FROM users 
                 WHERE email = :email 
                 LIMIT 1
@@ -36,13 +38,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Check user exists AND verify hashed password
             if ($user && password_verify($password, $user['password_hash'])) {
+
+                // ✅ This is the PREVIOUS login time (can be null on first login)
+                $previousLastLogin = $user['last_login'];
+
                 // Login success
                 $_SESSION['user_id']   = $user['id'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['role']      = $user['role'] ?? 'user';
 
+                // ✅ Store the *previous* last_login in session
+                // Your profile page can display this as "Last login"
+                if ($previousLastLogin !== null) {
+                    // format nicely if you want, or just store raw
+                    $_SESSION['last_login'] = date('Y-m-d H:i:s', strtotime($previousLastLogin));
+                } else {
+                    $_SESSION['last_login'] = null; // first login or unknown
+                }
+
+                // ✅ Update DB with current login time (this becomes "previous" next time)
+                try {
+                    $updateLastLogin = $pdo->prepare("
+                        UPDATE users 
+                        SET last_login = NOW() 
+                        WHERE id = :id
+                    ");
+                    $updateLastLogin->execute([':id' => $user['id']]);
+                } catch (PDOException $e) {
+                    // Optional: log it, but don't break login flow
+                    // error_log('Last login update failed: ' . $e->getMessage());
+                }
+
                 // Redirect based on role
-                if ($user['role'] === 'admin') {
+                if (!empty($user['role']) && $user['role'] === 'admin') {
                     header('Location: admin_dashboard.php');
                     exit();
                 } else {
@@ -58,7 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -241,7 +268,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    class="rounded border-yellow-300 text-primary focus:ring-primary h-4 w-4">
             <label for="remember" class="text-inkMuted">Remember me</label>
           </div>
-          <span class="text-xs text-inkMuted italic cursor-not-allowed">Forgot password? (coming soon)</span>
+          <a href="forgot_password.php" 
+            class="text-xs text-primary font-medium hover:underline">
+            Forgot password?
+          </a>
+
         </div>
 
         <!-- Submit Button -->
@@ -291,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
            </svg>`
         : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
            </svg>`;
     });
 
@@ -302,7 +333,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       
       if (!email || !password) {
         e.preventDefault();
-        // Add visual feedback for empty fields
         const inputs = this.querySelectorAll('input[required]');
         inputs.forEach(input => {
           if (!input.value) {

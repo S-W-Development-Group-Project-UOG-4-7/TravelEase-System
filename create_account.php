@@ -169,7 +169,7 @@
             <span class="ml-1 text-xs text-inkMuted">(required)</span>
           </label>
           <div class="relative">
-            <input type="text" name="phone" required placeholder="+1 (555) 123-4567"
+            <input type="text" name="phone" required placeholder="+94 71 234 5678"
                    class="form-input w-full border border-yellow-200 bg-white rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all placeholder-inkMuted/50">
             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-inkMuted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
