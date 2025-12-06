@@ -13,6 +13,12 @@ if (isset($_SESSION['user_id'])) {
         header('Location: admin_dashboard.php');
         exit;
     } elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'marketing') { // ✅ NEW
+    $role = $_SESSION['role'] ?? 'user';
+
+    if ($role === 'admin') {
+        header('Location: admin_dashboard.php');
+        exit;
+    } elseif (in_array($role, ['marketing', 'marketing_manager'])) {
         header('Location: marketing_dashboard.php');
         exit;
     } else {
@@ -77,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: admin_dashboard.php');
                     exit();
                 } elseif (!empty($user['role']) && $user['role'] === 'marketing') { // ✅ NEW
+                } elseif (in_array($user['role'], ['marketing', 'marketing_manager'])) {
                     header('Location: marketing_dashboard.php');
                     exit();
                 } else {
