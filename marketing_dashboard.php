@@ -5,25 +5,26 @@ require_once 'db.php';
 
 $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
 
-// For now we use static / placeholder metrics (0) to avoid DB errors
-// You can wire these to real tables later
+// Profile image from session (set this in marketing_profile.php after upload)
+$profileImage = !empty($_SESSION['profile_image'])
+    ? 'uploads/profile/' . $_SESSION['profile_image']
+    : 'img/default_user.png';
+
+// Placeholder metrics (0 for now)
 $totalCampaigns        = 0;
 $activeCampaigns       = 0;
 $leadsThisMonth        = 0;
 $revenueFromCampaigns  = 0.0;
 
-// OPTIONAL: if you already created these tables, you can uncomment this block
+// OPTIONAL REAL QUERIES (uncomment after your tables are ready)
 /*
 try {
-    // Total campaigns
     $totalCampaigns = (int)$pdo->query("SELECT COUNT(*) FROM marketing_campaigns")->fetchColumn();
 
-    // Active campaigns
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM marketing_campaigns WHERE status = 'active'");
     $stmt->execute();
     $activeCampaigns = (int)$stmt->fetchColumn();
 
-    // Leads this month
     $stmt = $pdo->prepare("
         SELECT COUNT(*) 
         FROM leads 
@@ -32,7 +33,6 @@ try {
     $stmt->execute();
     $leadsThisMonth = (int)$stmt->fetchColumn();
 
-    // Revenue from campaign-driven bookings (this month)
     $stmt = $pdo->prepare("
         SELECT COALESCE(SUM(total_amount), 0) 
         FROM bookings 
@@ -43,7 +43,6 @@ try {
     $revenueFromCampaigns = (float)$stmt->fetchColumn();
 
 } catch (PDOException $e) {
-    // In real project you might log this instead
     $dbError = $e->getMessage();
 }
 */
@@ -83,6 +82,7 @@ try {
   <!-- Top Navbar -->
   <header class="bg-white shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- Left: Logo + Title -->
       <div class="flex items-center space-x-3">
         <img src="img/Logo.png" alt="TravelEase Logo" class="h-9 w-9 object-contain">
         <div>
@@ -95,10 +95,22 @@ try {
           <p class="text-xs text-gray-500">Monitor campaigns, leads & bookings across Asia</p>
         </div>
       </div>
+
+      <!-- Right: Profile picture + greeting + buttons -->
       <div class="flex items-center space-x-4">
-        <span class="text-sm text-gray-600">
-          Hello, <span class="font-semibold"><?= htmlspecialchars($managerName) ?></span>
-        </span>
+        <div class="flex items-center space-x-3">
+          <img src="<?= htmlspecialchars($profileImage, ENT_QUOTES, 'UTF-8') ?>"
+               alt="Profile Picture"
+               class="h-9 w-9 rounded-full object-cover border border-gray-200">
+          <span class="text-sm text-gray-600">
+            Hello, <span class="font-semibold"><?= htmlspecialchars($managerName) ?></span>
+          </span>
+        </div>
+
+        <a href="marketing_profile.php"
+           class="text-xs sm:text-sm font-medium text-primary-700 hover:text-primary-800 border px-3 py-1.5 rounded-lg bg-primary-50">
+          My Profile
+        </a>
         <a href="logout.php"
            class="text-sm font-medium text-gray-700 hover:text-red-600 border px-3 py-1.5 rounded-lg">
           Logout
@@ -150,9 +162,9 @@ try {
     </div>
 
     <!-- Main grid: management sections -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Campaign management -->
-      <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col">
+      <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col lg:col-span-2">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-lg font-semibold text-gray-800">Campaign Management</h2>
           <span class="text-xs px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">Marketing</span>
@@ -160,7 +172,7 @@ try {
         <p class="text-sm text-gray-500 mb-4">
           Create, edit and monitor your marketing campaigns across digital & offline channels.
         </p>
-        <div class="mt-auto flex space-x-3">
+        <div class="mt-auto flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
           <a href="marketing_campaigns.php"
              class="flex-1 text-center text-sm font-medium py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
             View Campaigns
@@ -181,13 +193,13 @@ try {
         <p class="text-sm text-gray-500 mb-4">
           Track inquiries, follow up potential travelers, and see which campaigns convert into bookings.
         </p>
-        <div class="mt-auto flex space-x-3">
+        <div class="mt-auto flex flex-col space-y-3">
           <a href="marketing_leads.php"
-             class="flex-1 text-center text-sm font-medium py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
+             class="text-center text-sm font-medium py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
             View Leads
           </a>
           <a href="marketing_bookings.php"
-             class="flex-1 text-center text-sm font-medium py-2 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
+             class="text-center text-sm font-medium py-2 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
             Campaign Bookings
           </a>
         </div>
@@ -202,16 +214,32 @@ try {
         <p class="text-sm text-gray-500 mb-4">
           Compare channels, measure ROI, and export basic marketing performance reports.
         </p>
-        <div class="mt-auto flex space-x-3">
+        <div class="mt-auto flex flex-col space-y-3">
           <a href="marketing_reports.php"
-             class="flex-1 text-center text-sm font-medium py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
+             class="text-center text-sm font-medium py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
             View Reports
           </a>
           <a href="marketing_insights.php"
-             class="flex-1 text-center text-sm font-medium py-2 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
+             class="text-center text-sm font-medium py-2 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
             Campaign Insights
           </a>
         </div>
+      </div>
+    </div>
+
+    <!-- Profile info teaser (optional) -->
+    <div class="mt-8 bg-white rounded-2xl shadow-sm p-5 flex flex-col md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 class="text-sm font-semibold text-gray-800 mb-1">My Profile & Account</h2>
+        <p class="text-sm text-gray-500">
+          Update your name, email, password and profile picture on the profile settings page.
+        </p>
+      </div>
+      <div class="mt-3 md:mt-0">
+        <a href="marketing_profile.php"
+           class="inline-flex items-center text-sm font-medium px-4 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
+          Go to Profile Settings
+        </a>
       </div>
     </div>
 
