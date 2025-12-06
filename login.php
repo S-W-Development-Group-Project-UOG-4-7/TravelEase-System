@@ -7,6 +7,12 @@ require_once 'db.php'; // PDO $pdo connection
 
 // If already logged in, send to the correct dashboard
 if (isset($_SESSION['user_id'])) {
+
+    // ✅ Redirect based on existing session role
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+        header('Location: admin_dashboard.php');
+        exit;
+    } elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'marketing') { // ✅ NEW
     $role = $_SESSION['role'] ?? 'user';
 
     if ($role === 'admin') {
@@ -53,9 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role']      = $user['role'] ?? 'user';
 
                 // ✅ Store the *previous* last_login in session
-                // Your profile page can display this as "Last login"
                 if ($previousLastLogin !== null) {
-                    // format nicely if you want, or just store raw
                     $_SESSION['last_login'] = date('Y-m-d H:i:s', strtotime($previousLastLogin));
                 } else {
                     $_SESSION['last_login'] = null; // first login or unknown
@@ -74,10 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // error_log('Last login update failed: ' . $e->getMessage());
                 }
 
-                // Redirect based on role
+                // ✅ Redirect based on role (now includes marketing)
                 if (!empty($user['role']) && $user['role'] === 'admin') {
                     header('Location: admin_dashboard.php');
                     exit();
+                } elseif (!empty($user['role']) && $user['role'] === 'marketing') { // ✅ NEW
                 } elseif (in_array($user['role'], ['marketing', 'marketing_manager'])) {
                     header('Location: marketing_dashboard.php');
                     exit();
@@ -85,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: user_dashboard.php');
                     exit();
                 }
+
             } else {
                 $error = 'Invalid email or password.';
             }

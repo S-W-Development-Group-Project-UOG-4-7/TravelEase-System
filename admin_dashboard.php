@@ -3,19 +3,33 @@
 require_once 'admin_auth.php'; // protects this page
 require_once 'db.php';
 
-$adminName = $_SESSION['full_name'] ?? 'Admin';
+$adminId   = $_SESSION['user_id'] ?? null;
+$adminName = 'Admin';
+$adminImage = null;
 
-// You can later replace these with real queries
+// Dashboard stats defaults
 $totalUsers      = 0;
 $totalPackages   = 0;
 $totalBookings   = 0;
 $totalCountries  = 0;
 
 try {
+    // Fetch admin info (name + profile image)
+    if ($adminId) {
+        $stmtAdmin = $pdo->prepare("SELECT full_name, profile_image FROM users WHERE id = :id LIMIT 1");
+        $stmtAdmin->execute([':id' => $adminId]);
+        if ($row = $stmtAdmin->fetch(PDO::FETCH_ASSOC)) {
+            $adminName  = $row['full_name'] ?: 'Admin';
+            $adminImage = $row['profile_image'] ?: null;
+
+            // Keep session name in sync
+            $_SESSION['full_name'] = $adminName;
+        }
+    }
+
     // Total users
     $totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
-    // Example tables – change names if needed:
     // Total packages
     $totalPackages = (int)$pdo->query("SELECT COUNT(*) FROM packages")->fetchColumn();
 
@@ -76,12 +90,39 @@ try {
           <p class="text-xs text-gray-500">Manage users, packages & bookings across Asia</p>
         </div>
       </div>
+
+      <!-- Admin profile area (UPDATED) -->
       <div class="flex items-center space-x-4">
-        <span class="text-sm text-gray-600">Hello, <span class="font-semibold"><?= htmlspecialchars($adminName) ?></span></span>
-        <a href="logout.php"
-           class="text-sm font-medium text-gray-700 hover:text-red-600 border px-3 py-1.5 rounded-lg">
-          Logout
-        </a>
+        <!-- Avatar -->
+        <?php if (!empty($adminImage)) : ?>
+          <img
+            src="<?= htmlspecialchars($adminImage) ?>"
+            alt="Admin profile"
+            class="h-10 w-10 rounded-full object-cover border border-primary-200"
+          >
+        <?php else : ?>
+          <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-sm font-semibold text-primary-700">
+            <?= strtoupper(substr($adminName, 0, 1)) ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- Name + actions -->
+        <div class="flex flex-col items-start">
+          <span class="text-sm text-gray-600">
+            Hello, <span class="font-semibold"><?= htmlspecialchars($adminName) ?></span>
+          </span>
+          <div class="flex items-center space-x-2 mt-1">
+            <a href="admin_profile.php"
+               class="text-xs font-medium text-primary-700 hover:text-primary-900 hover:underline">
+              My Profile
+            </a>
+            <span class="text-gray-300 text-xs">|</span>
+            <a href="logout.php"
+               class="text-xs font-medium text-gray-700 hover:text-red-600 border px-2 py-1 rounded-lg">
+              Logout
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </header>
