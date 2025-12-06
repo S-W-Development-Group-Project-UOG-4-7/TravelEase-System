@@ -5,8 +5,13 @@ require_once 'db.php'; // PDO $pdo connection
 
 // If already logged in, send to the correct dashboard
 if (isset($_SESSION['user_id'])) {
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+    $role = $_SESSION['role'] ?? 'user';
+
+    if ($role === 'admin') {
         header('Location: admin_dashboard.php');
+        exit;
+    } elseif (in_array($role, ['marketing', 'marketing_manager'])) {
+        header('Location: marketing_dashboard.php');
         exit;
     } else {
         header('Location: user_dashboard.php');
@@ -44,6 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Redirect based on role
                 if ($user['role'] === 'admin') {
                     header('Location: admin_dashboard.php');
+                    exit();
+                } elseif (in_array($user['role'], ['marketing', 'marketing_manager'])) {
+                    header('Location: marketing_dashboard.php');
                     exit();
                 } else {
                     header('Location: user_dashboard.php');
