@@ -6,7 +6,7 @@ date_default_timezone_set('Asia/Colombo'); // ✅ Make times match your local ti
 require_once 'db.php'; // PDO $pdo connection
 
 // If already logged in, send to the correct dashboard
-if (isset($_SESSION['user_id'])) {
+if (isset($_SESSION['user_id'])){
 
     // ✅ Redirect based on existing session role
     if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
@@ -25,6 +25,7 @@ if (isset($_SESSION['user_id'])) {
         header('Location: user_dashboard.php');
         exit;
     }
+  }
 }
 
 $error = '';
