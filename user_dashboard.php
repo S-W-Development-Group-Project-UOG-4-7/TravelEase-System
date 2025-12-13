@@ -465,7 +465,7 @@ try {
                     <?php endif; ?>
                 </div>
 
-                <a href="packages.php"
+                <a href="book_trip.php"
                    class="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-semibold border border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition">
                     + Book a new trip
                 </a>
