@@ -286,10 +286,10 @@ $footerLinks = [
         ['text' => 'Support Center', 'link' => '#']
     ],
     'Account' => [
-        ['text' => 'Profile Settings', 'link' => '#'],
+        ['text' => 'Profile Settings', 'link' => 'marketing_profile.php'],
         ['text' => 'Notification Preferences', 'link' => '#'],
         ['text' => 'Team Management', 'link' => '#'],
-        ['text' => 'Logout', 'link' => '#']
+        ['text' => 'Logout', 'link' => 'login.php']
     ]
 ];
 
@@ -511,7 +511,7 @@ $currentYear = date('Y');
             <i class="fas fa-file-alt w-6 text-center"></i>
             Reports
           </a>
-          <a href="#" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-user w-6 text-center"></i>
             My Profile
           </a>
@@ -594,10 +594,10 @@ $currentYear = date('Y');
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <a href="#" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50 transition-colors" title="My Profile">
+            <a href="marketing_profile.php" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50 transition-colors" title="My Profile">
               <i class="fas fa-user"></i>
             </a>
-            <a href="#" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50 transition-colors" title="Logout">
+            <a href="login.php" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50 transition-colors" title="Logout">
               <i class="fas fa-sign-out-alt"></i>
             </a>
           </div>
@@ -1123,7 +1123,7 @@ $currentYear = date('Y');
         </p>
       </div>
       <div class="mt-3 md:mt-0">
-        <a href="#"
+        <a href="marketing_profile.php"
            class="inline-flex items-center text-sm font-medium px-4 py-2 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
           Go to Profile Settings
         </a>
