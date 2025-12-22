@@ -478,10 +478,11 @@ $currentYear = date('Y');
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
     <div class="fixed top-0 left-0 h-full w-80 max-w-full bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
       <div class="p-6">
+        <!-- Updated Mobile Menu Logo -->
         <div class="flex items-center justify-between mb-8">
           <div class="flex items-center gap-3">
-            <div class="h-12 w-12 rounded-2xl gold-gradient flex items-center justify-center">
-              <div class="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-black text-amber-600 text-xs">TE</div>
+            <div class="h-12 w-12 rounded-2xl overflow-hidden">
+              <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain">
             </div>
             <span class="font-black text-xl text-gray-900">TravelEase</span>
           </div>
@@ -494,10 +495,6 @@ $currentYear = date('Y');
           <a href="#overview" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
             <i class="fas fa-chart-line w-6 text-center"></i>
             Overview
-          </a>
-          <a href="#features" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-cogs w-6 text-center"></i>
-            Marketing Features
           </a>
           <a href="#campaigns" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
@@ -537,12 +534,11 @@ $currentYear = date('Y');
   <header class="fixed top-0 left-0 right-0 z-30 glass-effect border-b border-amber-100/50 backdrop-blur-xl">
     <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-20">
+        <!-- Updated Main Header Logo -->
         <div class="flex items-center gap-3">
           <a href="#" class="flex items-center gap-3 group">
             <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
-              <div class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-                <span class="text-white font-bold text-xl">TE</span>
-              </div>
+              <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain bg-white p-2">
             </div>
             <div class="flex flex-col leading-tight">
               <span class="font-black text-xl tracking-tight text-gray-900">
@@ -1134,10 +1130,11 @@ $currentYear = date('Y');
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid gap-8 md:grid-cols-4 mb-8">
+        <!-- Updated Footer Logo -->
         <div>
           <div class="flex items-center gap-3 mb-4">
-            <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <div class="h-6 w-6 rounded-lg bg-white flex items-center justify-center font-black text-amber-600 text-xs">TE</div>
+            <div class="h-10 w-10 rounded-xl overflow-hidden bg-white p-1">
+              <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain">
             </div>
             <span class="font-black text-lg text-gray-900">TravelEase</span>
           </div>
