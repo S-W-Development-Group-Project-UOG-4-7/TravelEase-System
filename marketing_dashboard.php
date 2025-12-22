@@ -834,6 +834,7 @@ $currentYear = date('Y');
     </div>
   </footer>
 
+  <!--mobile menu php part-->
   <script>
     const menuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
