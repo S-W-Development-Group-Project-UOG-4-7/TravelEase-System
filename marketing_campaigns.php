@@ -230,14 +230,10 @@ function getTypeClasses($type) {
         </div>
 
         <nav class="space-y-4">
-          <a href="#overview" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+          <a href="marketing_dashboard.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
             <i class="fas fa-chart-line w-6 text-center"></i>
             Overview
-          </a>
-          <a href="#features" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-cogs w-6 text-center"></i>
-            Marketing Features
-          </a>
+        </a>
           <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
             Campaigns
