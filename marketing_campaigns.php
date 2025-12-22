@@ -1,287 +1,137 @@
 <?php
-// marketing_manager_dashboard.php
-// Premium TravelEase Marketing Manager Dashboard with ALL Features
-
-// Start session for authentication
+// marketing_campaigns.php
 session_start();
-
-// Basic authentication check (you can remove or modify this)
 if (!isset($_SESSION['marketing_logged_in'])) {
-    // For demo purposes, auto-login
     $_SESSION['marketing_logged_in'] = true;
     $_SESSION['full_name'] = 'Marketing Manager';
-    $_SESSION['profile_image'] = '';
 }
 
 $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
+$profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
+$currentYear = date('Y');
 
-// Profile image from session
-$profileImage = !empty($_SESSION['profile_image'])
-    ? 'uploads/profile/' . $_SESSION['profile_image']
-    : 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
-
-// Placeholder metrics
-$totalCampaigns = 12;
-$activeCampaigns = 4;
-$leadsThisMonth = 892;
-
-// Campaign data for tables
+// Campaign data
 $campaigns = [
     [
+        'id' => 1,
         'name' => 'Summer Asia Promotion',
         'status' => 'Active',
+        'type' => 'Multi-Channel',
         'budget' => 25000,
         'spent' => 18450,
         'leads' => 1248,
-        'roi' => '4.2x'
+        'conversions' => 156,
+        'roi' => '4.2x',
+        'start_date' => '2024-05-01',
+        'end_date' => '2024-08-31',
+        'channels' => ['Social Media', 'Email', 'PPC']
     ],
     [
+        'id' => 2,
         'name' => 'Luxury Japan Getaway',
         'status' => 'Active',
+        'type' => 'Influencer',
         'budget' => 15000,
         'spent' => 12800,
         'leads' => 892,
-        'roi' => '3.8x'
+        'conversions' => 112,
+        'roi' => '3.8x',
+        'start_date' => '2024-06-15',
+        'end_date' => '2024-09-30',
+        'channels' => ['Instagram', 'YouTube', 'Blog']
     ],
     [
+        'id' => 3,
         'name' => 'Bali Wellness Retreat',
         'status' => 'Paused',
+        'type' => 'Content',
         'budget' => 12000,
         'spent' => 8200,
         'leads' => 567,
-        'roi' => '2.9x'
+        'conversions' => 68,
+        'roi' => '2.9x',
+        'start_date' => '2024-04-01',
+        'end_date' => '2024-07-31',
+        'channels' => ['Blog', 'Email', 'Social']
     ],
     [
+        'id' => 4,
         'name' => 'Thailand Island Hopping',
         'status' => 'Completed',
+        'type' => 'PPC',
         'budget' => 18000,
         'spent' => 17500,
         'leads' => 1102,
-        'roi' => '3.5x'
-    ]
-];
-
-// Active campaigns data
-$activeCampaignsData = [
-    [
-        'name' => 'Summer Asia Promotion',
-        'status' => 'On Track',
-        'description' => 'Multi-channel campaign targeting luxury travelers',
-        'progress' => 74,
-        'spent' => 18450,
-        'budget' => 25000
+        'conversions' => 198,
+        'roi' => '3.5x',
+        'start_date' => '2024-03-01',
+        'end_date' => '2024-06-30',
+        'channels' => ['Google Ads', 'Facebook Ads']
     ],
     [
-        'name' => 'Luxury Japan Getaway',
-        'status' => 'On Track',
-        'description' => 'Social media and influencer campaign',
-        'progress' => 85,
-        'spent' => 12800,
-        'budget' => 15000
-    ],
-    [
-        'name' => 'Autumn Retreats',
-        'status' => 'Starting Soon',
-        'description' => 'Email and content marketing campaign',
-        'progress' => 15,
-        'spent' => 1500,
-        'budget' => 10000
-    ]
-];
-
-// Upcoming campaigns
-$upcomingCampaigns = [
-    [
+        'id' => 5,
         'name' => 'Winter Luxury Escapes',
-        'start_date' => 'Nov 15, 2024',
-        'status' => 'Planned'
+        'status' => 'Planned',
+        'type' => 'Seasonal',
+        'budget' => 20000,
+        'spent' => 0,
+        'leads' => 0,
+        'conversions' => 0,
+        'roi' => '0.0x',
+        'start_date' => '2024-11-15',
+        'end_date' => '2025-02-28',
+        'channels' => ['All Channels']
     ],
     [
+        'id' => 6,
         'name' => 'Spring Festival Tours',
-        'start_date' => 'Feb 1, 2025',
-        'status' => 'Planned'
+        'status' => 'Draft',
+        'type' => 'Cultural',
+        'budget' => 22000,
+        'spent' => 0,
+        'leads' => 0,
+        'conversions' => 0,
+        'roi' => '0.0x',
+        'start_date' => '2025-02-01',
+        'end_date' => '2025-05-31',
+        'channels' => ['TBD']
     ]
 ];
 
-// Recent leads data
-$recentLeads = [
-    [
-        'name' => 'Jennifer Wilson',
-        'email' => 'j.wilson@email.com',
-        'source' => 'Website',
-        'interest' => 'Japan Luxury',
-        'status' => 'New',
-        'date' => 'Today'
-    ],
-    [
-        'name' => 'Robert Chen',
-        'email' => 'r.chen@email.com',
-        'source' => 'Social Media',
-        'interest' => 'Bali Retreat',
-        'status' => 'Contacted',
-        'date' => '2 days ago'
-    ],
-    [
-        'name' => 'Maria Rodriguez',
-        'email' => 'm.rodriguez@email.com',
-        'source' => 'Referral',
-        'interest' => 'Thailand Islands',
-        'status' => 'Qualified',
-        'date' => '3 days ago'
-    ],
-    [
-        'name' => 'James Thompson',
-        'email' => 'j.thompson@email.com',
-        'source' => 'Email Campaign',
-        'interest' => 'Vietnam Culture',
-        'status' => 'Hot Lead',
-        'date' => '5 days ago'
-    ]
-];
+function getStatusClasses($status) {
+    $classes = [
+        'Active' => 'bg-green-100 text-green-800',
+        'On Track' => 'bg-green-100 text-green-800',
+        'Paused' => 'bg-yellow-100 text-yellow-800',
+        'Completed' => 'bg-blue-100 text-blue-800',
+        'Planned' => 'bg-blue-100 text-blue-800',
+        'Draft' => 'bg-gray-100 text-gray-800',
+        'Starting Soon' => 'bg-yellow-100 text-yellow-800'
+    ];
+    return $classes[$status] ?? 'bg-gray-100 text-gray-800';
+}
 
-// Top performing content
-$topContent = [
-    [
-        'title' => 'Japan Luxury Guide',
-        'type' => 'Blog Post',
-        'views' => 2458
-    ],
-    [
-        'title' => 'Bali Retreat Video',
-        'type' => 'Video',
-        'views' => 1892
-    ],
-    [
-        'title' => 'Thailand Islands',
-        'type' => 'Instagram Post',
-        'engagements' => 1567
-    ],
-    [
-        'title' => 'Vietnam Culture Guide',
-        'type' => 'Blog Post',
-        'views' => 1234
-    ]
-];
-
-// Geographic performance
-$geoPerformance = [
-    ['region' => 'North America', 'percentage' => 42],
-    ['region' => 'Europe', 'percentage' => 28],
-    ['region' => 'Asia Pacific', 'percentage' => 18],
-    ['region' => 'Other Regions', 'percentage' => 12]
-];
-
-// Report templates
-$reportTemplates = [
-    [
-        'title' => 'Monthly Performance',
-        'description' => 'Comprehensive monthly marketing report',
-        'icon' => 'chart-line'
-    ],
-    [
-        'title' => 'Campaign ROI Analysis',
-        'description' => 'Detailed campaign performance and ROI',
-        'icon' => 'bullseye'
-    ],
-    [
-        'title' => 'Lead Generation Report',
-        'description' => 'Lead sources and conversion metrics',
-        'icon' => 'users'
-    ]
-];
-
-// Marketing features
-$marketingFeatures = [
-    [
-        'title' => 'Manage Promotional Content',
-        'description' => 'Create and manage promotional banners, ads, and marketing materials.',
-        'icon' => 'megaphone',
-        'link' => '#',
-        'action_text' => 'Access Tool'
-    ],
-    [
-        'title' => 'Write Package Descriptions',
-        'description' => 'Create compelling descriptions for travel packages and experiences.',
-        'icon' => 'edit',
-        'link' => '#',
-        'action_text' => 'Access Tool'
-    ],
-    [
-        'title' => 'Add New Packages',
-        'description' => 'Add new travel packages with images, pricing, and inclusions.',
-        'icon' => 'box-open',
-        'link' => '#',
-        'action_text' => 'Add Package'
-    ],
-    [
-        'title' => 'Promotional Offers',
-        'description' => 'Set up special promotions, discounts, and limited-time offers.',
-        'icon' => 'tags',
-        'link' => '#',
-        'action_text' => 'Manage Offers'
-    ],
-    [
-        'title' => 'Marketing Campaigns',
-        'description' => 'Create and schedule multi-channel marketing campaigns.',
-        'icon' => 'bullhorn',
-        'link' => '#',
-        'action_text' => 'Create Campaign'
-    ],
-    [
-        'title' => 'Discount Codes',
-        'description' => 'Generate and manage discount codes for promotions.',
-        'icon' => 'percentage',
-        'link' => '#',
-        'action_text' => 'Create Codes'
-    ],
-    [
-        'title' => 'Email Newsletters',
-        'description' => 'Design and send beautiful email newsletters to your subscribers.',
-        'icon' => 'envelope',
-        'link' => '#',
-        'action_text' => 'Design Newsletter',
-        'span_cols' => true,
-        'extra_info' => '12,450 subscribers'
-    ]
-];
-
-// Quick actions
-$quickActions = [
-    ['text' => 'Add New Package', 'icon' => 'plus', 'link' => '#'],
-    ['text' => 'Launch Campaign', 'icon' => 'rocket', 'link' => '#'],
-    ['text' => 'Generate Discount Code', 'icon' => 'tag', 'link' => '#'],
-    ['text' => 'Send Newsletter', 'icon' => 'paper-plane', 'link' => '#']
-];
-
-// Campaign planning quick actions
-$campaignQuickActions = [
-    ['text' => 'New Campaign', 'icon' => 'plus', 'link' => '#'],
-    ['text' => 'Generate Report', 'icon' => 'chart-bar', 'link' => '#'],
-    ['text' => 'Audience Insights', 'icon' => 'users', 'link' => '#'],
-    ['text' => 'Promote Content', 'icon' => 'bullhorn', 'link' => '#']
-];
-
-// Lead statistics
-$leadStats = [
-    ['label' => 'Total Leads', 'value' => '3,842', 'class' => 'text-gray-900'],
-    ['label' => 'New This Month', 'value' => $leadsThisMonth, 'class' => 'text-amber-600'],
-    ['label' => 'Conversion Rate', 'value' => '4.8%', 'class' => 'text-green-600'],
-    ['label' => 'Avg. Response Time', 'value' => '2.4 hrs', 'class' => 'text-gray-900'],
-    ['label' => 'Hot Leads', 'value' => '124', 'class' => 'text-red-600']
-];
-
-// Footer links
+function getTypeClasses($type) {
+    $classes = [
+        'Multi-Channel' => 'bg-purple-100 text-purple-800',
+        'Influencer' => 'bg-pink-100 text-pink-800',
+        'Content' => 'bg-blue-100 text-blue-800',
+        'PPC' => 'bg-red-100 text-red-800',
+        'Seasonal' => 'bg-amber-100 text-amber-800',
+        'Cultural' => 'bg-green-100 text-green-800'
+    ];
+    return $classes[$type] ?? 'bg-gray-100 text-gray-800';
+}
 $footerLinks = [
-    'Marketing Features' => [
-        ['text' => 'All Features', 'link' => '#features'],
-        ['text' => 'Add Packages', 'link' => '#'],
-        ['text' => 'Campaigns', 'link' => '#'],
-        ['text' => 'Discount Codes', 'link' => '#'],
-        ['text' => 'Email Newsletters', 'link' => '#']
+    'Marketing Tools' => [
+        ['text' => 'Dashboard', 'link' => 'marketing_dashboard1.php'],
+        ['text' => 'Campaigns', 'link' => 'marketing_campaigns.php'],
+        ['text' => 'Lead Management', 'link' => 'marketing_leads.php'],
+        ['text' => 'Report Generator', 'link' => 'marketing_report.php']
     ],
     'Resources' => [
-        ['text' => 'Documentation', 'link' => '#'],
-        ['text' => 'Best Practices', 'link' => '#'],
+        ['text' => 'Help Center', 'link' => '#'],
+        ['text' => 'API Documentation', 'link' => '#'],
         ['text' => 'Tutorials', 'link' => '#'],
         ['text' => 'Support Center', 'link' => '#']
     ],
@@ -292,36 +142,13 @@ $footerLinks = [
         ['text' => 'Logout', 'link' => 'login.php']
     ]
 ];
-
-// Helper function to get status classes
-function getStatusClasses($status) {
-    $classes = [
-        'Active' => 'bg-green-100 text-green-800',
-        'On Track' => 'bg-green-100 text-green-800',
-        'Paused' => 'bg-yellow-100 text-yellow-800',
-        'Completed' => 'bg-blue-100 text-blue-800',
-        'Planned' => 'bg-blue-100 text-blue-800',
-        'Starting Soon' => 'bg-yellow-100 text-yellow-800',
-        'New' => 'bg-green-100 text-green-800',
-        'Contacted' => 'bg-blue-100 text-blue-800',
-        'Qualified' => 'bg-purple-100 text-purple-800',
-        'Hot Lead' => 'bg-red-100 text-red-800'
-    ];
-    
-    return $classes[$status] ?? 'bg-gray-100 text-gray-800';
-}
-
-// Current year for footer
-$currentYear = date('Y');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Marketing Dashboard | TravelEase - Premium Asia Travel Experiences</title>
+  <title>Campaigns Management | TravelEase Marketing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Marketing analytics and campaign management for TravelEase luxury travel platform.">
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -339,34 +166,18 @@ $currentYear = date('Y');
               700: '#b45309',
               800: '#92400e',
               900: '#78350f'
-            },
-            amber: {
-              50: '#fffbeb',
-              100: '#fef3c7',
-              200: '#fde68a',
-              300: '#fcd34d',
-              400: '#fbbf24',
-              500: '#f59e0b',
-              600: '#d97706',
-              700: '#b45309',
-              800: '#92400e',
-              900: '#78350f'
             }
           }
         }
       }
     };
   </script>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     body { 
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: linear-gradient(135deg, #ffffff 0%, #fef7e5 50%, #fef3c7 100%);
       color: #1f2937;
-      overflow-x: hidden;
     }
     .glass-effect {
       background: rgba(255, 255, 255, 0.7);
@@ -376,103 +187,50 @@ $currentYear = date('Y');
     .gold-gradient {
       background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
     }
-    .hover-lift {
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .hover-lift:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 25px 50px -12px rgba(245, 158, 11, 0.25);
-    }
     .text-gradient {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .shadow-gold {
-      box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);
-    }
     .mobile-menu {
-      transform: translateX(-100%);
-      transition: transform 0.3s ease-in-out;
+  display: none;
     }
-    .mobile-menu.open {
-      transform: translateX(0);
+
+.mobile-menu.open {
+  display: block;
     }
-    .backdrop-blur-xl {
-      backdrop-filter: blur(24px);
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
     }
-    
-    @media (max-width: 640px) {
-      .cta-buttons {
-        flex-direction: column;
-        width: 100%;
-      }
-      .cta-buttons a {
-        width: 100%;
-        text-align: center;
-      }
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
     }
-    
-    .loading-bar {
-      width: 100%;
-      height: 3px;
-      background: linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b);
-      background-size: 200% 100%;
-      animation: loading 2s infinite;
+
+.mobile-menu.open > div:last-child {
+  animation: slideIn 0.3s ease-out forwards;
     }
-    
-    @keyframes loading {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #fef7e5;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #f59e0b, #fbbf24);
-      border-radius: 10px;
-    }
-    
-    .stat-card {
-      transition: all 0.3s ease;
-    }
-    .stat-card:hover {
-      transform: translateY(-5px);
-    }
-    .progress-bar {
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      background-color: #fef3c7;
-    }
-    .progress-fill {
-      height: 100%;
-      border-radius: 4px;
-      background: linear-gradient(90deg, #f59e0b, #fbbf24);
-      transition: width 0.5s ease;
-    }
-    .chart-container {
-      position: relative;
-      height: 300px;
-    }
-    .feature-card {
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-    .feature-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 30px -10px rgba(245, 158, 11, 0.15);
+
+.mobile-menu.closing > div:last-child {
+  animation: slideOut 0.3s ease-in forwards;
     }
   </style>
 </head>
 <body class="min-h-screen">
 
-  <div class="loading-bar fixed top-0 left-0 z-50"></div>
+<div class="loading-bar fixed top-0 left-0 z-50"></div>
 
   <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
@@ -492,7 +250,7 @@ $currentYear = date('Y');
         </div>
 
         <nav class="space-y-4">
-          <a href="#overview" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+          <a href="marketing_dashboard.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
             <i class="fas fa-chart-line w-6 text-center"></i>
             Overview
           </a>
@@ -552,7 +310,7 @@ $currentYear = date('Y');
         </div>
 
         <div class="hidden lg:flex items-center gap-8 text-sm font-semibold">
-          <a href="#overview" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="marketing_dashboard.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <span class="flex items-center gap-2">
               <i class="fas fa-chart-line text-xs text-amber-500"></i>
               Overview
@@ -577,7 +335,7 @@ $currentYear = date('Y');
           </a>
         </div>
 
-        <div class="hidden lg:flex items-center gap-4">
+    <div class="hidden lg:flex items-center gap-4">
           <div class="flex items-center gap-3">
             <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-amber-500">
             <div class="text-right">
@@ -602,187 +360,188 @@ $currentYear = date('Y');
     </nav>
   </header>
 
-  <section id="overview" class="pt-24 pb-12">
+  <main class="pt-24 pb-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Page Header -->
       <div class="mb-8">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h1 class="text-3xl sm:text-4xl font-black mb-2">
-              <span class="text-gray-900">Marketing Dashboard</span>
+              <span class="text-gradient">Campaign Management</span>
             </h1>
-            <p class="text-lg text-gray-700">Welcome back, <?= htmlspecialchars($managerName) ?>! Here's your marketing performance overview.</p>
+            <p class="text-lg text-gray-700">Manage all your marketing campaigns in one place.</p>
           </div>
-          <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
-            <a href="create_campaign.php"
-               class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
-              <i class="fas fa-plus mr-2"></i> New Campaign
-            </a>
-            <a href="#"
-               class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl border-2 border-amber-500 text-amber-700 hover:bg-amber-50 transition-all">
-              <i class="fas fa-box-open mr-2"></i> New Package
+          <div class="mt-4 md:mt-0">
+            <a href="create_campaign.php" class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
+              <i class="fas fa-plus mr-2"></i> Create New Campaign
             </a>
           </div>
         </div>
       </div>
 
+      <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-semibold text-gray-600">Total Campaigns</h3>
             <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
               <i class="fas fa-bullhorn text-white"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $totalCampaigns ?></div>
-          <p class="text-xs text-gray-500">Created in TravelEase</p>
+          <div class="text-2xl font-bold text-gray-900 mb-2"><?= count($campaigns) ?></div>
+          <p class="text-xs text-gray-500">All campaigns</p>
         </div>
 
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-semibold text-gray-600">Active Campaigns</h3>
-            <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <i class="fas fa-play-circle text-white"></i>
+            <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
+              <i class="fas fa-play-circle text-green-600"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $activeCampaigns ?></div>
+          <div class="text-2xl font-bold text-gray-900 mb-2">
+            <?= count(array_filter($campaigns, fn($c) => $c['status'] === 'Active')) ?>
+          </div>
           <p class="text-xs text-gray-500">Currently running</p>
         </div>
 
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Leads This Month</h3>
-            <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <i class="fas fa-users text-white"></i>
+            <h3 class="text-sm font-semibold text-gray-600">Total Budget</h3>
+            <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <i class="fas fa-dollar-sign text-blue-600"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $leadsThisMonth ?></div>
-          <p class="text-xs text-gray-500">From all channels</p>
+          <div class="text-2xl font-bold text-gray-900 mb-2">
+            $<?= number_format(array_sum(array_column($campaigns, 'budget'))) ?>
+          </div>
+          <p class="text-xs text-gray-500">Allocated budget</p>
+        </div>
+
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-gray-600">Total Leads</h3>
+            <div class="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <i class="fas fa-users text-purple-600"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold text-gray-900 mb-2">
+            <?= number_format(array_sum(array_column($campaigns, 'leads'))) ?>
+          </div>
+          <p class="text-xs text-gray-500">Generated leads</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
-        <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col lg:col-span-2 border border-amber-100 hover-lift">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Campaign Management</h2>
-            <span class="text-xs px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">Marketing</span>
-          </div>
-          <p class="text-sm text-gray-500 mb-4">
-            Create, edit and monitor your marketing campaigns across digital & offline channels.
-          </p>
-          <div class="mt-auto flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
-            <a href="#"
-               class="flex-1 text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
-              View Campaigns
-            </a>
-            <a href="create_campaign.php"
-               class="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
-              New Campaign
-            </a>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col border border-amber-100 hover-lift">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Leads & Conversions</h2>
-            <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Leads</span>
-          </div>
-          <p class="text-sm text-gray-500 mb-4">
-            Track inquiries, follow up potential travelers, and see which campaigns convert into bookings.
-          </p>
-          <div class="mt-auto flex flex-col space-y-3">
-            <a href="#"
-               class="text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
-              View Leads
-            </a>
-            <a href="#"
-               class="text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
-              Campaign Bookings
-            </a>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col border border-amber-100 hover-lift">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Performance & Reports</h2>
-            <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Analytics</span>
-          </div>
-          <p class="text-sm text-gray-500 mb-4">
-            Compare channels, measure ROI, and export basic marketing performance reports.
-          </p>
-          <div class="mt-auto flex flex-col space-y-3">
-            <a href="#"
-               class="text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
-              View Reports
-            </a>
-            <a href="#"
-               class="text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
-              Campaign Insights
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue Trends</h3>
-          <div class="chart-container">
-            <canvas id="revenueChart"></canvas>
-          </div>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Traffic Sources</h3>
-          <div class="chart-container">
-            <canvas id="trafficChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold mb-8">
+      <!-- Campaigns Table -->
+      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow mb-8">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900">Campaign Performance</h3>
-          <a href="#" class="px-4 py-2 rounded-xl gold-gradient text-white text-sm font-semibold hover:shadow-lg transition-all">
-            <i class="fas fa-plus mr-2"></i> New Campaign
-          </a>
+          <h3 class="text-lg font-semibold text-gray-900">All Campaigns</h3>
+          <div class="flex items-center gap-3">
+            <select class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
+              <option>Filter by Status</option>
+              <option>Active</option>
+              <option>Paused</option>
+              <option>Completed</option>
+              <option>Planned</option>
+            </select>
+            <input type="text" placeholder="Search campaigns..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
+          </div>
         </div>
         
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead>
               <tr class="border-b border-amber-100">
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign Name</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Type</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Budget</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Spent</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Leads</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">ROI</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody>
               <?php foreach ($campaigns as $campaign): ?>
               <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($campaign['name']) ?></td>
+                <td class="py-3 px-4">
+                  <div class="font-medium text-gray-900"><?= htmlspecialchars($campaign['name']) ?></div>
+                  <div class="text-xs text-gray-500">
+                    <?= date('M d, Y', strtotime($campaign['start_date'])) ?> - <?= date('M d, Y', strtotime($campaign['end_date'])) ?>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getTypeClasses($campaign['type']) ?>">
+                    <?= htmlspecialchars($campaign['type']) ?>
+                  </span>
+                </td>
                 <td class="py-3 px-4">
                   <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
                     <?= htmlspecialchars($campaign['status']) ?>
                   </span>
                 </td>
-                <td class="py-3 px-4 text-sm text-gray-700">$<?= number_format($campaign['budget']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700">$<?= number_format($campaign['spent']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700"><?= number_format($campaign['leads']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700 font-semibold text-green-600"><?= htmlspecialchars($campaign['roi']) ?></td>
+                <td class="py-3 px-4">
+                  <div class="text-sm text-gray-700">$<?= number_format($campaign['budget']) ?></div>
+                  <div class="text-xs text-gray-500">Spent: $<?= number_format($campaign['spent']) ?></div>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="text-sm text-gray-700"><?= number_format($campaign['leads']) ?></div>
+                  <div class="text-xs text-gray-500">Conversions: <?= number_format($campaign['conversions']) ?></div>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="font-semibold <?= $campaign['roi'] === '0.0x' ? 'text-gray-600' : 'text-green-600' ?>">
+                    <?= htmlspecialchars($campaign['roi']) ?>
+                  </span>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <button class="p-1 text-gray-600 hover:text-amber-600" title="View">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="p-1 text-gray-600 hover:text-amber-600" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="p-1 text-gray-600 hover:text-red-600" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
               </tr>
               <?php endforeach; ?>
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- Campaign Types Distribution -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+              <i class="fas fa-chart-line text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Performance</span>
+            </a>
+            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+              <i class="fas fa-download text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Export Data</span>
+            </a>
+            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+              <i class="fas fa-copy text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Duplicate</span>
+            </a>
+            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+              <i class="fas fa-calendar text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Schedule</span>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
-  </section>
+  </main>
 
-  
-
-  <!--footer-->
+  <!-- Footer -->
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid gap-8 md:grid-cols-4 mb-8">
@@ -833,30 +592,67 @@ $currentYear = date('Y');
       </div>
     </div>
   </footer>
-
-  <!--mobile menu php part-->
-  <script>
+  
+    <script>
     const menuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     const mobileMenuClose = document.getElementById('mobile-menu-close');
     const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+    
+    let isMenuOpen = false;
+
+    function openMobileMenu() {
+      mobileMenu.classList.remove('hidden');
+      mobileMenu.classList.remove('closing');
+      setTimeout(() => {
+        mobileMenu.classList.add('open');
+      }, 10);
+      document.body.style.overflow = 'hidden';
+      isMenuOpen = true;
+    }
+
+    function closeMobileMenu() {
+      mobileMenu.classList.remove('open');
+      mobileMenu.classList.add('closing');
+      setTimeout(() => {
+        mobileMenu.classList.add('hidden');
+        mobileMenu.classList.remove('closing');
+      }, 300);
+      document.body.style.overflow = '';
+      isMenuOpen = false;
+    }
 
     function toggleMobileMenu() {
-      mobileMenu.classList.toggle('open');
-      document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+      if (isMenuOpen) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
+      }
     }
 
     if (menuButton) {
-      menuButton.addEventListener('click', toggleMobileMenu);
+      menuButton.addEventListener('click', openMobileMenu);
     }
 
     if (mobileMenuClose) {
-      mobileMenuClose.addEventListener('click', toggleMobileMenu);
+      mobileMenuClose.addEventListener('click', closeMobileMenu);
     }
 
     if (mobileMenuBackdrop) {
-      mobileMenuBackdrop.addEventListener('click', toggleMobileMenu);
+      mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
     }
+
+    // Close menu when clicking on menu links
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+      link.addEventListener('click', closeMobileMenu);
+    });
+
+    // Close menu on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isMenuOpen) {
+        closeMobileMenu();
+      }
+    });
 
     window.addEventListener('load', () => {
       const loadingBar = document.querySelector('.loading-bar');
@@ -870,8 +666,12 @@ $currentYear = date('Y');
       initializeCharts();
     });
 
+    // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
+        // Don't prevent default for mobile menu links
+        if (this.getAttribute('href') === '#') return;
+        
         e.preventDefault();
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
@@ -879,6 +679,11 @@ $currentYear = date('Y');
             behavior: 'smooth',
             block: 'start'
           });
+          
+          // Close mobile menu if open
+          if (isMenuOpen) {
+            closeMobileMenu();
+          }
         }
       });
     });
@@ -959,6 +764,7 @@ $currentYear = date('Y');
       }
     }
 
+    // Feature card click handling
     document.querySelectorAll('.feature-card').forEach(card => {
       card.addEventListener('click', function() {
         const link = this.getAttribute('onclick')?.match(/href='([^']+)'/)?.[1];
