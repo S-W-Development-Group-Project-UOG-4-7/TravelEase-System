@@ -1,5 +1,5 @@
 <?php
-// marketing_campaigns.php
+// generate_report.php
 session_start();
 if (!isset($_SESSION['marketing_logged_in'])) {
     $_SESSION['marketing_logged_in'] = true;
@@ -10,118 +10,51 @@ $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
 $profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
 $currentYear = date('Y');
 
-// Campaign data
-$campaigns = [
-    [
-        'id' => 1,
-        'name' => 'Summer Asia Promotion',
-        'status' => 'Active',
-        'type' => 'Multi-Channel',
-        'budget' => 25000,
-        'spent' => 18450,
-        'leads' => 1248,
-        'conversions' => 156,
-        'roi' => '4.2x',
-        'start_date' => '2024-05-01',
-        'end_date' => '2024-08-31',
-        'channels' => ['Social Media', 'Email', 'PPC']
-    ],
-    [
-        'id' => 2,
-        'name' => 'Luxury Japan Getaway',
-        'status' => 'Active',
-        'type' => 'Influencer',
-        'budget' => 15000,
-        'spent' => 12800,
-        'leads' => 892,
-        'conversions' => 112,
-        'roi' => '3.8x',
-        'start_date' => '2024-06-15',
-        'end_date' => '2024-09-30',
-        'channels' => ['Instagram', 'YouTube', 'Blog']
-    ],
-    [
-        'id' => 3,
-        'name' => 'Bali Wellness Retreat',
-        'status' => 'Paused',
-        'type' => 'Content',
-        'budget' => 12000,
-        'spent' => 8200,
-        'leads' => 567,
-        'conversions' => 68,
-        'roi' => '2.9x',
-        'start_date' => '2024-04-01',
-        'end_date' => '2024-07-31',
-        'channels' => ['Blog', 'Email', 'Social']
-    ],
-    [
-        'id' => 4,
-        'name' => 'Thailand Island Hopping',
-        'status' => 'Completed',
-        'type' => 'PPC',
-        'budget' => 18000,
-        'spent' => 17500,
-        'leads' => 1102,
-        'conversions' => 198,
-        'roi' => '3.5x',
-        'start_date' => '2024-03-01',
-        'end_date' => '2024-06-30',
-        'channels' => ['Google Ads', 'Facebook Ads']
-    ],
-    [
-        'id' => 5,
-        'name' => 'Winter Luxury Escapes',
-        'status' => 'Planned',
-        'type' => 'Seasonal',
-        'budget' => 20000,
-        'spent' => 0,
-        'leads' => 0,
-        'conversions' => 0,
-        'roi' => '0.0x',
-        'start_date' => '2024-11-15',
-        'end_date' => '2025-02-28',
-        'channels' => ['All Channels']
-    ],
-    [
-        'id' => 6,
-        'name' => 'Spring Festival Tours',
-        'status' => 'Draft',
-        'type' => 'Cultural',
-        'budget' => 22000,
-        'spent' => 0,
-        'leads' => 0,
-        'conversions' => 0,
-        'roi' => '0.0x',
-        'start_date' => '2025-02-01',
-        'end_date' => '2025-05-31',
-        'channels' => ['TBD']
-    ]
+// Report types
+$reportTypes = [
+    'performance' => 'Performance Overview',
+    'campaign' => 'Campaign Analysis',
+    'leads' => 'Lead Generation',
+    'revenue' => 'Revenue Analysis',
+    'social' => 'Social Media',
+    'email' => 'Email Marketing'
 ];
 
-function getStatusClasses($status) {
-    $classes = [
-        'Active' => 'bg-green-100 text-green-800',
-        'On Track' => 'bg-green-100 text-green-800',
-        'Paused' => 'bg-yellow-100 text-yellow-800',
-        'Completed' => 'bg-blue-100 text-blue-800',
-        'Planned' => 'bg-blue-100 text-blue-800',
-        'Draft' => 'bg-gray-100 text-gray-800',
-        'Starting Soon' => 'bg-yellow-100 text-yellow-800'
-    ];
-    return $classes[$status] ?? 'bg-gray-100 text-gray-800';
-}
+// Report periods
+$periods = [
+    'last_week' => 'Last Week',
+    'last_month' => 'Last Month',
+    'last_quarter' => 'Last Quarter',
+    'last_year' => 'Last Year',
+    'custom' => 'Custom Range'
+];
 
-function getTypeClasses($type) {
-    $classes = [
-        'Multi-Channel' => 'bg-purple-100 text-purple-800',
-        'Influencer' => 'bg-pink-100 text-pink-800',
-        'Content' => 'bg-blue-100 text-blue-800',
-        'PPC' => 'bg-red-100 text-red-800',
-        'Seasonal' => 'bg-amber-100 text-amber-800',
-        'Cultural' => 'bg-green-100 text-green-800'
-    ];
-    return $classes[$type] ?? 'bg-gray-100 text-gray-800';
-}
+// Report formats
+$formats = [
+    'pdf' => 'PDF Document',
+    'excel' => 'Excel Spreadsheet',
+    'csv' => 'CSV Data',
+    'html' => 'HTML Report'
+];
+
+// Report templates
+$templates = [
+    [
+        'name' => 'Monthly Marketing Report',
+        'description' => 'Comprehensive monthly performance with charts',
+        'icon' => 'calendar'
+    ],
+    [
+        'name' => 'Campaign ROI Report',
+        'description' => 'Detailed ROI analysis for campaigns',
+        'icon' => 'chart-line'
+    ],
+    [
+        'name' => 'Lead Conversion Report',
+        'description' => 'Lead sources and conversion funnel',
+        'icon' => 'users'
+    ]
+];
 $footerLinks = [
     'Marketing Tools' => [
         ['text' => 'Dashboard', 'link' => 'marketing_dashboard1.php'],
@@ -147,7 +80,7 @@ $footerLinks = [
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Campaigns Management | TravelEase Marketing</title>
+  <title>Generate Report | TravelEase Marketing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -193,11 +126,23 @@ $footerLinks = [
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+    .progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      background-color: #fef3c7;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      transition: width 0.5s ease;
+    }
     .mobile-menu {
   display: none;
     }
 
-.mobile-menu.open {
+    .mobile-menu.open {
   display: block;
     }
 
@@ -219,18 +164,17 @@ $footerLinks = [
   }
     }
 
-.mobile-menu.open > div:last-child {
+    .mobile-menu.open > div:last-child {
   animation: slideIn 0.3s ease-out forwards;
     }
 
-.mobile-menu.closing > div:last-child {
+    .mobile-menu.closing > div:last-child {
   animation: slideOut 0.3s ease-in forwards;
     }
   </style>
 </head>
 <body class="min-h-screen">
-
-<div class="loading-bar fixed top-0 left-0 z-50"></div>
+  <div class="loading-bar fixed top-0 left-0 z-50"></div>
 
   <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
@@ -317,7 +261,6 @@ $footerLinks = [
             </span>
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-
           <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
             Campaigns
@@ -361,181 +304,268 @@ $footerLinks = [
   </header>
 
   <main class="pt-24 pb-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Page Header -->
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl sm:text-4xl font-black mb-2">
+          <span class="text-gradient">Generate Report</span>
+        </h1>
+        <p class="text-lg text-gray-700">Create custom marketing reports in minutes</p>
+      </div>
+
+      <!-- Report Generation Steps -->
       <div class="mb-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div>
-            <h1 class="text-3xl sm:text-4xl font-black mb-2">
-              <span class="text-gradient">Campaign Management</span>
-            </h1>
-            <p class="text-lg text-gray-700">Manage all your marketing campaigns in one place.</p>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex-1">
+            <div class="flex flex-col items-center">
+              <div class="h-8 w-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-semibold mb-2">1</div>
+              <span class="text-sm font-medium text-gray-900">Report Type</span>
+            </div>
           </div>
-          <div class="mt-4 md:mt-0">
-            <a href="create_campaign.php" class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
-              <i class="fas fa-plus mr-2"></i> Create New Campaign
-            </a>
+          <div class="flex-1">
+            <div class="flex flex-col items-center">
+              <div class="h-8 w-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-semibold mb-2">2</div>
+              <span class="text-sm font-medium text-gray-700">Settings</span>
+            </div>
           </div>
+          <div class="flex-1">
+            <div class="flex flex-col items-center">
+              <div class="h-8 w-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-semibold mb-2">3</div>
+              <span class="text-sm font-medium text-gray-700">Generate</span>
+            </div>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 33%"></div>
         </div>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Campaigns</h3>
-            <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <i class="fas fa-bullhorn text-white"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= count($campaigns) ?></div>
-          <p class="text-xs text-gray-500">All campaigns</p>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Active Campaigns</h3>
-            <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <i class="fas fa-play-circle text-green-600"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2">
-            <?= count(array_filter($campaigns, fn($c) => $c['status'] === 'Active')) ?>
-          </div>
-          <p class="text-xs text-gray-500">Currently running</p>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Budget</h3>
-            <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-              <i class="fas fa-dollar-sign text-blue-600"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2">
-            $<?= number_format(array_sum(array_column($campaigns, 'budget'))) ?>
-          </div>
-          <p class="text-xs text-gray-500">Allocated budget</p>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Leads</h3>
-            <div class="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <i class="fas fa-users text-purple-600"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2">
-            <?= number_format(array_sum(array_column($campaigns, 'leads'))) ?>
-          </div>
-          <p class="text-xs text-gray-500">Generated leads</p>
-        </div>
-      </div>
-
-      <!-- Campaigns Table -->
-      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow mb-8">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900">All Campaigns</h3>
-          <div class="flex items-center gap-3">
-            <select class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
-              <option>Filter by Status</option>
-              <option>Active</option>
-              <option>Paused</option>
-              <option>Completed</option>
-              <option>Planned</option>
-            </select>
-            <input type="text" placeholder="Search campaigns..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
-          </div>
-        </div>
-        
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-amber-100">
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign Name</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Type</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Budget</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Leads</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">ROI</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($campaigns as $campaign): ?>
-              <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
-                <td class="py-3 px-4">
-                  <div class="font-medium text-gray-900"><?= htmlspecialchars($campaign['name']) ?></div>
-                  <div class="text-xs text-gray-500">
-                    <?= date('M d, Y', strtotime($campaign['start_date'])) ?> - <?= date('M d, Y', strtotime($campaign['end_date'])) ?>
+      <!-- Report Generation Form -->
+      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
+        <form id="reportForm" class="space-y-6">
+          <!-- Step 1: Report Type -->
+          <div id="step1">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">1. Select Report Type</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <?php foreach ($templates as $template): ?>
+              <div class="p-4 rounded-xl border-2 border-amber-200 bg-white hover:border-amber-400 transition-colors cursor-pointer template-card">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
+                    <i class="fas fa-<?= htmlspecialchars($template['icon']) ?> text-white"></i>
                   </div>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getTypeClasses($campaign['type']) ?>">
-                    <?= htmlspecialchars($campaign['type']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
-                    <?= htmlspecialchars($campaign['status']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="text-sm text-gray-700">$<?= number_format($campaign['budget']) ?></div>
-                  <div class="text-xs text-gray-500">Spent: $<?= number_format($campaign['spent']) ?></div>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="text-sm text-gray-700"><?= number_format($campaign['leads']) ?></div>
-                  <div class="text-xs text-gray-500">Conversions: <?= number_format($campaign['conversions']) ?></div>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="font-semibold <?= $campaign['roi'] === '0.0x' ? 'text-gray-600' : 'text-green-600' ?>">
-                    <?= htmlspecialchars($campaign['roi']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="flex items-center gap-2">
-                    <button class="p-1 text-gray-600 hover:text-amber-600" title="View">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="p-1 text-gray-600 hover:text-amber-600" title="Edit">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="p-1 text-gray-600 hover:text-red-600" title="Delete">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                  <div>
+                    <h4 class="font-semibold text-gray-900"><?= htmlspecialchars($template['name']) ?></h4>
+                    <p class="text-xs text-gray-600"><?= htmlspecialchars($template['description']) ?></p>
                   </div>
-                </td>
-              </tr>
+                </div>
+              </div>
               <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Or select from predefined types:</label>
+              <select id="reportType" class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                <option value="">Select a report type</option>
+                <?php foreach ($reportTypes as $value => $label): ?>
+                <option value="<?= htmlspecialchars($value) ?>"><?= htmlspecialchars($label) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="button" onclick="nextStep()" class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all">
+                Next: Settings <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Report Settings -->
+          <div id="step2" class="hidden">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">2. Configure Report Settings</h3>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Report Period</label>
+                <select id="reportPeriod" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
+                  <?php foreach ($periods as $value => $label): ?>
+                  <option value="<?= htmlspecialchars($value) ?>"><?= htmlspecialchars($label) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div id="customDateRange" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="date" id="startDate" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input type="date" id="endDate" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Report Format</label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <?php foreach ($formats as $value => $label): ?>
+                  <label class="flex items-center p-3 rounded-xl border border-amber-200 bg-white cursor-pointer hover:bg-amber-50">
+                    <input type="radio" name="format" value="<?= htmlspecialchars($value) ?>" class="text-amber-600 focus:ring-amber-500" 
+                           <?= $value === 'pdf' ? 'checked' : '' ?>>
+                    <span class="ml-2 text-sm text-gray-700"><?= htmlspecialchars($label) ?></span>
+                  </label>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Include Sections</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div class="flex items-center">
+                    <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" checked>
+                    <label class="ml-2 text-sm text-gray-700">Executive Summary</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" checked>
+                    <label class="ml-2 text-sm text-gray-700">Key Metrics</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" checked>
+                    <label class="ml-2 text-sm text-gray-700">Charts & Graphs</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
+                    <label class="ml-2 text-sm text-gray-700">Detailed Data Tables</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
+                    <label class="ml-2 text-sm text-gray-700">Recommendations</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
+                    <label class="ml-2 text-sm text-gray-700">Appendix</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-between mt-6">
+              <button type="button" onclick="prevStep()" class="px-5 py-2.5 rounded-xl border border-amber-300 text-amber-700 font-semibold hover:bg-amber-50 transition-all">
+                <i class="fas fa-arrow-left mr-2"></i> Back
+              </button>
+              <button type="button" onclick="nextStep()" class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all">
+                Next: Generate <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Generate & Preview -->
+          <div id="step3" class="hidden">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">3. Generate & Preview</h3>
+            
+            <div class="bg-amber-50 rounded-xl p-6 mb-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="h-12 w-12 rounded-xl gold-gradient flex items-center justify-center">
+                  <i class="fas fa-file-alt text-white text-lg"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-900" id="previewTitle">Report Preview</h4>
+                  <p class="text-sm text-gray-600">Review your report settings before generating</p>
+                </div>
+              </div>
+
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Report Type:</span>
+                  <span class="font-medium text-gray-900" id="previewType">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Period:</span>
+                  <span class="font-medium text-gray-900" id="previewPeriod">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Format:</span>
+                  <span class="font-medium text-gray-900" id="previewFormat">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Estimated Size:</span>
+                  <span class="font-medium text-gray-900">2-5 MB</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Generation Time:</span>
+                  <span class="font-medium text-gray-900">30-60 seconds</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Report Name</label>
+              <input type="text" id="reportName" placeholder="e.g., Marketing Report - November 2024" 
+                     class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Email Notification (Optional)</label>
+              <input type="email" placeholder="your-email@example.com" 
+                     class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+            </div>
+
+            <div class="flex justify-between">
+              <button type="button" onclick="prevStep()" class="px-5 py-2.5 rounded-xl border border-amber-300 text-amber-700 font-semibold hover:bg-amber-50 transition-all">
+                <i class="fas fa-arrow-left mr-2"></i> Back
+              </button>
+              <button type="button" onclick="generateReport()" class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all">
+                <i class="fas fa-magic mr-2"></i> Generate Report
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
 
-      <!-- Campaign Types Distribution -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Quick Templates -->
+      <div class="mt-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Report Templates</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button onclick="useQuickTemplate('weekly')" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-left">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <i class="fas fa-calendar-week text-green-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">Weekly Summary</h4>
+                <p class="text-xs text-gray-600">Last 7 days performance</p>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">PDF format, 1-2 MB</div>
+          </button>
 
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-chart-line text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Performance</span>
-            </a>
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-download text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Export Data</span>
-            </a>
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-copy text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Duplicate</span>
-            </a>
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-calendar text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Schedule</span>
-            </a>
-          </div>
+          <button onclick="useQuickTemplate('monthly')" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-left">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-chart-bar text-blue-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">Monthly Performance</h4>
+                <p class="text-xs text-gray-600">Complete monthly analysis</p>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">Excel format, 3-5 MB</div>
+          </button>
+
+          <button onclick="useQuickTemplate('campaign')" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-left">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                <i class="fas fa-bullhorn text-purple-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">Campaign ROI</h4>
+                <p class="text-xs text-gray-600">Detailed ROI analysis</p>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">PDF format, 2-4 MB</div>
+          </button>
         </div>
       </div>
     </div>
@@ -592,7 +622,7 @@ $footerLinks = [
       </div>
     </div>
   </footer>
-  
+
     <script>
     const menuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
@@ -763,6 +793,7 @@ $footerLinks = [
         });
       }
     }
+    
 
     // Feature card click handling
     document.querySelectorAll('.feature-card').forEach(card => {

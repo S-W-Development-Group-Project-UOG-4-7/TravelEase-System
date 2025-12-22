@@ -496,15 +496,15 @@ $currentYear = date('Y');
             <i class="fas fa-chart-line w-6 text-center"></i>
             Overview
           </a>
-          <a href="#campaigns" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
             Campaigns
           </a>
-          <a href="#leads" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
             Leads
           </a>
-          <a href="#reports" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-file-alt w-6 text-center"></i>
             Reports
           </a>
@@ -559,22 +559,18 @@ $currentYear = date('Y');
             </span>
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="#features" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-cogs text-xs text-amber-500 mr-2"></i>
-            Features
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="#campaigns" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+
+          <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
             Campaigns
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="#leads" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-users text-xs text-amber-500 mr-2"></i>
             Leads
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="#reports" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="marketing_report.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
             Reports
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
@@ -617,7 +613,7 @@ $currentYear = date('Y');
             <p class="text-lg text-gray-700">Welcome back, <?= htmlspecialchars($managerName) ?>! Here's your marketing performance overview.</p>
           </div>
           <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
-            <a href="#"
+            <a href="create_campaign.php"
                class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
               <i class="fas fa-plus mr-2"></i> New Campaign
             </a>
@@ -678,7 +674,7 @@ $currentYear = date('Y');
                class="flex-1 text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
               View Campaigns
             </a>
-            <a href="#"
+            <a href="create_campaign.php"
                class="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
               New Campaign
             </a>
@@ -784,349 +780,9 @@ $currentYear = date('Y');
     </div>
   </section>
 
-  <section id="features" class="py-12 bg-gradient-to-b from-amber-50 to-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-black mb-6">
-          <span class="text-gray-900">Marketing</span>
-          <span class="text-gradient block">Features</span>
-        </h2>
-        <p class="text-lg text-gray-700 max-w-3xl mx-auto">
-          All your marketing tools in one place - manage campaigns, packages, promotions and more.
-        </p>
-      </div>
+  
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <?php foreach ($marketingFeatures as $index => $feature): ?>
-        <?php if ($index === 6): ?>
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold feature-card lg:col-span-2" onclick="window.location.href='<?= htmlspecialchars($feature['link']) ?>'">
-          <div class="flex items-start gap-4 mb-4">
-            <div class="h-12 w-12 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
-              <i class="fas fa-<?= htmlspecialchars($feature['icon']) ?> text-white text-lg"></i>
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-1"><?= htmlspecialchars($feature['title']) ?></h3>
-              <p class="text-sm text-gray-600"><?= htmlspecialchars($feature['description']) ?></p>
-            </div>
-          </div>
-          <div class="flex justify-between items-center">
-            <?php if (isset($feature['extra_info'])): ?>
-            <div class="text-sm text-gray-500">
-              <i class="fas fa-users mr-1"></i> <?= htmlspecialchars($feature['extra_info']) ?>
-            </div>
-            <?php endif; ?>
-            <span class="inline-flex items-center text-sm font-medium text-amber-600">
-              <?= htmlspecialchars($feature['action_text']) ?> <i class="fas fa-arrow-right ml-2"></i>
-            </span>
-          </div>
-        </div>
-        <?php else: ?>
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold feature-card" onclick="window.location.href='<?= htmlspecialchars($feature['link']) ?>'">
-          <div class="flex items-start gap-4 mb-4">
-            <div class="h-12 w-12 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
-              <i class="fas fa-<?= htmlspecialchars($feature['icon']) ?> text-white text-lg"></i>
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-1"><?= htmlspecialchars($feature['title']) ?></h3>
-              <p class="text-sm text-gray-600"><?= htmlspecialchars($feature['description']) ?></p>
-            </div>
-          </div>
-          <div class="flex justify-end">
-            <span class="inline-flex items-center text-sm font-medium text-amber-600">
-              <?= htmlspecialchars($feature['action_text']) ?> <i class="fas fa-arrow-right ml-2"></i>
-            </span>
-          </div>
-        </div>
-        <?php endif; ?>
-        <?php endforeach; ?>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div class="space-y-3">
-            <?php foreach ($quickActions as $action): ?>
-            <a href="<?= htmlspecialchars($action['link']) ?>" class="flex items-center justify-between p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors">
-              <span class="font-medium text-gray-900"><?= htmlspecialchars($action['text']) ?></span>
-              <i class="fas fa-<?= htmlspecialchars($action['icon']) ?> text-amber-600"></i>
-            </a>
-            <?php endforeach; ?>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="campaigns" class="py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-black mb-6">
-          <span class="text-gray-900">Campaign</span>
-          <span class="text-gradient block">Management</span>
-        </h2>
-        <p class="text-lg text-gray-700 max-w-3xl mx-auto">
-          Manage and track all your marketing campaigns in one place.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900">Active Campaigns</h3>
-            <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-sm font-semibold"><?= count($activeCampaignsData) ?> Active</span>
-          </div>
-          
-          <div class="space-y-4">
-            <?php foreach ($activeCampaignsData as $campaign): ?>
-            <div class="p-4 rounded-xl border border-amber-200 bg-white">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="font-semibold text-gray-900"><?= htmlspecialchars($campaign['name']) ?></h4>
-                <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
-                  <?= htmlspecialchars($campaign['status']) ?>
-                </span>
-              </div>
-              <p class="text-sm text-gray-600 mb-3"><?= htmlspecialchars($campaign['description']) ?></p>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-gray-600">Progress: <?= $campaign['progress'] ?>%</span>
-                <span class="font-semibold text-amber-600">$<?= number_format($campaign['spent']) ?> / $<?= number_format($campaign['budget']) ?></span>
-              </div>
-              <div class="progress-bar mt-2">
-                <div class="progress-fill" style="width: <?= $campaign['progress'] ?>%"></div>
-              </div>
-            </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Campaign Planning</h3>
-          
-          <div class="space-y-6">
-            <div>
-              <h4 class="font-semibold text-gray-900 mb-3">Upcoming Campaigns</h4>
-              <div class="space-y-3">
-                <?php foreach ($upcomingCampaigns as $campaign): ?>
-                <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50">
-                  <div>
-                    <h5 class="font-medium text-gray-900"><?= htmlspecialchars($campaign['name']) ?></h5>
-                    <p class="text-xs text-gray-600">Starts: <?= htmlspecialchars($campaign['start_date']) ?></p>
-                  </div>
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
-                    <?= htmlspecialchars($campaign['status']) ?>
-                  </span>
-                </div>
-                <?php endforeach; ?>
-              </div>
-            </div>
-            
-            <div>
-              <h4 class="font-semibold text-gray-900 mb-3">Quick Actions</h4>
-              <div class="grid grid-cols-2 gap-3">
-                <?php foreach ($campaignQuickActions as $action): ?>
-                <a href="<?= htmlspecialchars($action['link']) ?>" class="p-3 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-                  <i class="fas fa-<?= htmlspecialchars($action['icon']) ?> text-amber-500 mb-1 block text-lg"></i>
-                  <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars($action['text']) ?></span>
-                </a>
-                <?php endforeach; ?>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="leads" class="py-12 bg-gradient-to-b from-white to-amber-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-black mb-6">
-          <span class="text-gray-900">Lead</span>
-          <span class="text-gradient block">Management</span>
-        </h2>
-        <p class="text-lg text-gray-700 max-w-3xl mx-auto">
-          Track and manage your marketing leads through the conversion funnel.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold lg:col-span-2">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Conversion Funnel</h3>
-          <div class="chart-container">
-            <canvas id="funnelChart"></canvas>
-          </div>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Lead Statistics</h3>
-          <div class="space-y-4">
-            <?php foreach ($leadStats as $stat): ?>
-            <div class="flex items-center justify-between">
-              <span class="text-gray-700"><?= htmlspecialchars($stat['label']) ?></span>
-              <span class="font-semibold <?= htmlspecialchars($stat['class']) ?>"><?= htmlspecialchars($stat['value']) ?></span>
-            </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900">Recent Leads</h3>
-          <a href="#" class="px-4 py-2 rounded-xl gold-gradient text-white text-sm font-semibold hover:shadow-lg transition-all">
-            <i class="fas fa-eye mr-2"></i> View All Leads
-          </a>
-        </div>
-        
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-amber-100">
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Email</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Source</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Interest</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($recentLeads as $lead): ?>
-              <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($lead['name']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($lead['email']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($lead['source']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($lead['interest']) ?></td>
-                <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($lead['status']) ?>">
-                    <?= htmlspecialchars($lead['status']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($lead['date']) ?></td>
-              </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="reports" class="py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-black mb-6">
-          <span class="text-gray-900">Marketing</span>
-          <span class="text-gradient block">Reports</span>
-        </h2>
-        <p class="text-lg text-gray-700 max-w-3xl mx-auto">
-          Generate and access comprehensive marketing performance reports.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Report Templates</h3>
-          
-          <div class="space-y-4">
-            <?php foreach ($reportTemplates as $report): ?>
-            <div class="flex items-center justify-between p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors cursor-pointer">
-              <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-                  <i class="fas fa-<?= htmlspecialchars($report['icon']) ?> text-white"></i>
-                </div>
-                <div>
-                  <h4 class="font-semibold text-gray-900"><?= htmlspecialchars($report['title']) ?></h4>
-                  <p class="text-sm text-gray-600"><?= htmlspecialchars($report['description']) ?></p>
-                </div>
-              </div>
-              <button class="p-2 rounded-lg text-amber-600 hover:bg-amber-100 transition-colors">
-                <i class="fas fa-download"></i>
-              </button>
-            </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-
-        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Generate Custom Report</h3>
-          
-          <form class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-              <select class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
-                <option>Performance Overview</option>
-                <option>Campaign Analysis</option>
-                <option>Lead Generation</option>
-                <option>Package Performance</option>
-                <option>Promotional ROI</option>
-              </select>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                <input type="date" class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                <input type="date" class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
-              </div>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Metrics to Include</label>
-              <div class="grid grid-cols-2 gap-2">
-                <div class="flex items-center">
-                  <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" checked>
-                  <label class="ml-2 text-sm text-gray-700">Revenue</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" checked>
-                  <label class="ml-2 text-sm text-gray-700">Leads</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
-                  <label class="ml-2 text-sm text-gray-700">Website Traffic</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" checked>
-                  <label class="ml-2 text-sm text-gray-700">Conversion Rates</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
-                  <label class="ml-2 text-sm text-gray-700">Package Sales</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
-                  <label class="ml-2 text-sm text-gray-700">Promo Usage</label>
-                </div>
-              </div>
-            </div>
-            
-            <button type="submit" class="w-full py-3 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all">
-              <i class="fas fa-file-export mr-2"></i> Generate Report
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col md:flex-row md:items-center md:justify-between border border-amber-100">
-      <div>
-        <h2 class="text-sm font-semibold text-gray-800 mb-1">My Profile & Account</h2>
-        <p class="text-sm text-gray-500">
-          Update your name, email, password and profile picture on the profile settings page.
-        </p>
-      </div>
-      <div class="mt-3 md:mt-0">
-        <a href="marketing_profile.php"
-           class="inline-flex items-center text-sm font-medium px-4 py-2 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
-          Go to Profile Settings
-        </a>
-      </div>
-    </div>
-  </div>
-
+  <!--footer-->
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid gap-8 md:grid-cols-4 mb-8">

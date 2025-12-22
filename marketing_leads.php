@@ -1,5 +1,5 @@
 <?php
-// marketing_campaigns.php
+// marketing_leads.php
 session_start();
 if (!isset($_SESSION['marketing_logged_in'])) {
     $_SESSION['marketing_logged_in'] = true;
@@ -10,117 +10,109 @@ $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
 $profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
 $currentYear = date('Y');
 
-// Campaign data
-$campaigns = [
+// Leads data
+$leads = [
     [
         'id' => 1,
-        'name' => 'Summer Asia Promotion',
-        'status' => 'Active',
-        'type' => 'Multi-Channel',
-        'budget' => 25000,
-        'spent' => 18450,
-        'leads' => 1248,
-        'conversions' => 156,
-        'roi' => '4.2x',
-        'start_date' => '2024-05-01',
-        'end_date' => '2024-08-31',
-        'channels' => ['Social Media', 'Email', 'PPC']
+        'name' => 'Jennifer Wilson',
+        'email' => 'j.wilson@email.com',
+        'phone' => '(555) 123-4567',
+        'source' => 'Website',
+        'campaign' => 'Summer Asia Promotion',
+        'interest' => 'Japan Luxury',
+        'status' => 'New',
+        'value' => 4500,
+        'date' => 'Today',
+        'notes' => 'Interested in luxury Japan packages'
     ],
     [
         'id' => 2,
-        'name' => 'Luxury Japan Getaway',
-        'status' => 'Active',
-        'type' => 'Influencer',
-        'budget' => 15000,
-        'spent' => 12800,
-        'leads' => 892,
-        'conversions' => 112,
-        'roi' => '3.8x',
-        'start_date' => '2024-06-15',
-        'end_date' => '2024-09-30',
-        'channels' => ['Instagram', 'YouTube', 'Blog']
+        'name' => 'Robert Chen',
+        'email' => 'r.chen@email.com',
+        'phone' => '(555) 234-5678',
+        'source' => 'Social Media',
+        'campaign' => 'Luxury Japan Getaway',
+        'interest' => 'Bali Retreat',
+        'status' => 'Contacted',
+        'value' => 3200,
+        'date' => '2 days ago',
+        'notes' => 'Requested brochure'
     ],
     [
         'id' => 3,
-        'name' => 'Bali Wellness Retreat',
-        'status' => 'Paused',
-        'type' => 'Content',
-        'budget' => 12000,
-        'spent' => 8200,
-        'leads' => 567,
-        'conversions' => 68,
-        'roi' => '2.9x',
-        'start_date' => '2024-04-01',
-        'end_date' => '2024-07-31',
-        'channels' => ['Blog', 'Email', 'Social']
+        'name' => 'Maria Rodriguez',
+        'email' => 'm.rodriguez@email.com',
+        'phone' => '(555) 345-6789',
+        'source' => 'Referral',
+        'campaign' => 'Bali Wellness Retreat',
+        'interest' => 'Thailand Islands',
+        'status' => 'Qualified',
+        'value' => 2800,
+        'date' => '3 days ago',
+        'notes' => 'Ready to book next month'
     ],
     [
         'id' => 4,
-        'name' => 'Thailand Island Hopping',
-        'status' => 'Completed',
-        'type' => 'PPC',
-        'budget' => 18000,
-        'spent' => 17500,
-        'leads' => 1102,
-        'conversions' => 198,
-        'roi' => '3.5x',
-        'start_date' => '2024-03-01',
-        'end_date' => '2024-06-30',
-        'channels' => ['Google Ads', 'Facebook Ads']
+        'name' => 'James Thompson',
+        'email' => 'j.thompson@email.com',
+        'phone' => '(555) 456-7890',
+        'source' => 'Email Campaign',
+        'campaign' => 'Thailand Island Hopping',
+        'interest' => 'Vietnam Culture',
+        'status' => 'Hot Lead',
+        'value' => 5200,
+        'date' => '5 days ago',
+        'notes' => 'High priority - ready to purchase'
     ],
     [
         'id' => 5,
-        'name' => 'Winter Luxury Escapes',
-        'status' => 'Planned',
-        'type' => 'Seasonal',
-        'budget' => 20000,
-        'spent' => 0,
-        'leads' => 0,
-        'conversions' => 0,
-        'roi' => '0.0x',
-        'start_date' => '2024-11-15',
-        'end_date' => '2025-02-28',
-        'channels' => ['All Channels']
+        'name' => 'Sarah Johnson',
+        'email' => 's.johnson@email.com',
+        'phone' => '(555) 567-8901',
+        'source' => 'Website',
+        'campaign' => 'Summer Asia Promotion',
+        'interest' => 'Korean Culture',
+        'status' => 'New',
+        'value' => 3800,
+        'date' => 'Today',
+        'notes' => 'Looking for family package'
     ],
     [
         'id' => 6,
-        'name' => 'Spring Festival Tours',
-        'status' => 'Draft',
-        'type' => 'Cultural',
-        'budget' => 22000,
-        'spent' => 0,
-        'leads' => 0,
-        'conversions' => 0,
-        'roi' => '0.0x',
-        'start_date' => '2025-02-01',
-        'end_date' => '2025-05-31',
-        'channels' => ['TBD']
+        'name' => 'Michael Brown',
+        'email' => 'm.brown@email.com',
+        'phone' => '(555) 678-9012',
+        'source' => 'PPC Ads',
+        'campaign' => 'Winter Luxury Escapes',
+        'interest' => 'Ski Resort',
+        'status' => 'Contacted',
+        'value' => 6200,
+        'date' => '1 day ago',
+        'notes' => 'Interested in winter packages'
     ]
 ];
 
 function getStatusClasses($status) {
     $classes = [
-        'Active' => 'bg-green-100 text-green-800',
-        'On Track' => 'bg-green-100 text-green-800',
-        'Paused' => 'bg-yellow-100 text-yellow-800',
-        'Completed' => 'bg-blue-100 text-blue-800',
-        'Planned' => 'bg-blue-100 text-blue-800',
-        'Draft' => 'bg-gray-100 text-gray-800',
-        'Starting Soon' => 'bg-yellow-100 text-yellow-800'
+        'New' => 'bg-green-100 text-green-800',
+        'Contacted' => 'bg-blue-100 text-blue-800',
+        'Qualified' => 'bg-purple-100 text-purple-800',
+        'Hot Lead' => 'bg-red-100 text-red-800',
+        'Cold Lead' => 'bg-gray-100 text-gray-800',
+        'Converted' => 'bg-amber-100 text-amber-800'
     ];
     return $classes[$status] ?? 'bg-gray-100 text-gray-800';
 }
 
-function getTypeClasses($type) {
+function getSourceClasses($source) {
     $classes = [
-        'Multi-Channel' => 'bg-purple-100 text-purple-800',
-        'Influencer' => 'bg-pink-100 text-pink-800',
-        'Content' => 'bg-blue-100 text-blue-800',
-        'PPC' => 'bg-red-100 text-red-800',
-        'Seasonal' => 'bg-amber-100 text-amber-800',
-        'Cultural' => 'bg-green-100 text-green-800'
+        'Website' => 'bg-indigo-100 text-indigo-800',
+        'Social Media' => 'bg-pink-100 text-pink-800',
+        'Email Campaign' => 'bg-blue-100 text-blue-800',
+        'PPC Ads' => 'bg-red-100 text-red-800',
+        'Referral' => 'bg-green-100 text-green-800'
     ];
-    return $classes[$type] ?? 'bg-gray-100 text-gray-800';
+    return $classes[$source] ?? 'bg-gray-100 text-gray-800';
 }
 $footerLinks = [
     'Marketing Tools' => [
@@ -147,7 +139,7 @@ $footerLinks = [
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Campaigns Management | TravelEase Marketing</title>
+  <title>Leads Management | TravelEase Marketing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -195,11 +187,11 @@ $footerLinks = [
     }
     .mobile-menu {
   display: none;
-    }
+}
 
 .mobile-menu.open {
   display: block;
-    }
+}
 
 @keyframes slideIn {
   from {
@@ -208,7 +200,7 @@ $footerLinks = [
   to {
     transform: translateX(0);
   }
-    }
+}
 
 @keyframes slideOut {
   from {
@@ -217,20 +209,19 @@ $footerLinks = [
   to {
     transform: translateX(-100%);
   }
-    }
+}
 
 .mobile-menu.open > div:last-child {
   animation: slideIn 0.3s ease-out forwards;
-    }
+}
 
 .mobile-menu.closing > div:last-child {
   animation: slideOut 0.3s ease-in forwards;
-    }
+}
   </style>
 </head>
 <body class="min-h-screen">
-
-<div class="loading-bar fixed top-0 left-0 z-50"></div>
+ <div class="loading-bar fixed top-0 left-0 z-50"></div>
 
   <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
@@ -367,84 +358,84 @@ $footerLinks = [
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h1 class="text-3xl sm:text-4xl font-black mb-2">
-              <span class="text-gradient">Campaign Management</span>
+              <span class="text-gradient">Leads Management</span>
             </h1>
-            <p class="text-lg text-gray-700">Manage all your marketing campaigns in one place.</p>
+            <p class="text-lg text-gray-700">Track and manage all your marketing leads.</p>
           </div>
           <div class="mt-4 md:mt-0">
-            <a href="create_campaign.php" class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
-              <i class="fas fa-plus mr-2"></i> Create New Campaign
+            <a href="#" class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
+              <i class="fas fa-plus mr-2"></i> Add New Lead
             </a>
           </div>
         </div>
       </div>
 
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Campaigns</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Total Leads</h3>
             <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <i class="fas fa-bullhorn text-white"></i>
+              <i class="fas fa-users text-white"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= count($campaigns) ?></div>
-          <p class="text-xs text-gray-500">All campaigns</p>
+          <div class="text-2xl font-bold text-gray-900 mb-2"><?= count($leads) ?></div>
+          <p class="text-xs text-gray-500">All leads</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Active Campaigns</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Pending Leads</h3>
             <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <i class="fas fa-play-circle text-green-600"></i>
+              <i class="fas fa-star text-green-600"></i>
             </div>
           </div>
           <div class="text-2xl font-bold text-gray-900 mb-2">
-            <?= count(array_filter($campaigns, fn($c) => $c['status'] === 'Active')) ?>
+            <?= count(array_filter($leads, fn($l) => $l['status'] === 'New')) ?>
           </div>
-          <p class="text-xs text-gray-500">Currently running</p>
+          <p class="text-xs text-gray-500">Today</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Budget</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Total Value</h3>
             <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
               <i class="fas fa-dollar-sign text-blue-600"></i>
             </div>
           </div>
           <div class="text-2xl font-bold text-gray-900 mb-2">
-            $<?= number_format(array_sum(array_column($campaigns, 'budget'))) ?>
+            $<?= number_format(array_sum(array_column($leads, 'value'))) ?>
           </div>
-          <p class="text-xs text-gray-500">Allocated budget</p>
+          <p class="text-xs text-gray-500">Potential revenue</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Leads</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Avg. Value</h3>
             <div class="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <i class="fas fa-users text-purple-600"></i>
+              <i class="fas fa-chart-bar text-purple-600"></i>
             </div>
           </div>
           <div class="text-2xl font-bold text-gray-900 mb-2">
-            <?= number_format(array_sum(array_column($campaigns, 'leads'))) ?>
+            $<?= number_format(array_sum(array_column($leads, 'value')) / count($leads)) ?>
           </div>
-          <p class="text-xs text-gray-500">Generated leads</p>
+          <p class="text-xs text-gray-500">Per lead</p>
         </div>
       </div>
 
-      <!-- Campaigns Table -->
+      <!-- Leads Table -->
       <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow mb-8">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900">All Campaigns</h3>
+          <h3 class="text-lg font-semibold text-gray-900">All Leads</h3>
           <div class="flex items-center gap-3">
             <select class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
               <option>Filter by Status</option>
-              <option>Active</option>
-              <option>Paused</option>
-              <option>Completed</option>
-              <option>Planned</option>
+              <option>New</option>
+              <option>Contacted</option>
+              <option>Qualified</option>
+              <option>Hot Lead</option>
             </select>
-            <input type="text" placeholder="Search campaigns..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
+            <input type="text" placeholder="Search leads..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
           </div>
         </div>
         
@@ -452,54 +443,51 @@ $footerLinks = [
           <table class="w-full">
             <thead>
               <tr class="border-b border-amber-100">
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign Name</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Type</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Lead</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Contact</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Source</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Budget</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Leads</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">ROI</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Value</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($campaigns as $campaign): ?>
+              <?php foreach ($leads as $lead): ?>
               <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
                 <td class="py-3 px-4">
-                  <div class="font-medium text-gray-900"><?= htmlspecialchars($campaign['name']) ?></div>
-                  <div class="text-xs text-gray-500">
-                    <?= date('M d, Y', strtotime($campaign['start_date'])) ?> - <?= date('M d, Y', strtotime($campaign['end_date'])) ?>
-                  </div>
+                  <div class="font-medium text-gray-900"><?= htmlspecialchars($lead['name']) ?></div>
+                  <div class="text-xs text-gray-500"><?= htmlspecialchars($lead['interest']) ?></div>
                 </td>
                 <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getTypeClasses($campaign['type']) ?>">
-                    <?= htmlspecialchars($campaign['type']) ?>
+                  <div class="text-sm text-gray-700"><?= htmlspecialchars($lead['email']) ?></div>
+                  <div class="text-xs text-gray-500"><?= htmlspecialchars($lead['phone']) ?></div>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getSourceClasses($lead['source']) ?>">
+                    <?= htmlspecialchars($lead['source']) ?>
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($lead['campaign']) ?></td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($lead['status']) ?>">
+                    <?= htmlspecialchars($lead['status']) ?>
                   </span>
                 </td>
                 <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
-                    <?= htmlspecialchars($campaign['status']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="text-sm text-gray-700">$<?= number_format($campaign['budget']) ?></div>
-                  <div class="text-xs text-gray-500">Spent: $<?= number_format($campaign['spent']) ?></div>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="text-sm text-gray-700"><?= number_format($campaign['leads']) ?></div>
-                  <div class="text-xs text-gray-500">Conversions: <?= number_format($campaign['conversions']) ?></div>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="font-semibold <?= $campaign['roi'] === '0.0x' ? 'text-gray-600' : 'text-green-600' ?>">
-                    <?= htmlspecialchars($campaign['roi']) ?>
-                  </span>
+                  <div class="font-semibold text-gray-900">$<?= number_format($lead['value']) ?></div>
+                  <div class="text-xs text-gray-500"><?= htmlspecialchars($lead['date']) ?></div>
                 </td>
                 <td class="py-3 px-4">
                   <div class="flex items-center gap-2">
                     <button class="p-1 text-gray-600 hover:text-amber-600" title="View">
                       <i class="fas fa-eye"></i>
                     </button>
-                    <button class="p-1 text-gray-600 hover:text-amber-600" title="Edit">
+                    <button class="p-1 text-gray-600 hover:text-blue-600" title="Edit">
                       <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="p-1 text-gray-600 hover:text-green-600" title="Contact">
+                      <i class="fas fa-phone"></i>
                     </button>
                     <button class="p-1 text-gray-600 hover:text-red-600" title="Delete">
                       <i class="fas fa-trash"></i>
@@ -513,31 +501,32 @@ $footerLinks = [
         </div>
       </div>
 
-      <!-- Campaign Types Distribution -->
+      <!-- Lead Sources & Quick Actions -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Management Tools</h3>
           <div class="grid grid-cols-2 gap-3">
             <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-chart-line text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Performance</span>
+              <i class="fas fa-envelope text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Send Email</span>
             </a>
             <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-download text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Export Data</span>
+              <i class="fas fa-file-export text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Export CSV</span>
             </a>
             <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-copy text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Duplicate</span>
+              <i class="fas fa-filter text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Advanced Filter</span>
             </a>
             <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
-              <i class="fas fa-calendar text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Schedule</span>
+              <i class="fas fa-tags text-amber-500 text-xl mb-2 block"></i>
+              <span class="text-sm font-medium text-gray-700">Tag Leads</span>
             </a>
           </div>
         </div>
-      </div>
+      </div> 
     </div>
   </main>
 
@@ -592,187 +581,190 @@ $footerLinks = [
       </div>
     </div>
   </footer>
+
+  <script>
+  const menuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
+  const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
   
-    <script>
-    const menuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const mobileMenuClose = document.getElementById('mobile-menu-close');
-    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
-    
-    let isMenuOpen = false;
+  let isMenuOpen = false;
 
-    function openMobileMenu() {
-      mobileMenu.classList.remove('hidden');
+  function openMobileMenu() {
+    mobileMenu.classList.remove('hidden');
+    mobileMenu.classList.remove('closing');
+    setTimeout(() => {
+      mobileMenu.classList.add('open');
+    }, 10);
+    document.body.style.overflow = 'hidden';
+    isMenuOpen = true;
+  }
+
+  function closeMobileMenu() {
+    mobileMenu.classList.remove('open');
+    mobileMenu.classList.add('closing');
+    setTimeout(() => {
+      mobileMenu.classList.add('hidden');
       mobileMenu.classList.remove('closing');
-      setTimeout(() => {
-        mobileMenu.classList.add('open');
-      }, 10);
-      document.body.style.overflow = 'hidden';
-      isMenuOpen = true;
+    }, 300);
+    document.body.style.overflow = '';
+    isMenuOpen = false;
+  }
+
+  function toggleMobileMenu() {
+    if (isMenuOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
     }
+  }
 
-    function closeMobileMenu() {
-      mobileMenu.classList.remove('open');
-      mobileMenu.classList.add('closing');
-      setTimeout(() => {
-        mobileMenu.classList.add('hidden');
-        mobileMenu.classList.remove('closing');
-      }, 300);
-      document.body.style.overflow = '';
-      isMenuOpen = false;
+  // Initialize event listeners for mobile menu
+  if (menuButton) {
+    menuButton.addEventListener('click', openMobileMenu);
+  }
+
+  if (mobileMenuClose) {
+    mobileMenuClose.addEventListener('click', closeMobileMenu);
+  }
+
+  if (mobileMenuBackdrop) {
+    mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
+  }
+
+  // Close menu when clicking on menu links
+  document.querySelectorAll('#mobile-menu a').forEach(link => {
+    link.addEventListener('click', closeMobileMenu);
+  });
+
+  // Close menu on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMenuOpen) {
+      closeMobileMenu();
     }
+  });
 
-    function toggleMobileMenu() {
-      if (isMenuOpen) {
-        closeMobileMenu();
-      } else {
-        openMobileMenu();
-      }
-    }
-
-    if (menuButton) {
-      menuButton.addEventListener('click', openMobileMenu);
-    }
-
-    if (mobileMenuClose) {
-      mobileMenuClose.addEventListener('click', closeMobileMenu);
-    }
-
-    if (mobileMenuBackdrop) {
-      mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
-    }
-
-    // Close menu when clicking on menu links
-    document.querySelectorAll('#mobile-menu a').forEach(link => {
-      link.addEventListener('click', closeMobileMenu);
-    });
-
-    // Close menu on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && isMenuOpen) {
-        closeMobileMenu();
-      }
-    });
-
-    window.addEventListener('load', () => {
-      const loadingBar = document.querySelector('.loading-bar');
-      if (loadingBar) {
-        loadingBar.style.opacity = '0';
-        setTimeout(() => {
-          loadingBar.remove();
-        }, 500);
-      }
+  // Smooth scrolling for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      // Don't prevent default for mobile menu links
+      if (this.getAttribute('href') === '#') return;
       
-      initializeCharts();
-    });
-
-    // Smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        // Don't prevent default for mobile menu links
-        if (this.getAttribute('href') === '#') return;
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
         
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-          
-          // Close mobile menu if open
-          if (isMenuOpen) {
-            closeMobileMenu();
+        // Close mobile menu if open
+        if (isMenuOpen) {
+          closeMobileMenu();
+        }
+      }
+    });
+  });
+
+  // Feature card click handling
+  document.querySelectorAll('.feature-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const link = this.getAttribute('onclick')?.match(/href='([^']+)'/)?.[1];
+      if (link) {
+        window.location.href = link;
+      }
+    });
+  });
+
+  // Initialize charts
+  function initializeCharts() {
+    const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
+    if (revenueCtx) {
+      new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          datasets: [{
+            label: 'Revenue ($)',
+            data: [185000, 210000, 195000, 245000, 265000, 284000, 275000],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: false, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+            x: { grid: { display: false } }
           }
         }
       });
-    });
-
-    function initializeCharts() {
-      const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
-      if (revenueCtx) {
-        new Chart(revenueCtx, {
-          type: 'line',
-          data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-            datasets: [{
-              label: 'Revenue ($)',
-              data: [185000, 210000, 195000, 245000, 265000, 284000, 275000],
-              borderColor: '#f59e0b',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: false, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-              x: { grid: { display: false } }
-            }
-          }
-        });
-      }
-
-      const trafficCtx = document.getElementById('trafficChart')?.getContext('2d');
-      if (trafficCtx) {
-        new Chart(trafficCtx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Organic Search', 'Social Media', 'Email', 'Direct', 'Referral'],
-            datasets: [{
-              data: [35, 25, 15, 12, 13],
-              backgroundColor: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
-          }
-        });
-      }
-
-      const funnelCtx = document.getElementById('funnelChart')?.getContext('2d');
-      if (funnelCtx) {
-        new Chart(funnelCtx, {
-          type: 'bar',
-          data: {
-            labels: ['Awareness', 'Interest', 'Consideration', 'Intent', 'Conversion'],
-            datasets: [{
-              data: [5000, 3500, 2000, 800, 240],
-              backgroundColor: ['#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b'],
-              borderWidth: 0,
-              borderRadius: 4
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-              y: { grid: { display: false } }
-            }
-          }
-        });
-      }
     }
 
-    // Feature card click handling
-    document.querySelectorAll('.feature-card').forEach(card => {
-      card.addEventListener('click', function() {
-        const link = this.getAttribute('onclick')?.match(/href='([^']+)'/)?.[1];
-        if (link) {
-          window.location.href = link;
+    const trafficCtx = document.getElementById('trafficChart')?.getContext('2d');
+    if (trafficCtx) {
+      new Chart(trafficCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Organic Search', 'Social Media', 'Email', 'Direct', 'Referral'],
+          datasets: [{
+            data: [35, 25, 15, 12, 13],
+            backgroundColor: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
         }
       });
-    });
-  </script>
+    }
+
+    const funnelCtx = document.getElementById('funnelChart')?.getContext('2d');
+    if (funnelCtx) {
+      new Chart(funnelCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Awareness', 'Interest', 'Consideration', 'Intent', 'Conversion'],
+          datasets: [{
+            data: [5000, 3500, 2000, 800, 240],
+            backgroundColor: ['#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b'],
+            borderWidth: 0,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+  }
+
+  // Window load event handler
+  window.addEventListener('load', () => {
+    const loadingBar = document.querySelector('.loading-bar');
+    if (loadingBar) {
+      loadingBar.style.opacity = '0';
+      setTimeout(() => {
+        loadingBar.remove();
+      }, 500);
+    }
+    
+    initializeCharts();
+  });
+</script>
 </body>
 </html>
