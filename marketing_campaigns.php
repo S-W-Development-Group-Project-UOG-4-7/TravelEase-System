@@ -258,13 +258,17 @@ $footerLinks = [
             <i class="fas fa-bullhorn w-6 text-center"></i>
             Campaigns
           </a>
-          <a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
             Leads
-          </a>
+          </a>-->
           <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-file-alt w-6 text-center"></i>
             Reports
+          </a>
+           <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+            <i class="fas fa-handshake w-6 text-center"></i>
+            Partnerships
           </a>
           <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-user w-6 text-center"></i>
@@ -323,14 +327,19 @@ $footerLinks = [
             Campaigns
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-users text-xs text-amber-500 mr-2"></i>
             Leads
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
+          </a>-->
           <a href="marketing_report.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
             Reports
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
+           <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
+            Partnerships
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
         </div>
