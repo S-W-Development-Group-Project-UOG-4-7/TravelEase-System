@@ -32,7 +32,6 @@ $profileImageUrl = 'img/default-avatar.png';
 $badgeLabel = 'Traveler';
 
 // ---------- Fetch data from database ----------
-
 $savedCount            = 0;
 $tripsCount            = 0;
 $wishlistCount         = 0;
@@ -42,6 +41,11 @@ $savedTours            = [];
 $countriesVisitedCount = 0;   // distinct completed-trip countries
 $recentTrips           = [];  // recent trip history
 $dbError               = '';
+
+// ---------- Reviews & Ratings ----------
+$reviewEligiblePackages = [];
+$latestReviews = [];
+$avgRatings = [];
 
 try {
     // Get last_login + profile_image from users table
@@ -95,7 +99,7 @@ try {
     $stmt->execute([':uid' => $userId]);
     $upcomingTrips = $stmt->fetchAll();
 
-    // Recommended packages - REMOVED rating column
+    // Recommended packages
     $stmt = $pdo->query("
         SELECT p.id,
                p.title,
@@ -157,6 +161,52 @@ try {
     ");
     $stmt->execute([':uid' => $userId]);
     $recentTrips = $stmt->fetchAll();
+
+    // ---------- Review + rating data ----------
+    // Packages user booked (for dropdown)
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT p.id, p.title, c.name AS country_name
+        FROM trips t
+        JOIN packages p ON t.package_id = p.id
+        JOIN countries c ON p.country_id = c.id
+        WHERE t.user_id = :uid
+        ORDER BY c.name, p.title
+    ");
+    $stmt->execute([':uid' => $userId]);
+    $reviewEligiblePackages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Latest reviews for packages user booked (initial render)
+    $stmt = $pdo->prepare("
+        SELECT
+            r.id, r.rating, r.review_text, r.created_at,
+            u.full_name AS reviewer_name,
+            p.title AS package_title,
+            c.name AS country_name
+        FROM package_reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN packages p ON r.package_id = p.id
+        JOIN countries c ON p.country_id = c.id
+        WHERE r.package_id IN (
+            SELECT DISTINCT package_id FROM trips WHERE user_id = :uid
+        )
+        ORDER BY r.id DESC
+        LIMIT 6
+    ");
+    $stmt->execute([':uid' => $userId]);
+    $latestReviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Avg ratings per package (used in Recommended Packages cards)
+    $stmt = $pdo->prepare("
+        SELECT package_id,
+               ROUND(AVG(rating)::numeric, 1) AS avg_rating,
+               COUNT(*) AS total
+        FROM package_reviews
+        GROUP BY package_id
+    ");
+    $stmt->execute();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $avgRatings[(int)$r['package_id']] = $r;
+    }
 
     // Badge logic
     if ($tripsCount >= 5 || $savedCount >= 10 || $countriesVisitedCount >= 5) {
@@ -1094,9 +1144,14 @@ try {
                             </div>
                         <?php else: ?>
                             <?php foreach ($recommendedPkgs as $pkg): 
-                                // Generate a random rating between 4.0 and 5.0 for demo purposes
-                                // In a real app, this would come from a reviews table
-                                $rating = mt_rand(40, 50) / 10; // Random rating 4.0-5.0
+                                $pkgId = (int)$pkg['id'];
+                                if (isset($avgRatings[$pkgId])) {
+                                    $rating = (float)$avgRatings[$pkgId]['avg_rating'];
+                                    $ratingTotal = (int)$avgRatings[$pkgId]['total'];
+                                } else {
+                                    $rating = mt_rand(40, 50) / 10;
+                                    $ratingTotal = 0;
+                                }
                                 $ratingWidth = ($rating / 5) * 100;
                             ?>
                                 <div class="border border-gray-100 rounded-2xl p-5 flex flex-col gap-3 hover-lift cursor-pointer group"
@@ -1121,14 +1176,16 @@ try {
                                         <?= htmlspecialchars($pkg['short_description']); ?>
                                     </p>
                                     
-                                    <!-- Rating - Using demo data since rating column doesn't exist -->
+                                    <!-- Rating - Using real average rating if available -->
                                     <div class="flex items-center gap-2">
                                         <div class="flex">
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
                                                 <i class="fas fa-star text-<?= $i <= floor($rating) ? 'yellow-400' : 'gray-300'; ?> text-xs"></i>
                                             <?php endfor; ?>
                                         </div>
-                                        <span class="text-xs text-gray-500"><?= number_format($rating, 1); ?></span>
+                                        <span class="text-xs text-gray-500">
+                                            <?= number_format($rating, 1); ?><?= $ratingTotal > 0 ? " (" . $ratingTotal . ")" : ""; ?>
+                                        </span>
                                     </div>
                                     
                                     <div class="flex items-center justify-between mt-2 pt-3 border-t border-gray-100">
@@ -1224,6 +1281,109 @@ try {
                         <i class="fas fa-plus"></i>
                         Add More
                     </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reviews & Ratings Section -->
+        <section class="animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Submit Review -->
+                <div class="dashboard-card glass-card p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <span class="p-2 rounded-lg bg-primary-50"><i class="fas fa-star text-primary-600"></i></span>
+                            Submit a Review
+                        </h2>
+                        <span id="review-status" class="text-xs font-semibold text-gray-500"></span>
+                    </div>
+
+                    <p class="text-sm text-gray-600 mt-2">Rate a package you booked. Updates appear instantly.</p>
+
+                    <form id="reviewForm" class="mt-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Package</label>
+                            <select name="package_id"
+                                    class="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-primary-500 focus:ring-primary-500"
+                                    required>
+                                <option value="">-- Select a package --</option>
+                                <?php foreach ($reviewEligiblePackages as $p): ?>
+                                    <option value="<?= (int)$p['id']; ?>">
+                                        <?= htmlspecialchars($p['country_name'] . ' - ' . $p['title']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if (empty($reviewEligiblePackages)): ?>
+                                <p class="text-xs text-gray-500 mt-2">Book a trip first to leave a review.</p>
+                            <?php endif; ?>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Rating</label>
+                            <select name="rating"
+                                    class="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-primary-500 focus:ring-primary-500"
+                                    required>
+                                <option value="">-- Choose --</option>
+                                <option value="5">★★★★★ (5)</option>
+                                <option value="4">★★★★☆ (4)</option>
+                                <option value="3">★★★☆☆ (3)</option>
+                                <option value="2">★★☆☆☆ (2)</option>
+                                <option value="1">★☆☆☆☆ (1)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Review</label>
+                            <textarea name="review_text" rows="4"
+                                      class="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-primary-500 focus:ring-primary-500"
+                                      placeholder="Share your experience..." required></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Min 5 characters. Max 1000 characters.</p>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                                <?= empty($reviewEligiblePackages) ? 'disabled' : ''; ?>>
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Review
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Live Reviews -->
+                <div class="dashboard-card glass-card p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <span class="p-2 rounded-lg bg-secondary-50"><i class="fas fa-bolt text-secondary-600"></i></span>
+                            Live Reviews
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-500">Auto-refresh</span>
+                    </div>
+
+                    <div id="reviewsList" class="mt-5 space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                        <?php if (empty($latestReviews)): ?>
+                            <div class="text-sm text-gray-600 bg-white/60 border border-gray-100 rounded-2xl p-4">
+                                No reviews yet. Be the first to review a package you booked!
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($latestReviews as $rv): ?>
+                                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="font-bold text-gray-900 text-sm">
+                                            <?= htmlspecialchars($rv['package_title']); ?>
+                                            <span class="text-xs text-gray-500 font-semibold">· <?= htmlspecialchars($rv['country_name']); ?></span>
+                                        </div>
+                                        <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                            <?= (int)$rv['rating']; ?>/5
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-700 mt-2"><?= htmlspecialchars($rv['review_text']); ?></p>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        by <?= htmlspecialchars($rv['reviewer_name']); ?> · <?= htmlspecialchars($rv['created_at']); ?>
+                                    </p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1732,6 +1892,106 @@ try {
             document.querySelectorAll('.stat-card, .dashboard-card').forEach(card => {
                 observer.observe(card);
             });
+            
+            // ----- Reviews functionality -----
+            // Real-time update
+            let lastReviewId = <?php
+                $maxId = 0;
+                foreach ($latestReviews as $rv) { $maxId = max($maxId, (int)$rv['id']); }
+                echo (int)$maxId;
+            ?>;
+
+            function escapeHtml(str) {
+                return String(str ?? '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            function reviewCardHTML(rv) {
+                return `
+                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="font-bold text-gray-900 text-sm">
+                            ${escapeHtml(rv.package_title)}
+                            <span class="text-xs text-gray-500 font-semibold">· ${escapeHtml(rv.country_name)}</span>
+                        </div>
+                        <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                            ${parseInt(rv.rating, 10)}/5
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-2">${escapeHtml(rv.review_text)}</p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        by ${escapeHtml(rv.reviewer_name)} · ${escapeHtml(rv.created_at)}
+                    </p>
+                </div>`;
+            }
+
+            async function fetchNewReviews() {
+                try {
+                    const res = await fetch(`review_feed.php?since_id=${lastReviewId}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (!data.ok) return;
+
+                    if (Array.isArray(data.reviews) && data.reviews.length) {
+                        const list = document.getElementById('reviewsList');
+                        data.reviews.reverse().forEach(rv => {
+                            list.insertAdjacentHTML('afterbegin', reviewCardHTML(rv));
+                        });
+                        lastReviewId = data.last_id || lastReviewId;
+
+                        while (list.children.length > 12) list.removeChild(list.lastElementChild);
+                    }
+                } catch (e) {
+                    console.error('Error fetching reviews:', e);
+                }
+            }
+
+            // Fetch new reviews every 5 seconds
+            setInterval(fetchNewReviews, 5000);
+
+            // Handle review form submission
+            const reviewForm = document.getElementById('reviewForm');
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    const statusEl = document.getElementById('review-status');
+                    statusEl.textContent = 'Submitting...';
+                    statusEl.className = 'text-xs font-semibold text-gray-500';
+
+                    const fd = new FormData(e.target);
+
+                    try {
+                        const res = await fetch('review_submit.php', { method: 'POST', body: fd });
+                        const data = await res.json();
+
+                        if (!data.ok) {
+                            statusEl.textContent = data.message || 'Failed';
+                            statusEl.className = 'text-xs font-semibold text-red-600';
+                            return;
+                        }
+
+                        statusEl.textContent = data.message || 'Submitted!';
+                        statusEl.className = 'text-xs font-semibold text-green-600';
+
+                        if (data.review) {
+                            const list = document.getElementById('reviewsList');
+                            list.insertAdjacentHTML('afterbegin', reviewCardHTML(data.review));
+                            lastReviewId = Math.max(lastReviewId, parseInt(data.review.id, 10) || lastReviewId);
+                            while (list.children.length > 12) list.removeChild(list.lastElementChild);
+                        }
+
+                        e.target.reset();
+                    } catch (err) {
+                        console.error('Error submitting review:', err);
+                        statusEl.textContent = 'Network error';
+                        statusEl.className = 'text-xs font-semibold text-red-600';
+                    }
+                });
+            }
         });
     </script>
 </body>
