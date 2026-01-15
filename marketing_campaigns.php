@@ -10,94 +10,100 @@ $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
 $profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
 $currentYear = date('Y');
 
-// Campaign data
-$campaigns = [
-    [
-        'id' => 1,
-        'name' => 'Summer Asia Promotion',
-        'status' => 'Active',
-        'type' => 'Multi-Channel',
-        'budget' => 25000,
-        'spent' => 18450,
-        'leads' => 1248,
-        'conversions' => 156,
-        'roi' => '4.2x',
-        'start_date' => '2024-05-01',
-        'end_date' => '2024-08-31',
-        'channels' => ['Social Media', 'Email', 'PPC']
-    ],
-    [
-        'id' => 2,
-        'name' => 'Luxury Japan Getaway',
-        'status' => 'Active',
-        'type' => 'Influencer',
-        'budget' => 15000,
-        'spent' => 12800,
-        'leads' => 892,
-        'conversions' => 112,
-        'roi' => '3.8x',
-        'start_date' => '2024-06-15',
-        'end_date' => '2024-09-30',
-        'channels' => ['Instagram', 'YouTube', 'Blog']
-    ],
-    [
-        'id' => 3,
-        'name' => 'Bali Wellness Retreat',
-        'status' => 'Paused',
-        'type' => 'Content',
-        'budget' => 12000,
-        'spent' => 8200,
-        'leads' => 567,
-        'conversions' => 68,
-        'roi' => '2.9x',
-        'start_date' => '2024-04-01',
-        'end_date' => '2024-07-31',
-        'channels' => ['Blog', 'Email', 'Social']
-    ],
-    [
-        'id' => 4,
-        'name' => 'Thailand Island Hopping',
-        'status' => 'Completed',
-        'type' => 'PPC',
-        'budget' => 18000,
-        'spent' => 17500,
-        'leads' => 1102,
-        'conversions' => 198,
-        'roi' => '3.5x',
-        'start_date' => '2024-03-01',
-        'end_date' => '2024-06-30',
-        'channels' => ['Google Ads', 'Facebook Ads']
-    ],
-    [
-        'id' => 5,
-        'name' => 'Winter Luxury Escapes',
-        'status' => 'Planned',
-        'type' => 'Seasonal',
-        'budget' => 20000,
-        'spent' => 0,
-        'leads' => 0,
-        'conversions' => 0,
-        'roi' => '0.0x',
-        'start_date' => '2024-11-15',
-        'end_date' => '2025-02-28',
-        'channels' => ['All Channels']
-    ],
-    [
-        'id' => 6,
-        'name' => 'Spring Festival Tours',
-        'status' => 'Draft',
-        'type' => 'Cultural',
-        'budget' => 22000,
-        'spent' => 0,
-        'leads' => 0,
-        'conversions' => 0,
-        'roi' => '0.0x',
-        'start_date' => '2025-02-01',
-        'end_date' => '2025-05-31',
-        'channels' => ['TBD']
-    ]
-];
+// Database connection
+require_once __DIR__ . '/db.php';
 
+// Fetch packages from database
+$campaigns = [];
+try {
+    $stmt = $pdo->query("
+        SELECT 
+            id,
+            package_name as name,
+            category,
+            region,
+            country,
+            short_description,
+            detailed_description,
+            duration_days,
+            difficulty_level,
+            accommodation_type,
+            inclusions,
+            base_price as budget,
+            group_min,
+            group_max,
+            availability_start as start_date,
+            availability_end as end_date,
+            early_bird_discount,
+            early_bird_days,
+            video_url,
+            virtual_tour_url,
+            cover_image,
+            gallery_images,
+            created_at,
+            -- Calculate dynamic values for display
+            COALESCE(group_min, 0) as leads,
+            COALESCE(CAST(base_price * 0.1 as integer), 0) as conversions,
+            CASE 
+                WHEN availability_end < CURRENT_DATE THEN 'Completed'
+                WHEN availability_start > CURRENT_DATE THEN 'Planned'
+                WHEN availability_start <= CURRENT_DATE AND availability_end >= CURRENT_DATE THEN 'Active'
+                ELSE 'Draft'
+            END as status,
+            CASE 
+                WHEN availability_end < CURRENT_DATE THEN 'Completed'
+                WHEN availability_start > CURRENT_DATE THEN 'Planned'
+                WHEN availability_start <= CURRENT_DATE AND availability_end >= CURRENT_DATE THEN 'Active'
+                ELSE 'Draft'
+            END as display_status,
+            -- Mock spent amount (you can calculate actual spent from orders if available)
+            CAST(base_price * 0.7 as integer) as spent,
+            -- Mock ROI calculation
+            CASE 
+                WHEN availability_end < CURRENT_DATE THEN '3.5x'
+                WHEN availability_start > CURRENT_DATE THEN '0.0x'
+                ELSE '2.8x'
+            END as roi,
+            category as type
+        FROM travel_packages 
+        ORDER BY created_at DESC
+    ");
+    
+    $campaigns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // If no packages found, show sample data
+    if (empty($campaigns)) {
+        // You can keep some sample data or show empty state
+        $campaigns = [
+            [
+                'id' => 1,
+                'name' => 'Summer Asia Promotion',
+                'status' => 'Active',
+                'type' => 'Adventure',
+                'budget' => 25000,
+                'spent' => 18450,
+                'leads' => 1248,
+                'conversions' => 156,
+                'roi' => '4.2x',
+                'start_date' => '2024-05-01',
+                'end_date' => '2024-08-31'
+            ]
+        ];
+    }
+    
+} catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
+    // Fallback to empty array
+    $campaigns = [];
+}
+
+// Calculate statistics
+$totalCampaigns = count($campaigns);
+$activeCampaigns = count(array_filter($campaigns, fn($c) => ($c['display_status'] ?? $c['status']) === 'Active'));
+$totalBudget = array_sum(array_column($campaigns, 'budget'));
+$totalLeads = array_sum(array_column($campaigns, 'leads'));
+
+// Status and type styling functions
 function getStatusClasses($status) {
     $classes = [
         'Active' => 'bg-green-100 text-green-800',
@@ -118,10 +124,20 @@ function getTypeClasses($type) {
         'Content' => 'bg-blue-100 text-blue-800',
         'PPC' => 'bg-red-100 text-red-800',
         'Seasonal' => 'bg-amber-100 text-amber-800',
-        'Cultural' => 'bg-green-100 text-green-800'
+        'Cultural' => 'bg-green-100 text-green-800',
+        'Adventure' => 'bg-purple-100 text-purple-800',
+        'Wellness & Spa' => 'bg-pink-100 text-pink-800',
+        'Cultural' => 'bg-blue-100 text-blue-800',
+        'Luxury' => 'bg-red-100 text-red-800',
+        'Family' => 'bg-amber-100 text-amber-800',
+        'Honeymoon' => 'bg-green-100 text-green-800',
+        'Cruise' => 'bg-indigo-100 text-indigo-800',
+        'Eco-Tourism' => 'bg-teal-100 text-teal-800'
     ];
     return $classes[$type] ?? 'bg-gray-100 text-gray-800';
 }
+
+// Footer links
 $footerLinks = [
     'Marketing Tools' => [
         ['text' => 'Dashboard', 'link' => 'marketing_dashboard1.php'],
@@ -147,7 +163,7 @@ $footerLinks = [
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Campaigns Management | TravelEase Marketing</title>
+  <title>Packages Management | TravelEase Marketing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -226,6 +242,27 @@ $footerLinks = [
 .mobile-menu.closing > div:last-child {
   animation: slideOut 0.3s ease-in forwards;
     }
+    
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .empty-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -254,9 +291,9 @@ $footerLinks = [
             <i class="fas fa-chart-line w-6 text-center"></i>
             Overview
           </a>
-          <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+         <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
-            Campaigns
+            Packages
           </a>
           <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
@@ -324,7 +361,7 @@ $footerLinks = [
 
           <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Campaigns
+            Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
@@ -376,13 +413,13 @@ $footerLinks = [
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h1 class="text-3xl sm:text-4xl font-black mb-2">
-              <span class="text-gradient">Campaign Management</span>
+              <span class="text-gradient">Package Management</span>
             </h1>
-            <p class="text-lg text-gray-700">Manage all your marketing campaigns in one place.</p>
+            <p class="text-lg text-gray-700">Manage all your travel packages in one place.</p>
           </div>
           <div class="mt-4 md:mt-0">
             <a href="create_campaign.php" class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
-              <i class="fas fa-plus mr-2"></i> Create New Campaign
+              <i class="fas fa-plus mr-2"></i> Create New Package
             </a>
           </div>
         </div>
@@ -392,39 +429,39 @@ $footerLinks = [
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Campaigns</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Total Packages</h3>
             <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <i class="fas fa-bullhorn text-white"></i>
+              <i class="fas fa-suitcase text-white"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= count($campaigns) ?></div>
-          <p class="text-xs text-gray-500">All campaigns</p>
+          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $totalCampaigns ?></div>
+          <p class="text-xs text-gray-500">All packages</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Active Campaigns</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Active Packages</h3>
             <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
               <i class="fas fa-play-circle text-green-600"></i>
             </div>
           </div>
           <div class="text-2xl font-bold text-gray-900 mb-2">
-            <?= count(array_filter($campaigns, fn($c) => $c['status'] === 'Active')) ?>
+            <?= $activeCampaigns ?>
           </div>
-          <p class="text-xs text-gray-500">Currently running</p>
+          <p class="text-xs text-gray-500">Currently available</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Budget</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Total Value</h3>
             <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
               <i class="fas fa-dollar-sign text-blue-600"></i>
             </div>
           </div>
           <div class="text-2xl font-bold text-gray-900 mb-2">
-            $<?= number_format(array_sum(array_column($campaigns, 'budget'))) ?>
+            $<?= number_format($totalBudget) ?>
           </div>
-          <p class="text-xs text-gray-500">Allocated budget</p>
+          <p class="text-xs text-gray-500">Total package value</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
@@ -435,115 +472,181 @@ $footerLinks = [
             </div>
           </div>
           <div class="text-2xl font-bold text-gray-900 mb-2">
-            <?= number_format(array_sum(array_column($campaigns, 'leads'))) ?>
+            <?= number_format($totalLeads) ?>
           </div>
-          <p class="text-xs text-gray-500">Generated leads</p>
+          <p class="text-xs text-gray-500">Estimated leads</p>
         </div>
       </div>
 
-      <!-- Campaigns Table -->
+      <!-- Packages Table -->
       <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow mb-8">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900">All Campaigns</h3>
+          <h3 class="text-lg font-semibold text-gray-900">All Packages</h3>
           <div class="flex items-center gap-3">
-            <select class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
-              <option>Filter by Status</option>
-              <option>Active</option>
-              <option>Paused</option>
-              <option>Completed</option>
-              <option>Planned</option>
+            <select id="statusFilter" class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Planned">Planned</option>
+              <option value="Completed">Completed</option>
+              <option value="Draft">Draft</option>
             </select>
-            <input type="text" placeholder="Search campaigns..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
+            <input type="text" id="searchInput" placeholder="Search packages..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
           </div>
         </div>
         
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-amber-100">
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign Name</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Type</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Budget</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Leads</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">ROI</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($campaigns as $campaign): ?>
-              <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
-                <td class="py-3 px-4">
-                  <div class="font-medium text-gray-900"><?= htmlspecialchars($campaign['name']) ?></div>
-                  <div class="text-xs text-gray-500">
-                    <?= date('M d, Y', strtotime($campaign['start_date'])) ?> - <?= date('M d, Y', strtotime($campaign['end_date'])) ?>
-                  </div>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getTypeClasses($campaign['type']) ?>">
-                    <?= htmlspecialchars($campaign['type']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
-                    <?= htmlspecialchars($campaign['status']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="text-sm text-gray-700">$<?= number_format($campaign['budget']) ?></div>
-                  <div class="text-xs text-gray-500">Spent: $<?= number_format($campaign['spent']) ?></div>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="text-sm text-gray-700"><?= number_format($campaign['leads']) ?></div>
-                  <div class="text-xs text-gray-500">Conversions: <?= number_format($campaign['conversions']) ?></div>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="font-semibold <?= $campaign['roi'] === '0.0x' ? 'text-gray-600' : 'text-green-600' ?>">
-                    <?= htmlspecialchars($campaign['roi']) ?>
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <div class="flex items-center gap-2">
-                    <button class="p-1 text-gray-600 hover:text-amber-600" title="View">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="p-1 text-gray-600 hover:text-amber-600" title="Edit">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="p-1 text-gray-600 hover:text-red-600" title="Delete">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
+        <?php if (empty($campaigns)): ?>
+          <div class="empty-state p-8 text-center">
+            <div class="h-20 w-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-suitcase text-amber-500 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">No Packages Found</h3>
+            <p class="text-gray-600 mb-4">You haven't created any travel packages yet.</p>
+            <a href="create_campaign.php" class="inline-flex items-center px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
+              <i class="fas fa-plus mr-2"></i> Create Your First Package
+            </a>
+          </div>
+        <?php else: ?>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-amber-100">
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Package Name</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Price</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Duration</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Availability</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="packagesTableBody">
+                <?php foreach ($campaigns as $package): 
+                  $status = $package['display_status'] ?? $package['status'];
+                  $type = $package['type'] ?? $package['category'] ?? 'Other';
+                ?>
+                <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors package-row" 
+                    data-status="<?= htmlspecialchars($status) ?>"
+                    data-name="<?= htmlspecialchars(strtolower($package['name'])) ?>">
+                  <td class="py-3 px-4">
+                    <div class="font-medium text-gray-900"><?= htmlspecialchars($package['name']) ?></div>
+                    <div class="text-xs text-gray-500">
+                      <?= htmlspecialchars($package['region'] ?? '') ?>, <?= htmlspecialchars($package['country'] ?? '') ?>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getTypeClasses($type) ?>">
+                      <?= htmlspecialchars($type) ?>
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($status) ?>">
+                      <?= htmlspecialchars($status) ?>
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="text-sm text-gray-700">$<?= number_format($package['budget']) ?></div>
+                    <?php if (isset($package['spent']) && $package['spent'] > 0): ?>
+                    <div class="text-xs text-gray-500">Spent: $<?= number_format($package['spent']) ?></div>
+                    <?php endif; ?>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="text-sm text-gray-700"><?= htmlspecialchars($package['duration_days'] ?? 0) ?> days</div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="text-sm text-gray-700">
+                      <?php if (!empty($package['start_date']) && !empty($package['end_date'])): ?>
+                        <?= date('M d, Y', strtotime($package['start_date'])) ?> - <?= date('M d, Y', strtotime($package['end_date'])) ?>
+                      <?php else: ?>
+                        TBD
+                      <?php endif; ?>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-2">
+                      <a href="view_package.php?id=<?= $package['id'] ?>" class="p-1 text-gray-600 hover:text-amber-600" title="View">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <a href="edit_package.php?id=<?= $package['id'] ?>" class="p-1 text-gray-600 hover:text-amber-600" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      <button onclick="deletePackage(<?= $package['id'] ?>, '<?= htmlspecialchars(addslashes($package['name'])) ?>')" class="p-1 text-gray-600 hover:text-red-600" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
       </div>
 
-      <!-- Campaign Types Distribution -->
+      <!-- Quick Actions -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div class="grid grid-cols-2 gap-3">
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+            <a href="marketing_report.php" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
               <i class="fas fa-chart-line text-amber-500 text-xl mb-2 block"></i>
               <span class="text-sm font-medium text-gray-700">Performance</span>
             </a>
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+            <a href="export_packages.php" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
               <i class="fas fa-download text-amber-500 text-xl mb-2 block"></i>
               <span class="text-sm font-medium text-gray-700">Export Data</span>
             </a>
-            <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
+            <a href="create_campaign.php" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
               <i class="fas fa-copy text-amber-500 text-xl mb-2 block"></i>
-              <span class="text-sm font-medium text-gray-700">Duplicate</span>
+              <span class="text-sm font-medium text-gray-700">New Package</span>
             </a>
             <a href="#" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-center">
               <i class="fas fa-calendar text-amber-500 text-xl mb-2 block"></i>
               <span class="text-sm font-medium text-gray-700">Schedule</span>
             </a>
+          </div>
+        </div>
+        
+        <!-- Package Statistics -->
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Package Statistics</h3>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-600">Active Packages</span>
+                <span class="font-semibold"><?= $activeCampaigns ?> / <?= $totalCampaigns ?></span>
+              </div>
+              <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 rounded-full" style="width: <?= $totalCampaigns > 0 ? ($activeCampaigns / $totalCampaigns * 100) : 0 ?>%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-600">Average Price</span>
+                <span class="font-semibold">$<?= $totalCampaigns > 0 ? number_format($totalBudget / $totalCampaigns) : 0 ?></span>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-600">Average Duration</span>
+                <span class="font-semibold">
+                  <?php 
+                  if ($totalCampaigns > 0) {
+                    $totalDays = 0;
+                    $count = 0;
+                    foreach ($campaigns as $pkg) {
+                      if (isset($pkg['duration_days']) && $pkg['duration_days'] > 0) {
+                        $totalDays += $pkg['duration_days'];
+                        $count++;
+                      }
+                    }
+                    echo $count > 0 ? number_format($totalDays / $count, 1) . ' days' : 'N/A';
+                  } else {
+                    echo 'N/A';
+                  }
+                  ?>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -603,6 +706,7 @@ $footerLinks = [
   </footer>
   
     <script>
+    // Mobile menu functionality
     const menuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     const mobileMenuClose = document.getElementById('mobile-menu-close');
@@ -631,14 +735,6 @@ $footerLinks = [
       isMenuOpen = false;
     }
 
-    function toggleMobileMenu() {
-      if (isMenuOpen) {
-        closeMobileMenu();
-      } else {
-        openMobileMenu();
-      }
-    }
-
     if (menuButton) {
       menuButton.addEventListener('click', openMobileMenu);
     }
@@ -663,6 +759,7 @@ $footerLinks = [
       }
     });
 
+    // Loading bar removal
     window.addEventListener('load', () => {
       const loadingBar = document.querySelector('.loading-bar');
       if (loadingBar) {
@@ -671,14 +768,61 @@ $footerLinks = [
           loadingBar.remove();
         }, 500);
       }
-      
-      initializeCharts();
     });
+
+    // Filter and search functionality
+    const statusFilter = document.getElementById('statusFilter');
+    const searchInput = document.getElementById('searchInput');
+    const packageRows = document.querySelectorAll('.package-row');
+
+    function filterPackages() {
+      const status = statusFilter.value;
+      const search = searchInput.value.toLowerCase();
+      
+      packageRows.forEach(row => {
+        const rowStatus = row.getAttribute('data-status');
+        const rowName = row.getAttribute('data-name');
+        const matchesStatus = !status || rowStatus === status;
+        const matchesSearch = !search || rowName.includes(search);
+        
+        if (matchesStatus && matchesSearch) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    if (statusFilter) {
+      statusFilter.addEventListener('change', filterPackages);
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', filterPackages);
+    }
+
+    // Delete package function
+    function deletePackage(id, name) {
+      if (confirm(`Are you sure you want to delete the package "${name}"? This action cannot be undone.`)) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'delete_package.php';
+        
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'id';
+        idInput.value = id;
+        
+        form.appendChild(idInput);
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
 
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
-        // Don't prevent default for mobile menu links
         if (this.getAttribute('href') === '#') return;
         
         e.preventDefault();
@@ -693,92 +837,6 @@ $footerLinks = [
           if (isMenuOpen) {
             closeMobileMenu();
           }
-        }
-      });
-    });
-
-    function initializeCharts() {
-      const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
-      if (revenueCtx) {
-        new Chart(revenueCtx, {
-          type: 'line',
-          data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-            datasets: [{
-              label: 'Revenue ($)',
-              data: [185000, 210000, 195000, 245000, 265000, 284000, 275000],
-              borderColor: '#f59e0b',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: false, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-              x: { grid: { display: false } }
-            }
-          }
-        });
-      }
-
-      const trafficCtx = document.getElementById('trafficChart')?.getContext('2d');
-      if (trafficCtx) {
-        new Chart(trafficCtx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Organic Search', 'Social Media', 'Email', 'Direct', 'Referral'],
-            datasets: [{
-              data: [35, 25, 15, 12, 13],
-              backgroundColor: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
-          }
-        });
-      }
-
-      const funnelCtx = document.getElementById('funnelChart')?.getContext('2d');
-      if (funnelCtx) {
-        new Chart(funnelCtx, {
-          type: 'bar',
-          data: {
-            labels: ['Awareness', 'Interest', 'Consideration', 'Intent', 'Conversion'],
-            datasets: [{
-              data: [5000, 3500, 2000, 800, 240],
-              backgroundColor: ['#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b'],
-              borderWidth: 0,
-              borderRadius: 4
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-              y: { grid: { display: false } }
-            }
-          }
-        });
-      }
-    }
-
-    // Feature card click handling
-    document.querySelectorAll('.feature-card').forEach(card => {
-      card.addEventListener('click', function() {
-        const link = this.getAttribute('onclick')?.match(/href='([^']+)'/)?.[1];
-        if (link) {
-          window.location.href = link;
         }
       });
     });

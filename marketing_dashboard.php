@@ -498,7 +498,7 @@ $currentYear = date('Y');
           </a>
           <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
-            Campaigns
+            Packages
           </a>
           <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
@@ -566,7 +566,7 @@ $currentYear = date('Y');
 
           <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Campaigns
+            Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
@@ -579,9 +579,10 @@ $currentYear = date('Y');
             Reports
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
-            <i class="fas fa-handshake w-6 text-center"></i>
+          <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
             Partnerships
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
         </div>
 
@@ -623,11 +624,7 @@ $currentYear = date('Y');
           <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
             <a href="create_campaign.php"
                class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
-              <i class="fas fa-plus mr-2"></i> New Campaign
-            </a>
-            <a href="#"
-               class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl border-2 border-amber-500 text-amber-700 hover:bg-amber-50 transition-all">
-              <i class="fas fa-box-open mr-2"></i> New Package
+              <i class="fas fa-plus mr-2"></i> New Package
             </a>
           </div>
         </div>
@@ -636,7 +633,7 @@ $currentYear = date('Y');
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Total Campaigns</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Total Packages</h3>
             <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
               <i class="fas fa-bullhorn text-white"></i>
             </div>
@@ -647,7 +644,7 @@ $currentYear = date('Y');
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-600">Active Campaigns</h3>
+            <h3 class="text-sm font-semibold text-gray-600">Active Packages</h3>
             <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
               <i class="fas fa-play-circle text-white"></i>
             </div>

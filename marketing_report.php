@@ -257,7 +257,7 @@ $footerLinks = [
           </a>
           <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
-            Campaigns
+            Packages
           </a>
           <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
@@ -325,7 +325,7 @@ $footerLinks = [
 
           <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Campaigns
+            Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">

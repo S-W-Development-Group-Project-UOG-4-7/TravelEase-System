@@ -361,6 +361,20 @@ $footerLinks = [
             width: 90%;
             animation: modalSlideIn 0.3s ease-out;
         }
+        /* Add to existing <style> section */
+        .mobile-menu {
+            transition: opacity 0.3s ease;
+        }
+        .mobile-menu:not(.hidden) {
+            display: flex !important;
+        }
+        .mobile-menu .absolute.inset-y-0.right-0 {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        .mobile-menu.open .absolute.inset-y-0.right-0 {
+            transform: translateX(0);
+       }
         @keyframes modalSlideIn {
             from {
                 opacity: 0;
@@ -377,79 +391,83 @@ $footerLinks = [
     <!-- Loading Bar -->
     <div class="loading-bar fixed top-0 left-0 z-50"></div>
 
-    <!-- Mobile Menu -->
-    <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden hidden">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
-        <div class="fixed top-0 left-0 h-full w-80 max-w-full bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-8">
-                    <div class="flex items-center gap-3">
-                        <div class="h-12 w-12 rounded-2xl overflow-hidden">
-                            <div class="h-full w-full gold-gradient"></div>
-                        </div>
-                        <span class="font-black text-xl text-gray-900">TravelEase</span>
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="lg:hidden fixed inset-0 z-50 hidden">
+    <div id="mobile-menu-backdrop" class="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
+    <div class="absolute inset-y-0 left-0 w-80 bg-white shadow-xl">
+        <div class="p-6 h-full overflow-y-auto">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="h-12 w-12 rounded-2xl overflow-hidden">
+                        <div class="h-full w-full gold-gradient"></div>
                     </div>
-                    <button id="mobile-menu-close" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
+                    <span class="font-black text-xl text-gray-900">TravelEase</span>
                 </div>
+                <button id="mobile-menu-close" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
 
-                <nav class="space-y-4">
-                    <a href="marketing_dashboard.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-                        <i class="fas fa-chart-line w-6 text-center"></i>
-                        Overview
-                    </a>
-                    <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-                        <i class="fas fa-handshake w-6 text-center"></i>
-                        Partnerships
-                    </a>
-                    <a href="joint_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-                        <i class="fas fa-bullhorn w-6 text-center"></i>
-                        Joint Campaigns
-                    </a>
-                    <a href="affiliate_portal.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-                        <i class="fas fa-link w-6 text-center"></i>
-                        Affiliate Portal
-                    </a>
-                </nav>
+            <nav class="space-y-4 mb-8">
+                <a href="marketing_dashboard.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+                    <i class="fas fa-chart-line w-6 text-center"></i>
+                    Overview
+                </a>
+                <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+                    <i class="fas fa-bullhorn w-6 text-center"></i>
+                    Packages
+                </a>
+                <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+                    <i class="fas fa-file-alt w-6 text-center"></i>
+                    Reports
+                </a>
+                <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+                    <i class="fas fa-handshake w-6 text-center"></i>
+                    Partnerships
+                </a>
+                <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+                    <i class="fas fa-user w-6 text-center"></i>
+                    My Profile
+                </a>
+            </nav>
 
-                <div class="mt-8 pt-8 border-t border-amber-100">
-                    <div class="flex items-center gap-3 mb-4">
-                        <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-amber-500">
-                        <div>
-                            <div class="font-semibold text-gray-900"><?= htmlspecialchars($managerName) ?></div>
-                            <div class="text-sm text-gray-600">Partnership Manager</div>
-                        </div>
+            <div class="pt-8 border-t border-amber-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-amber-500">
+                    <div>
+                        <div class="font-semibold text-gray-900"><?= htmlspecialchars($managerName) ?></div>
+                        <div class="text-sm text-gray-600">Marketing Manager</div>
                     </div>
-                    <a href="login.php" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
-                        <i class="fas fa-sign-out-alt text-amber-500"></i>
-                        <span>Logout</span>
-                    </a>
                 </div>
+                <a href="login.php" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
+                    <i class="fas fa-sign-out-alt text-amber-500"></i>
+                    <span>Logout</span>
+                </a>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-30 glass-effect border-b border-amber-100/50 backdrop-blur-xl">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <a href="marketing_dashboard.php" class="flex items-center gap-3 group">
-                        <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
-                            <div class="h-full w-full gold-gradient"></div>
-                        </div>
-                        <div class="flex flex-col leading-tight">
-                            <span class="font-black text-xl tracking-tight text-gray-900">
-                                TravelEase
-                            </span>
-                            <span class="hidden sm:inline-block text-xs text-gray-600 font-medium">
-                                Partnership Manager
-                            </span>
-                        </div>
-                    </a>
-                </div>
+            <div class="flex items-center gap-3">
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
+                        <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain bg-white p-2">
+                    </div>
+                    <div class="flex flex-col leading-tight">
+                        <span class="font-black text-xl tracking-tight text-gray-900">
+                        TravelEase
+                        </span>
+                        <span class="hidden sm:inline-block text-xs text-gray-600 font-medium">
+                        Marketing Dashboard
+                        </span>
+                    </div>
+                </a>
+            </div>
 
                 <!-- Desktop Navigation -->
                 <div class="hidden lg:flex items-center gap-8 text-sm font-semibold">
@@ -460,20 +478,26 @@ $footerLinks = [
                         </span>
                         <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
                     </a>
+
+                    <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+                            <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
+                            Packages
+                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+                    </a>
+                    <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+                            <i class="fas fa-users text-xs text-amber-500 mr-2"></i>
+                            Leads
+                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+                    </a>-->
+                    <a href="marketing_report.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+                            <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
+                            Reports
+                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+                    </a>
                     <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-                        <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
-                        Partnerships
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="joint_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-                        <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-                        Joint Campaigns
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="affiliate_portal.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-                        <i class="fas fa-link text-xs text-amber-500 mr-2"></i>
-                        Affiliate Portal
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+                            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
+                            Partnerships
+                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
                     </a>
                 </div>
 

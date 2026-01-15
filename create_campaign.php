@@ -16,10 +16,78 @@ $currentYear  = date('Y');
 
 function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-/**
- * Convert PHP array to PostgreSQL TEXT[] literal
- * Example: ["a","b"] => {"a","b"}
- */
+// -------------------- DROPDOWN OPTIONS --------------------
+$packageCategories = [
+    'adventure' => 'Adventure',
+    'wellness' => 'Wellness & Spa',
+    'cultural' => 'Cultural',
+    'luxury' => 'Luxury',
+    'family' => 'Family',
+    'honeymoon' => 'Honeymoon',
+    'cruise' => 'Cruise',
+    'eco' => 'Eco-Tourism'
+];
+
+$destinations = [
+    'asia' => 'Asia',
+    'europe' => 'Europe',
+    'north_america' => 'North America',
+    'south_america' => 'South America',
+    'africa' => 'Africa',
+    'oceania' => 'Oceania',
+    'middle_east' => 'Middle East',
+    'caribbean' => 'Caribbean'
+];
+
+$countries = [
+    'indonesia' => 'Indonesia',
+    'thailand' => 'Thailand',
+    'japan' => 'Japan',
+    'france' => 'France',
+    'italy' => 'Italy',
+    'usa' => 'United States',
+    'canada' => 'Canada',
+    'australia' => 'Australia',
+    'new_zealand' => 'New Zealand',
+    'south_africa' => 'South Africa',
+    'egypt' => 'Egypt',
+    'uae' => 'United Arab Emirates'
+];
+
+$difficultyLevels = [
+    'easy' => 'Easy',
+    'moderate' => 'Moderate',
+    'challenging' => 'Challenging',
+    'difficult' => 'Difficult'
+];
+
+$accommodationTypes = [
+    'hotel' => 'Hotel',
+    'resort' => 'Resort',
+    'villa' => 'Private Villa',
+    'camp' => 'Camp/Lodge',
+    'cruise_ship' => 'Cruise Ship',
+    'hostel' => 'Hostel',
+    'apartment' => 'Apartment',
+    'homestay' => 'Homestay'
+];
+
+$inclusions = [
+   'accommodation' => 'Accommodation', 
+  'meals' => 'Meals', 
+  'flights' => 'Flights', 
+  'transfers' => 'Airport Transfers', 
+  'tours' => 'Guided Tours', 
+  'activities' => 'Activities', 
+  'insurance' => 'Travel Insurance', 
+  'visa' => 'Visa Assistance', 
+  'breakfast' => 'Daily Breakfast', 
+  'wifi' => 'WiFi Access', 
+  'spa' => 'Spa Access', 
+  'gym' => 'Gym Access'
+];
+
+// -------------------- HELPERS ------------------
 function pg_text_array_literal(array $arr): string {
     $items = [];
     foreach ($arr as $v) {
@@ -37,139 +105,59 @@ function ensure_upload_dir(string $dir): void {
 }
 
 function save_uploaded_file(array $file, string $uploadDir, array $allowedExt = ['jpg','jpeg','png','webp']): ?string {
-    if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
-        return null;
-    }
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return null;
 
-    $tmpName = $file['tmp_name'];
-    $orig    = $file['name'] ?? '';
-    $ext     = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
-
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, $allowedExt, true)) {
-        throw new RuntimeException("Invalid file type: " . h($ext) . ". Allowed: " . implode(',', $allowedExt));
+        throw new RuntimeException("Invalid image type.");
     }
 
-    // Basic MIME check (optional but useful)
     $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime  = $finfo->file($tmpName);
-    $okMimes = ['image/jpeg','image/png','image/webp'];
-    if (!in_array($mime, $okMimes, true)) {
-        throw new RuntimeException("Invalid image MIME type: " . h($mime));
+    if (!in_array($finfo->file($file['tmp_name']), ['image/jpeg','image/png','image/webp'], true)) {
+        throw new RuntimeException("Invalid image MIME.");
     }
 
     ensure_upload_dir($uploadDir);
 
-    $safeBase = bin2hex(random_bytes(12));
-    $filename = $safeBase . '.' . $ext;
-    $dest     = rtrim($uploadDir, '/') . '/' . $filename;
+    $name = bin2hex(random_bytes(12)) . '.' . $ext;
+    $path = rtrim($uploadDir, '/') . '/' . $name;
 
-    if (!move_uploaded_file($tmpName, $dest)) {
-        throw new RuntimeException("Failed to move uploaded file.");
+    if (!move_uploaded_file($file['tmp_name'], $path)) {
+        throw new RuntimeException("File upload failed.");
     }
 
-    // Return relative path to store in DB
-    return str_replace(__DIR__ . '/', '', $dest);
+    return 'uploads/packages/' . $name;
 }
 
 function save_multiple_uploaded_files(array $files, string $uploadDir): array {
     $saved = [];
     if (!isset($files['name']) || !is_array($files['name'])) return $saved;
 
-    $count = count($files['name']);
-    for ($i = 0; $i < $count; $i++) {
-        if (($files['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) continue;
-        $one = [
-            'name'     => $files['name'][$i] ?? '',
+    for ($i = 0; $i < count($files['name']); $i++) {
+        if (($files['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) continue;
+
+        $fileInfo = [
+            'name'     => $files['name'][$i],
             'type'     => $files['type'][$i] ?? '',
-            'tmp_name' => $files['tmp_name'][$i] ?? '',
-            'error'    => $files['error'][$i] ?? UPLOAD_ERR_NO_FILE,
-            'size'     => $files['size'][$i] ?? 0,
+            'tmp_name' => $files['tmp_name'][$i],
+            'error'    => $files['error'][$i],
+            'size'     => $files['size'][$i] ?? 0
         ];
-        $saved[] = save_uploaded_file($one, $uploadDir);
+        
+        try {
+            $result = save_uploaded_file($fileInfo, $uploadDir);
+            if ($result) {
+                $saved[] = $result;
+            }
+        } catch (RuntimeException $e) {
+            // Skip invalid files but continue with others
+            continue;
+        }
     }
     return array_values(array_filter($saved));
 }
 
-// Package categories
-$packageCategories = [
-    'luxury' => 'Luxury Getaway',
-    'adventure' => 'Adventure Tour',
-    'wellness' => 'Wellness Retreat',
-    'family' => 'Family Vacation',
-    'cultural' => 'Cultural Experience',
-    'beach' => 'Beach Holiday',
-    'honeymoon' => 'Honeymoon Package',
-    'business' => 'Business Travel'
-];
-
-// Destinations
-$destinations = [
-    'asia' => 'Asia Pacific',
-    'europe' => 'Europe',
-    'americas' => 'Americas',
-    'africa' => 'Africa',
-    'middle_east' => 'Middle East',
-    'caribbean' => 'Caribbean'
-];
-
-// Countries
-$countries = [
-    'Indonesia' => 'Indonesia (Bali)',
-    'Japan' => 'Japan',
-    'Thailand' => 'Thailand',
-    'Vietnam' => 'Vietnam',
-    'Malaysia' => 'Malaysia',
-    'Singapore' => 'Singapore',
-    'France' => 'France',
-    'Italy' => 'Italy',
-    'Spain' => 'Spain',
-    'Greece' => 'Greece',
-    'USA' => 'United States',
-    'Canada' => 'Canada',
-    'Australia' => 'Australia',
-    'New Zealand' => 'New Zealand',
-    'Maldives' => 'Maldives',
-    'UAE' => 'United Arab Emirates'
-];
-
-// Accommodation types
-$accommodationTypes = [
-    '5_star' => '5-Star Hotel',
-    '4_star' => '4-Star Hotel',
-    'boutique' => 'Boutique Hotel',
-    'resort' => 'Luxury Resort',
-    'villa' => 'Private Villa',
-    'apartment' => 'Serviced Apartment',
-    'eco_lodge' => 'Eco Lodge',
-    'homestay' => 'Homestay'
-];
-
-// Package inclusions
-$inclusions = [
-    'accommodation' => 'Accommodation',
-    'meals' => 'Meals',
-    'flights' => 'Flights',
-    'transfers' => 'Airport Transfers',
-    'tours' => 'Guided Tours',
-    'activities' => 'Activities',
-    'insurance' => 'Travel Insurance',
-    'visa' => 'Visa Assistance',
-    'breakfast' => 'Daily Breakfast',
-    'wifi' => 'WiFi Access',
-    'spa' => 'Spa Access',
-    'gym' => 'Gym Access'
-];
-
-// Difficulty levels
-$difficultyLevels = [
-    'easy' => 'Easy (Relaxing)',
-    'moderate' => 'Moderate (Some Activity)',
-    'active' => 'Active (Physical Activity)',
-    'challenging' => 'Challenging (Adventure)'
-];
-
-$successMessage = '';
-$errorMessage   = '';
+// -------------------- FORM DEFAULTS --------------------
 
 $form = [
     'package_name' => '',
@@ -179,196 +167,158 @@ $form = [
     'short_description' => '',
     'detailed_description' => '',
     'duration_days' => 7,
-    'difficulty_level' => '',
+    'difficulty_level' => null,
     'accommodation_type' => '',
     'inclusions' => [],
     'base_price' => '',
-    'group_min' => '',
-    'group_max' => '',
-    'availability_start' => '',
-    'availability_end' => '',
-    'year_round' => 0,
-    'early_bird_discount' => '',
-    'early_bird_days' => '',
-    'video_url' => '',
-    'virtual_tour_url' => '',
+    'group_min' => null,
+    'group_max' => null,
+    'availability_start' => null,
+    'availability_end' => null,
+    'early_bird_discount' => null,
+    'early_bird_days' => null,
+    'video_url' => null,
+    'virtual_tour_url' => null,
 ];
 
+$successMessage = '';
+$errorMessage   = '';
+$newId = null;
+
+// -------------------- HANDLE POST --------------------
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Collect
-    $form['package_name'] = trim($_POST['package_name'] ?? '');
-    $form['category'] = trim($_POST['category'] ?? '');
-    $form['region'] = trim($_POST['region'] ?? '');
-    $form['country'] = trim($_POST['country'] ?? '');
-    $form['short_description'] = trim($_POST['short_description'] ?? '');
-    $form['detailed_description'] = trim($_POST['detailed_description'] ?? '');
-    $form['duration_days'] = (int)($_POST['duration_days'] ?? 0);
-    $form['difficulty_level'] = trim($_POST['difficulty_level'] ?? '');
-    $form['accommodation_type'] = trim($_POST['accommodation_type'] ?? '');
-    $form['inclusions'] = $_POST['inclusions'] ?? [];
-    if (!is_array($form['inclusions'])) $form['inclusions'] = [];
-    $form['base_price'] = trim($_POST['base_price'] ?? '');
-    $form['group_min'] = ($_POST['group_min'] ?? '') !== '' ? (int)$_POST['group_min'] : null;
-    $form['group_max'] = ($_POST['group_max'] ?? '') !== '' ? (int)$_POST['group_max'] : null;
-    $form['availability_start'] = trim($_POST['availability_start'] ?? '');
-    $form['availability_end'] = trim($_POST['availability_end'] ?? '');
-    $form['year_round'] = isset($_POST['year_round']) ? 1 : 0;
-    $form['early_bird_discount'] = ($_POST['early_bird_discount'] ?? '') !== '' ? (int)$_POST['early_bird_discount'] : null;
-    $form['early_bird_days'] = ($_POST['early_bird_days'] ?? '') !== '' ? (int)$_POST['early_bird_days'] : null;
-    $form['video_url'] = trim($_POST['video_url'] ?? '');
-    $form['virtual_tour_url'] = trim($_POST['virtual_tour_url'] ?? '');
-
-    // Validate (minimum)
-    $errors = [];
-    if ($form['package_name'] === '') $errors[] = "Package name is required.";
-    if ($form['category'] === '') $errors[] = "Category is required.";
-    if ($form['region'] === '') $errors[] = "Region is required.";
-    if ($form['country'] === '') $errors[] = "Country is required.";
-    if ($form['short_description'] === '') $errors[] = "Short description is required.";
-    if (mb_strlen($form['short_description']) > 200) $errors[] = "Short description must be max 200 characters.";
-    if ($form['duration_days'] <= 0) $errors[] = "Duration must be at least 1 day.";
-    if ($form['accommodation_type'] === '') $errors[] = "Accommodation type is required.";
-    if ($form['base_price'] === '' || !is_numeric($form['base_price']) || (float)$form['base_price'] <= 0) $errors[] = "Base price must be a valid number > 0.";
-
-    if ($form['year_round'] === 0) {
-        // If not year-round, dates can be provided (optional), but if one provided, ensure order
-        if ($form['availability_start'] !== '' && $form['availability_end'] !== '') {
-            if (strtotime($form['availability_start']) > strtotime($form['availability_end'])) {
-                $errors[] = "Availability start date must be before end date.";
-            }
-        }
+    // Check if this is a reset request
+    if (isset($_POST['reset_form'])) {
+        // Clear form data but keep messages if any
+        $form = [
+            'package_name' => '',
+            'category' => '',
+            'region' => '',
+            'country' => '',
+            'short_description' => '',
+            'detailed_description' => '',
+            'duration_days' => 7,
+            'difficulty_level' => null,
+            'accommodation_type' => '',
+            'inclusions' => [],
+            'base_price' => '',
+            'group_min' => null,
+            'group_max' => null,
+            'availability_start' => null,
+            'availability_end' => null,
+            'early_bird_discount' => null,
+            'early_bird_days' => null,
+            'video_url' => null,
+            'virtual_tour_url' => null,
+        ];
     } else {
-        $form['availability_start'] = '';
-        $form['availability_end'] = '';
-    }
+        // Process form submission
+        $form['package_name'] = trim($_POST['package_name'] ?? '');
+        $form['category'] = trim($_POST['category'] ?? '');
+        $form['region'] = trim($_POST['region'] ?? '');
+        $form['country'] = trim($_POST['country'] ?? '');
+        $form['short_description'] = trim($_POST['short_description'] ?? '');
+        $form['detailed_description'] = trim($_POST['detailed_description'] ?? '') ?: null;
+        $form['duration_days'] = (int)($_POST['duration_days'] ?? 0);
+        $form['difficulty_level'] = trim($_POST['difficulty_level'] ?? '') ?: null;
+        $form['accommodation_type'] = trim($_POST['accommodation_type'] ?? '');
+        $form['inclusions'] = is_array($_POST['inclusions'] ?? null) ? $_POST['inclusions'] : [];
+        $form['base_price'] = $_POST['base_price'] ?? '';
+        $form['group_min'] = ($_POST['group_min'] ?? '') !== '' ? (int)$_POST['group_min'] : null;
+        $form['group_max'] = ($_POST['group_max'] ?? '') !== '' ? (int)$_POST['group_max'] : null;
+        $form['availability_start'] = trim($_POST['availability_start'] ?? '') ?: null;
+        $form['availability_end'] = trim($_POST['availability_end'] ?? '') ?: null;
+        $form['early_bird_discount'] = ($_POST['early_bird_discount'] ?? '') !== '' ? (int)$_POST['early_bird_discount'] : null;
+        $form['early_bird_days'] = ($_POST['early_bird_days'] ?? '') !== '' ? (int)$_POST['early_bird_days'] : null;
+        $form['video_url'] = trim($_POST['video_url'] ?? '') ?: null;
+        $form['virtual_tour_url'] = trim($_POST['virtual_tour_url'] ?? '') ?: null;
 
-    // Validate inclusions against allowed keys
-    $allowedInclusions = array_keys($inclusions);
-    $form['inclusions'] = array_values(array_unique(array_filter($form['inclusions'], function($x) use ($allowedInclusions){
-        return in_array($x, $allowedInclusions, true);
-    })));
+        // -------------------- VALIDATION --------------------
 
-    if (!$errors) {
-        try {
-            $uploadDir = __DIR__ . '/uploads/packages';
+        $errors = [];
+        if ($form['package_name'] === '') $errors[] = "Package name required.";
+        if ($form['category'] === '') $errors[] = "Category required.";
+        if ($form['region'] === '') $errors[] = "Region required.";
+        if ($form['country'] === '') $errors[] = "Country required.";
+        if ($form['short_description'] === '') $errors[] = "Short description required.";
+        if ($form['duration_days'] < 1) $errors[] = "Duration must be at least 1 day.";
+        if (!is_numeric($form['base_price']) || $form['base_price'] <= 0) $errors[] = "Invalid base price.";
 
-            // Upload images (optional)
-            $coverPath = null;
-            if (!empty($_FILES['cover_image']['name'] ?? '')) {
-                $coverPath = save_uploaded_file($_FILES['cover_image'], $uploadDir);
+        if (!$errors) {
+            try {
+                $pdo->beginTransaction();
+
+                $uploadDir = __DIR__ . '/uploads/packages';
+                $coverPath = !empty($_FILES['cover_image']['name']) ? save_uploaded_file($_FILES['cover_image'], $uploadDir) : null;
+                $gallery   = !empty($_FILES['gallery_images']['name'][0]) ? save_multiple_uploaded_files($_FILES['gallery_images'], $uploadDir) : [];
+
+                $stmt = $pdo->prepare("
+                    INSERT INTO travel_packages (
+                        package_name, category, region, country,
+                        short_description, detailed_description,
+                        duration_days, difficulty_level, accommodation_type,
+                        inclusions,
+                        base_price,
+                        group_min, group_max,
+                        availability_start, availability_end,
+                        early_bird_discount, early_bird_days,
+                        video_url, virtual_tour_url,
+                        cover_image, gallery_images
+                    ) VALUES (
+                        :package_name, :category, :region, :country,
+                        :short_description, :detailed_description,
+                        :duration_days, :difficulty_level, :accommodation_type,
+                        :inclusions,
+                        :base_price,
+                        :group_min, :group_max,
+                        :availability_start, :availability_end,
+                        :early_bird_discount, :early_bird_days,
+                        :video_url, :virtual_tour_url,
+                        :cover_image, :gallery_images
+                    )
+                    RETURNING id
+                ");
+
+                $stmt->execute([
+                    ':package_name' => $form['package_name'],
+                    ':category' => $form['category'],
+                    ':region' => $form['region'],
+                    ':country' => $form['country'],
+                    ':short_description' => $form['short_description'],
+                    ':detailed_description' => $form['detailed_description'],
+                    ':duration_days' => $form['duration_days'],
+                    ':difficulty_level' => $form['difficulty_level'],
+                    ':accommodation_type' => $form['accommodation_type'],
+                    ':inclusions' => $form['inclusions'] ? pg_text_array_literal($form['inclusions']) : null,
+                    ':base_price' => (float)$form['base_price'],
+                    ':group_min' => $form['group_min'],
+                    ':group_max' => $form['group_max'],
+                    ':availability_start' => $form['availability_start'],
+                    ':availability_end' => $form['availability_end'],
+                    ':early_bird_discount' => $form['early_bird_discount'],
+                    ':early_bird_days' => $form['early_bird_days'],
+                    ':video_url' => $form['video_url'],
+                    ':virtual_tour_url' => $form['virtual_tour_url'],
+                    ':cover_image' => $coverPath,
+                    ':gallery_images' => $gallery ? pg_text_array_literal($gallery) : null,
+                ]);
+
+                $newId = $stmt->fetchColumn();
+                $pdo->commit();
+
+                $successMessage = "✅ Package created successfully! ID: " . h($newId);
+
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                $errorMessage = "❌ Failed to create package: " . h($e->getMessage());
             }
-
-            $galleryPaths = [];
-            if (!empty($_FILES['gallery_images']['name'][0] ?? '')) {
-                $galleryPaths = save_multiple_uploaded_files($_FILES['gallery_images'], $uploadDir);
-            }
-
-            // Build PG array literals
-            $pgInclusions = !empty($form['inclusions']) ? pg_text_array_literal($form['inclusions']) : null;
-            $pgGallery    = !empty($galleryPaths) ? pg_text_array_literal($galleryPaths) : null;
-
-            $availabilityStart = $form['availability_start'] !== '' ? $form['availability_start'] : null;
-            $availabilityEnd   = $form['availability_end'] !== '' ? $form['availability_end'] : null;
-
-            $videoUrl = $form['video_url'] !== '' ? $form['video_url'] : null;
-            $virtualTourUrl = $form['virtual_tour_url'] !== '' ? $form['virtual_tour_url'] : null;
-
-            $difficulty = $form['difficulty_level'] !== '' ? $form['difficulty_level'] : null;
-
-            $pdo->beginTransaction();
-
-            $sql = "
-                INSERT INTO travel_packages (
-                    package_name, category, region, country,
-                    short_description, detailed_description,
-                    duration_days, difficulty_level, accommodation_type,
-                    inclusions,
-                    base_price, single_supplement,
-                    group_min, group_max,
-                    availability_start, availability_end, year_round,
-                    early_bird_discount, early_bird_days,
-                    video_url, virtual_tour_url,
-                    status, visibility,
-                    cover_image, gallery_images
-                ) VALUES (
-                    :package_name, :category, :region, :country,
-                    :short_description, :detailed_description,
-                    :duration_days, :difficulty_level, :accommodation_type,
-                    :inclusions,
-                    :base_price, :single_supplement,
-                    :group_min, :group_max,
-                    :availability_start, :availability_end, :year_round,
-                    :early_bird_discount, :early_bird_days,
-                    :video_url, :virtual_tour_url,
-                    'draft', 'public',
-                    :cover_image, :gallery_images
-                )
-                RETURNING id
-            ";
-
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':package_name' => $form['package_name'],
-                ':category' => $form['category'],
-                ':region' => $form['region'],
-                ':country' => $form['country'],
-                ':short_description' => $form['short_description'],
-                ':detailed_description' => $form['detailed_description'] !== '' ? $form['detailed_description'] : null,
-                ':duration_days' => $form['duration_days'],
-                ':difficulty_level' => $difficulty,
-                ':accommodation_type' => $form['accommodation_type'],
-                ':inclusions' => $pgInclusions,
-                ':base_price' => (float)$form['base_price'],
-                ':single_supplement' => null,
-                ':group_min' => $form['group_min'],
-                ':group_max' => $form['group_max'],
-                ':availability_start' => $availabilityStart,
-                ':availability_end' => $availabilityEnd,
-                ':year_round' => $form['year_round'] ? true : false,
-                ':early_bird_discount' => $form['early_bird_discount'],
-                ':early_bird_days' => $form['early_bird_days'],
-                ':video_url' => $videoUrl,
-                ':virtual_tour_url' => $virtualTourUrl,
-                ':cover_image' => $coverPath,
-                ':gallery_images' => $pgGallery,
-            ]);
-
-            $newId = $stmt->fetchColumn();
-            $pdo->commit();
-
-            $successMessage = "✅ Package created successfully! Package ID: " . h($newId);
-
-            // Reset form after success
-            $form = [
-                'package_name' => '',
-                'category' => '',
-                'region' => '',
-                'country' => '',
-                'short_description' => '',
-                'detailed_description' => '',
-                'duration_days' => 7,
-                'difficulty_level' => '',
-                'accommodation_type' => '',
-                'inclusions' => [],
-                'base_price' => '',
-                'group_min' => '',
-                'group_max' => '',
-                'availability_start' => '',
-                'availability_end' => '',
-                'year_round' => 0,
-                'early_bird_discount' => '',
-                'early_bird_days' => '',
-                'video_url' => '',
-                'virtual_tour_url' => '',
-            ];
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            $errorMessage = "❌ Failed to create package: " . h($e->getMessage());
+        } else {
+            $errorMessage = "❌ " . implode("<br>• ", array_map('h', $errors));
         }
-    } else {
-        $errorMessage = "❌ Please fix the following: <br>• " . implode("<br>• ", array_map('h', $errors));
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -475,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </a>
           <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
-            Campaigns
+            Packages
           </a>
           <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
@@ -543,7 +493,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Campaigns
+            Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
@@ -556,9 +506,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Reports
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
-            <i class="fas fa-handshake w-6 text-center"></i>
-            Partnerships
+          <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
+            Packages
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
         </div>
 
@@ -607,13 +558,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       </div>
     </div>
-  </div>
-</main>
-
 
     <?php if ($successMessage): ?>
         <div class="mb-6 p-4 rounded-2xl border border-green-200 bg-green-50 text-green-800">
             <?= $successMessage ?>
+            <?php if ($newId): ?>
+                <div class="mt-2">
+                    <form method="POST" class="inline">
+                        <input type="hidden" name="reset_form" value="1">
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Create Another Package
+                        </button>
+                    </form>
+                </div>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
     <?php if ($errorMessage): ?>
@@ -686,7 +644,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                   class="w-full p-4 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                                   maxlength="200" required><?= h($form['short_description']) ?></textarea>
                         <div class="text-right text-sm text-gray-500 mt-1">
-                            <span id="charCount">0</span>/200 characters
+                            <span id="charCount"><?= strlen($form['short_description']) ?></span>/200 characters
                         </div>
                     </div>
                 </div>
@@ -783,13 +741,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Group Min</label>
                             <input type="number" min="1" id="groupSizeMin" name="group_min"
-                                   value="<?= h($form['group_min']) ?>"
+                                   value="<?= $form['group_min'] !== null ? h($form['group_min']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Group Max</label>
                             <input type="number" min="1" id="groupSizeMax" name="group_max"
-                                   value="<?= h($form['group_max']) ?>"
+                                   value="<?= $form['group_max'] !== null ? h($form['group_max']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
                     </div>
@@ -798,13 +756,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Early Bird Discount (%)</label>
                             <input type="number" min="0" max="100" id="earlyBirdDiscount" name="early_bird_discount"
-                                   value="<?= h($form['early_bird_discount']) ?>"
+                                   value="<?= $form['early_bird_discount'] !== null ? h($form['early_bird_discount']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Early Bird Days</label>
                             <input type="number" min="0" id="earlyBirdDays" name="early_bird_days"
-                                   value="<?= h($form['early_bird_days']) ?>"
+                                   value="<?= $form['early_bird_days'] !== null ? h($form['early_bird_days']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
                     </div>
@@ -827,13 +785,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h3 class="text-xl font-bold text-gray-900 mb-6">4. Availability & Media</h3>
 
                 <div class="space-y-6">
-                    <label class="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-white">
-                        <input type="checkbox" id="yearRound" name="year_round"
-                               class="rounded text-amber-600 focus:ring-amber-500"
-                               <?= $form['year_round'] ? 'checked' : '' ?>>
-                        <span class="font-medium text-gray-800">Available Year-Round</span>
-                    </label>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Availability Start</label>
@@ -917,15 +868,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="fas fa-arrow-left mr-2"></i>Back
                     </button>
 
-                    <!-- IMPORTANT: submit button -->
-                    <button type="submit" id="createPackageBtn"
-                            class="px-6 py-3 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all text-lg">
-                        Create Package <i class="fas fa-check ml-2"></i>
-                    </button>
+                    <div class="flex gap-4">
+                        <button type="button" id="resetFormBtn"
+                                class="px-6 py-3 rounded-xl border border-amber-200 bg-white text-gray-700 font-semibold hover:bg-amber-50 transition-all">
+                            <i class="fas fa-redo mr-2"></i>Reset Form
+                        </button>
+                        
+                        <button type="submit" id="createPackageBtn"
+                                class="px-6 py-3 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all text-lg">
+                            Create Package <i class="fas fa-check ml-2"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <p class="text-xs text-gray-500 mt-3">
-                    When you click “Create Package”, the package will be inserted into <code>travel_packages</code>.
+                    When you click "Create Package", the package will be inserted into <code>travel_packages</code>.
                 </p>
             </div>
 
@@ -992,19 +949,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     shortDesc.addEventListener('input', updateCount);
     updateCount();
 
-    // Year round disable dates
-    const yearRound = document.getElementById('yearRound');
-    const startEl = document.getElementById('availabilityStart');
-    const endEl = document.getElementById('availabilityEnd');
-    function toggleDates(){
-        const disabled = yearRound.checked;
-        startEl.disabled = disabled;
-        endEl.disabled = disabled;
-        if(disabled){ startEl.value=''; endEl.value=''; }
-    }
-    yearRound.addEventListener('change', toggleDates);
-    toggleDates();
-
     // Preview
     function fillPreview(){
         document.getElementById('previewPackageName').textContent = document.getElementById('packageName').value || '-';
@@ -1030,6 +974,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const form = document.getElementById('packageForm');
     form.addEventListener('submit', function(){
         document.getElementById('detailed_description').value = quill.root.innerHTML || '';
+    });
+
+    // Reset form button
+    document.getElementById('resetFormBtn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+            // Reset form fields
+            document.getElementById('packageForm').reset();
+            
+            // Reset Quill editor
+            quill.root.innerHTML = '';
+            
+            // Reset checkboxes
+            document.querySelectorAll('.inclusion-checkbox').forEach(cb => cb.checked = false);
+            
+            // Reset file inputs
+            document.getElementById('coverImageInput').value = '';
+            document.getElementById('galleryInput').value = '';
+            
+            // Go back to step 1
+            showStep(0);
+            
+            // Update character count
+            updateCount();
+            
+            alert('Form has been reset!');
+        }
     });
 
     // Start at step 1

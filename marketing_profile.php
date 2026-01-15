@@ -204,15 +204,15 @@ $profileImage  = !empty($user['profile_image'])
         class="bg-white p-6 rounded-xl shadow-sm space-y-5">
 
     <!-- Profile Picture -->
-    <div>
-      <label class="block text-sm font-medium mb-1 text-gray-700">Profile Picture</label>
-      <img src="<?= htmlspecialchars($profileImage, ENT_QUOTES, 'UTF-8') ?>"
-           class="h-24 w-24 rounded-full object-cover mb-3 border border-gray-200"
-           alt="Profile Picture">
-      <input type="file" name="profile_image" accept="image/*"
-             class="block text-sm border border-gray-200 rounded-lg p-2 bg-gray-50 w-full max-w-xs">
-      <p class="text-xs text-gray-500 mt-1">Allowed types: JPG, JPEG, PNG.</p>
-    </div>
+<div>
+  <label class="block text-sm font-medium mb-1 text-gray-700">Profile Picture</label>
+  <img src="uploads/profile/user_2.jpg"
+       class="h-24 w-24 rounded-full object-cover mb-3 border border-gray-200"
+       alt="Profile Picture">
+  <input type="file" name="profile_image" accept="image/uploads/profile/user_2.jpg"
+         class="block text-sm border border-gray-200 rounded-lg p-2 bg-gray-50 w-full max-w-xs">
+  <p class="text-xs text-gray-500 mt-1">Allowed types: JPG, JPEG, PNG.</p>
+</div>
 
     <!-- Name -->
     <div>
