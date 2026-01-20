@@ -194,21 +194,25 @@ $footerLinks = [
         </div>
 
         <nav class="space-y-4">
-          <a href="marketing_dashboard.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+          <a href="marketing_dashboard1.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
             <i class="fas fa-chart-line w-6 text-center"></i>
             Overview
           </a>
           <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-bullhorn w-6 text-center"></i>
-            Campaigns
+            Packages
           </a>
-          <a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+         <!--- <a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-users w-6 text-center"></i>
             Leads
-          </a>
+          </a>--->
           <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-file-alt w-6 text-center"></i>
             Reports
+          </a>
+          <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+            <i class="fas fa-handshake w-6 text-center"></i>
+            Partnerships
           </a>
           <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-user w-6 text-center"></i>
@@ -254,26 +258,31 @@ $footerLinks = [
         </div>
 
         <div class="hidden lg:flex items-center gap-8 text-sm font-semibold">
-          <a href="marketing_dashboard.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="marketing_dashboard1.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <span class="flex items-center gap-2">
               <i class="fas fa-chart-line text-xs text-amber-500"></i>
               Overview
             </span>
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+         <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Campaigns
+            Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <!---<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-users text-xs text-amber-500 mr-2"></i>
             Leads
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
+          </a>--->
           <a href="marketing_report.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
             Reports
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
+          <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
+            Partnerships
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
         </div>
@@ -695,6 +704,269 @@ $footerLinks = [
       
       initializeCharts();
     });
+// Report Generation Functions
+let currentStep = 1;
+
+function updateProgressBar() {
+    const progressFill = document.querySelector('.progress-fill');
+    if (progressFill) {
+        const width = (currentStep / 3) * 100;
+        progressFill.style.width = `${width}%`;
+    }
+}
+
+function updateStepIndicators() {
+    // Update step numbers
+    const steps = document.querySelectorAll('.flex.flex-col.items-center');
+    steps.forEach((step, index) => {
+        const numberDiv = step.querySelector('div:first-child');
+        const textSpan = step.querySelector('span:last-child');
+        
+        if (index + 1 === currentStep) {
+            numberDiv.classList.remove('bg-amber-100', 'text-amber-800');
+            numberDiv.classList.add('bg-amber-500', 'text-white');
+            textSpan.classList.remove('text-gray-700');
+            textSpan.classList.add('text-gray-900');
+        } else {
+            numberDiv.classList.remove('bg-amber-500', 'text-white');
+            numberDiv.classList.add('bg-amber-100', 'text-amber-800');
+            textSpan.classList.remove('text-gray-900');
+            textSpan.classList.add('text-gray-700');
+        }
+    });
+}
+
+function showStep(stepNumber) {
+    // Hide all steps
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('step3').classList.add('hidden');
+    
+    // Show current step
+    document.getElementById(`step${stepNumber}`).classList.remove('hidden');
+    
+    // Update current step
+    currentStep = stepNumber;
+    
+    // Update UI
+    updateProgressBar();
+    updateStepIndicators();
+    updatePreview();
+}
+
+function nextStep() {
+    if (currentStep < 3) {
+        showStep(currentStep + 1);
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        showStep(currentStep - 1);
+    }
+}
+
+// Handle custom date range visibility
+document.getElementById('reportPeriod').addEventListener('change', function() {
+    const customRangeDiv = document.getElementById('customDateRange');
+    if (this.value === 'custom') {
+        customRangeDiv.classList.remove('hidden');
+    } else {
+        customRangeDiv.classList.add('hidden');
+    }
+    updatePreview();
+});
+
+// Template card selection
+document.querySelectorAll('.template-card').forEach(card => {
+    card.addEventListener('click', function() {
+        // Remove selection from all cards
+        document.querySelectorAll('.template-card').forEach(c => {
+            c.classList.remove('border-amber-400');
+            c.classList.add('border-amber-200');
+        });
+        
+        // Select this card
+        this.classList.remove('border-amber-200');
+        this.classList.add('border-amber-400');
+        
+        // Update report type dropdown
+        const title = this.querySelector('h4').textContent;
+        const reportTypeSelect = document.getElementById('reportType');
+        let found = false;
+        
+        for (let option of reportTypeSelect.options) {
+            if (option.text === title) {
+                reportTypeSelect.value = option.value;
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            reportTypeSelect.value = 'performance'; // Default fallback
+        }
+        
+        updatePreview();
+    });
+});
+
+// Update preview function
+function updatePreview() {
+    // Get selected values
+    const reportTypeSelect = document.getElementById('reportType');
+    const reportType = reportTypeSelect.options[reportTypeSelect.selectedIndex].text;
+    
+    const periodSelect = document.getElementById('reportPeriod');
+    const period = periodSelect.options[periodSelect.selectedIndex].text;
+    
+    const format = document.querySelector('input[name="format"]:checked')?.value || 'pdf';
+    const formatLabels = {
+        'pdf': 'PDF Document',
+        'excel': 'Excel Spreadsheet',
+        'csv': 'CSV Data',
+        'html': 'HTML Report'
+    };
+    
+    // Update preview elements
+    document.getElementById('previewType').textContent = reportType || '-';
+    document.getElementById('previewPeriod').textContent = period || '-';
+    document.getElementById('previewFormat').textContent = formatLabels[format] || '-';
+    
+    // Auto-generate report name if empty
+    if (!document.getElementById('reportName').value && reportType && period) {
+        const now = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const month = monthNames[now.getMonth()];
+        const year = now.getFullYear();
+        document.getElementById('reportName').value = `${reportType} - ${month} ${year}`;
+    }
+}
+
+// Quick template functions
+function useQuickTemplate(templateType) {
+    // Reset to step 1
+    showStep(1);
+    
+    // Clear any existing selections
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('border-amber-400');
+        card.classList.add('border-amber-200');
+    });
+    
+    // Set based on template type
+    const reportTypeSelect = document.getElementById('reportType');
+    const periodSelect = document.getElementById('reportPeriod');
+    
+    switch(templateType) {
+        case 'weekly':
+            reportTypeSelect.value = 'performance';
+            periodSelect.value = 'last_week';
+            break;
+        case 'monthly':
+            reportTypeSelect.value = 'performance';
+            periodSelect.value = 'last_month';
+            break;
+        case 'campaign':
+            reportTypeSelect.value = 'campaign';
+            periodSelect.value = 'last_month';
+            break;
+    }
+    
+    // Set PDF format for quick templates
+    document.querySelector('input[name="format"][value="pdf"]').checked = true;
+    
+    // Update preview
+    updatePreview();
+    
+    // Auto-advance to step 3
+    setTimeout(() => {
+        showStep(3);
+    }, 300);
+}
+
+// Generate report function
+function generateReport() {
+    // Get form values
+    const reportName = document.getElementById('reportName').value;
+    const reportType = document.getElementById('reportType').value;
+    const reportTypeText = document.getElementById('reportType').options[document.getElementById('reportType').selectedIndex].text;
+    const period = document.getElementById('reportPeriod').value;
+    const periodText = document.getElementById('reportPeriod').options[document.getElementById('reportPeriod').selectedIndex].text;
+    const format = document.querySelector('input[name="format"]:checked')?.value;
+    
+    // Validation
+    if (!reportName.trim()) {
+        alert('Please enter a report name');
+        document.getElementById('reportName').focus();
+        return;
+    }
+    
+    if (!reportType) {
+        alert('Please select a report type');
+        showStep(1);
+        return;
+    }
+    
+    // Show loading/confirmation
+    const generateButton = document.querySelector('button[onclick="generateReport()"]');
+    const originalText = generateButton.innerHTML;
+    
+    generateButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating...';
+    generateButton.disabled = true;
+    
+    // Simulate generation process
+    setTimeout(() => {
+        // Success message
+        alert(`✅ Report "${reportName}" generated successfully!\n\n` +
+              `Type: ${reportTypeText}\n` +
+              `Period: ${periodText}\n` +
+              `Format: ${format.toUpperCase()}\n\n` +
+              `The report will be available for download shortly.`);
+        
+        // Reset button
+        generateButton.innerHTML = originalText;
+        generateButton.disabled = false;
+        
+        // Optionally reset form
+        // showStep(1);
+        // document.getElementById('reportForm').reset();
+        
+    }, 2000);
+}
+
+// Initialize event listeners for format changes
+document.querySelectorAll('input[name="format"]').forEach(radio => {
+    radio.addEventListener('change', updatePreview);
+});
+
+// Initialize event listeners for type changes
+document.getElementById('reportType').addEventListener('change', updatePreview);
+
+// Initialize event listeners for period changes
+document.getElementById('reportPeriod').addEventListener('change', updatePreview);
+
+// Initialize event listeners for report name changes
+document.getElementById('reportName').addEventListener('input', updatePreview);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+    
+    // Set today's date as default for custom date range
+    const today = new Date().toISOString().split('T')[0];
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoStr = oneWeekAgo.toISOString().split('T')[0];
+    
+    document.getElementById('startDate').value = oneWeekAgoStr;
+    document.getElementById('endDate').value = today;
+    
+    // Add event listeners for custom date range
+    document.getElementById('startDate').addEventListener('change', updatePreview);
+    document.getElementById('endDate').addEventListener('change', updatePreview);
+});
 
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
