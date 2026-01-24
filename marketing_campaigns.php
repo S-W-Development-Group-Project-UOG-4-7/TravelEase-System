@@ -10,6 +10,20 @@ $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
 $profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
 $currentYear = date('Y');
 
+// Add this code to show delete messages
+$delete_message = '';
+$delete_error = '';
+
+if (isset($_SESSION['delete_message'])) {
+    $delete_message = $_SESSION['delete_message'];
+    unset($_SESSION['delete_message']);
+}
+
+if (isset($_SESSION['delete_error'])) {
+    $delete_error = $_SESSION['delete_error'];
+    unset($_SESSION['delete_error']);
+}
+
 // Database connection
 require_once __DIR__ . '/db.php';
 
@@ -209,37 +223,37 @@ $footerLinks = [
       background-clip: text;
     }
     .mobile-menu {
-  display: none;
+      display: none;
     }
 
-.mobile-menu.open {
-  display: block;
+    .mobile-menu.open {
+      display: block;
     }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+    @keyframes slideIn {
+      from {
+        transform: translateX(-100%);
+      }
+      to {
+        transform: translateX(0);
+      }
     }
 
-@keyframes slideOut {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-100%);
-  }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(-100%);
+      }
     }
 
-.mobile-menu.open > div:last-child {
-  animation: slideIn 0.3s ease-out forwards;
+    .mobile-menu.open > div:last-child {
+      animation: slideIn 0.3s ease-out forwards;
     }
 
-.mobile-menu.closing > div:last-child {
-  animation: slideOut 0.3s ease-in forwards;
+    .mobile-menu.closing > div:last-child {
+      animation: slideOut 0.3s ease-in forwards;
     }
     
     /* Loading skeleton */
@@ -306,6 +320,37 @@ $footerLinks = [
     /* Progress bar animation */
     .progress-bar-inner {
       transition: width 0.8s ease-in-out;
+    }
+
+    /* Add this to your existing CSS in marketing_campaigns.php */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-slideDown {
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    /* Delete confirmation styles */
+    .delete-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -469,6 +514,45 @@ $footerLinks = [
         </div>
       </div>
 
+      <!-- Delete Success/Error Messages -->
+      <?php if ($delete_message): ?>
+      <div class="mb-6 animate-slideDown">
+          <div class="glass-effect rounded-2xl p-6 border border-green-200 bg-green-50 shadow-lg">
+              <div class="flex items-center gap-4">
+                  <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <i class="fas fa-check text-green-600 text-xl"></i>
+                  </div>
+                  <div class="flex-1">
+                      <h3 class="font-bold text-green-800 text-lg">Success!</h3>
+                      <p class="text-green-700 mt-1"><?= htmlspecialchars($delete_message) ?></p>
+                  </div>
+                  <button onclick="this.parentElement.parentElement.remove()" class="p-2 text-green-600 hover:text-green-800">
+                      <i class="fas fa-times"></i>
+                  </button>
+              </div>
+          </div>
+      </div>
+      <?php endif; ?>
+
+      <?php if ($delete_error): ?>
+      <div class="mb-6 animate-slideDown">
+          <div class="glass-effect rounded-2xl p-6 border border-red-200 bg-red-50 shadow-lg">
+              <div class="flex items-center gap-4">
+                  <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                      <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                  </div>
+                  <div class="flex-1">
+                      <h3 class="font-bold text-red-800 text-lg">Error</h3>
+                      <p class="text-red-700 mt-1"><?= htmlspecialchars($delete_error) ?></p>
+                  </div>
+                  <button onclick="this.parentElement.parentElement.remove()" class="p-2 text-red-600 hover:text-red-800">
+                      <i class="fas fa-times"></i>
+                  </button>
+              </div>
+          </div>
+      </div>
+      <?php endif; ?>
+
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-lg hover:shadow-xl transition-shadow">
@@ -573,11 +657,15 @@ $footerLinks = [
               $status = $package['display_status'] ?? $package['status'];
               $category = $package['category'] ?? 'luxury';
               $categoryLabel = ucfirst($category);
+              // Ensure we have ID for delete
+              $packageId = $package['id'] ?? 0;
+              $packageName = $package['name'] ?? 'Unknown Package';
             ?>
             <div class="package-card group relative bg-white rounded-2xl overflow-hidden border border-amber-100 shadow-lg hover:shadow-2xl transition-all duration-300"
                  data-status="<?= htmlspecialchars($status) ?>"
                  data-category="<?= htmlspecialchars($category) ?>"
-                 data-name="<?= htmlspecialchars(strtolower($package['name'])) ?>">
+                 data-name="<?= htmlspecialchars(strtolower($packageName)) ?>"
+                 data-id="<?= $packageId ?>">
               
               <!-- Status Badge -->
               <div class="absolute top-4 right-4 z-10">
@@ -597,7 +685,7 @@ $footerLinks = [
               <div class="h-48 overflow-hidden">
                 <?php if (!empty($package['cover_image'])): ?>
                   <img src="<?= htmlspecialchars($package['cover_image']) ?>" 
-                       alt="<?= htmlspecialchars($package['name']) ?>" 
+                       alt="<?= htmlspecialchars($packageName) ?>" 
                        class="package-image w-full h-full object-cover">
                 <?php else: ?>
                   <div class="w-full h-full bg-gradient-to-br from-amber-100 to-amber-300 flex items-center justify-center">
@@ -609,8 +697,8 @@ $footerLinks = [
               <!-- Package Content -->
               <div class="p-6">
                 <div class="flex items-start justify-between mb-3">
-                  <h3 class="text-lg font-bold text-gray-900 truncate flex-1 mr-2"><?= htmlspecialchars($package['name']) ?></h3>
-                  <span class="text-xl font-bold text-amber-600 whitespace-nowrap">$<?= number_format($package['base_price']) ?></span>
+                  <h3 class="text-lg font-bold text-gray-900 truncate flex-1 mr-2"><?= htmlspecialchars($packageName) ?></h3>
+                  <span class="text-xl font-bold text-amber-600 whitespace-nowrap">$<?= number_format($package['base_price'] ?? 0) ?></span>
                 </div>
                 
                 <p class="text-gray-600 text-sm mb-4 line-clamp-2"><?= htmlspecialchars($package['short_description'] ?? 'No description available') ?></p>
@@ -619,7 +707,7 @@ $footerLinks = [
                   <!-- Location -->
                   <div class="flex items-center text-sm text-gray-500">
                     <i class="fas fa-map-marker-alt text-amber-500 mr-2"></i>
-                    <span><?= htmlspecialchars($package['country'] ?? 'Not specified') ?>, <?= htmlspecialchars($package['region'] ?? '') ?></span>
+                    <span><?= htmlspecialchars($package['country'] ?? 'Not specified') ?><?= !empty($package['region']) ? ', ' . htmlspecialchars($package['region']) : '' ?></span>
                   </div>
                   
                   <!-- Duration -->
@@ -658,18 +746,20 @@ $footerLinks = [
                 <!-- Action Buttons -->
                 <div class="flex items-center justify-between pt-4 border-t border-amber-100">
                   <div class="flex items-center gap-2">
-                    <a href="view_package.php?id=<?= $package['id'] ?>" 
+                    <a href="view_package.php?id=<?= $packageId ?>" 
                        class="action-btn px-4 py-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors text-sm font-medium flex items-center gap-2">
                       <i class="fas fa-eye"></i>
                       View
                     </a>
-                    <a href="edit_package.php?id=<?= $package['id'] ?>" 
+                    <a href="edit_package.php?id=<?= $packageId ?>" 
                        class="action-btn px-4 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-medium flex items-center gap-2">
                       <i class="fas fa-edit"></i>
                       Edit
                     </a>
                   </div>
-                  <button onclick="deletePackage(<?= $package['id'] ?>, '<?= htmlspecialchars(addslashes($package['name'])) ?>')" 
+                  
+                  <!-- Delete Button - FIXED -->
+                  <button onclick="confirmDelete(<?= $packageId ?>, '<?= htmlspecialchars(addslashes($packageName)) ?>')" 
                           class="action-btn px-4 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm font-medium flex items-center gap-2">
                     <i class="fas fa-trash"></i>
                     Delete
@@ -940,31 +1030,36 @@ $footerLinks = [
       searchInput.addEventListener('input', filterPackages);
     }
 
-    // Delete package function
-    function deletePackage(id, name) {
-      if (confirm(`Are you sure you want to delete the package "${name}"? This action cannot be undone.`)) {
-        // Show loading state
-        const event = new CustomEvent('showLoading', { detail: { message: 'Deleting package...' } });
-        window.dispatchEvent(event);
+    // Fixed Delete Function - Simple and Working
+    function confirmDelete(id, name) {
+      // Debug: Check what values are being passed
+      console.log('Delete clicked - ID:', id, 'Name:', name);
+      
+      if (!id || id === 0) {
+        alert('Error: Package ID is missing!');
+        return false;
+      }
+      
+      if (confirm('Are you sure you want to delete "' + name + '"? This action cannot be undone.')) {
+        // Show loading overlay
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'delete-loading';
+        loadingOverlay.innerHTML = `
+          <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+            <div class="text-gray-900 font-semibold">Deleting package...</div>
+            <div class="text-sm text-gray-600">Please wait</div>
+          </div>
+        `;
+        document.body.appendChild(loadingOverlay);
         
-        // Create a form to submit the delete request
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'delete_package.php';
-        
-        const idInput = document.createElement('input');
-        idInput.type = 'hidden';
-        idInput.name = 'id';
-        idInput.value = id;
-        
-        form.appendChild(idInput);
-        document.body.appendChild(form);
-        
-        // Submit after a short delay to show loading
+        // Redirect to delete page with ID
         setTimeout(() => {
-          form.submit();
+          window.location.href = 'delete_package.php?id=' + id;
         }, 500);
       }
+      
+      return false;
     }
 
     // Add smooth animations for page elements
