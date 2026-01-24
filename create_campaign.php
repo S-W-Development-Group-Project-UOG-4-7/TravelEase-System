@@ -439,6 +439,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <i class="fas fa-handshake w-6 text-center"></i>
             Partnerships
           </a>
+           <a href="marketing_feedback.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+                        Customer Feedback
+                    </a>
           <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-user w-6 text-center"></i>
             My Profile
@@ -511,6 +515,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
+           <a href="marketing_feedback.php" class="text-amber-600 transition-all duration-300 relative group">
+                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+                        Customer Feedback
+                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-amber-500"></span>
+                    </a>
         </div>
 
         <div class="hidden lg:flex items-center gap-4">

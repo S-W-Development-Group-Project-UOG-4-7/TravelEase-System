@@ -5,9 +5,8 @@
 // Start session for authentication
 session_start();
 
-// Basic authentication check (you can remove or modify this)
+// Basic authentication check
 if (!isset($_SESSION['marketing_logged_in'])) {
-    // For demo purposes, auto-login
     $_SESSION['marketing_logged_in'] = true;
     $_SESSION['full_name'] = 'Marketing Manager';
     $_SESSION['profile_image'] = '';
@@ -20,264 +19,222 @@ $profileImage = !empty($_SESSION['profile_image'])
     ? 'uploads/profile/' . $_SESSION['profile_image']
     : 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
 
-// Placeholder metrics
-$totalCampaigns = 12;
-$activeCampaigns = 4;
-$leadsThisMonth = 892;
+// Database connection
+require_once __DIR__ . '/db.php';
 
-// Campaign data for tables
-$campaigns = [
-    [
-        'name' => 'Summer Asia Promotion',
-        'status' => 'Active',
-        'budget' => 25000,
-        'spent' => 18450,
-        'leads' => 1248,
-        'roi' => '4.2x'
-    ],
-    [
-        'name' => 'Luxury Japan Getaway',
-        'status' => 'Active',
-        'budget' => 15000,
-        'spent' => 12800,
-        'leads' => 892,
-        'roi' => '3.8x'
-    ],
-    [
-        'name' => 'Bali Wellness Retreat',
-        'status' => 'Paused',
-        'budget' => 12000,
-        'spent' => 8200,
-        'leads' => 567,
-        'roi' => '2.9x'
-    ],
-    [
-        'name' => 'Thailand Island Hopping',
-        'status' => 'Completed',
-        'budget' => 18000,
-        'spent' => 17500,
-        'leads' => 1102,
-        'roi' => '3.5x'
-    ]
-];
+// Fetch packages from database
+$packages = [];
+$totalPackages = 0;
+$activePackages = 0;
+$totalBudget = 0;
+$totalLeads = 0;
 
-// Active campaigns data
-$activeCampaignsData = [
-    [
-        'name' => 'Summer Asia Promotion',
-        'status' => 'On Track',
-        'description' => 'Multi-channel campaign targeting luxury travelers',
-        'progress' => 74,
-        'spent' => 18450,
-        'budget' => 25000
-    ],
-    [
-        'name' => 'Luxury Japan Getaway',
-        'status' => 'On Track',
-        'description' => 'Social media and influencer campaign',
-        'progress' => 85,
-        'spent' => 12800,
-        'budget' => 15000
-    ],
-    [
-        'name' => 'Autumn Retreats',
-        'status' => 'Starting Soon',
-        'description' => 'Email and content marketing campaign',
-        'progress' => 15,
-        'spent' => 1500,
-        'budget' => 10000
-    ]
-];
+try {
+    $stmt = $pdo->query("
+        SELECT 
+            id,
+            package_name as name,
+            category,
+            region,
+            country,
+            short_description,
+            detailed_description,
+            duration_days,
+            difficulty_level,
+            accommodation_type,
+            inclusions,
+            base_price,
+            group_min,
+            group_max,
+            availability_start as start_date,
+            availability_end as end_date,
+            early_bird_discount,
+            early_bird_days,
+            video_url,
+            virtual_tour_url,
+            cover_image,
+            gallery_images,
+            created_at,
+            -- Calculate dynamic values for display
+            COALESCE(group_max, 0) as max_capacity,
+            CASE 
+                WHEN availability_end < CURRENT_DATE THEN 'Completed'
+                WHEN availability_start > CURRENT_DATE THEN 'Planned'
+                WHEN availability_start <= CURRENT_DATE AND availability_end >= CURRENT_DATE THEN 'Active'
+                ELSE 'Draft'
+            END as status,
+            CASE 
+                WHEN availability_end < CURRENT_DATE THEN 'Completed'
+                WHEN availability_start > CURRENT_DATE THEN 'Planned'
+                WHEN availability_start <= CURRENT_DATE AND availability_end >= CURRENT_DATE THEN 'Active'
+                ELSE 'Draft'
+            END as display_status
+        FROM travel_packages 
+        ORDER BY created_at DESC
+        LIMIT 6
+    ");
+    
+    $packages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get total statistics
+    $statsStmt = $pdo->query("
+        SELECT 
+            COUNT(*) as total_packages,
+            SUM(CASE 
+                WHEN availability_start <= CURRENT_DATE AND availability_end >= CURRENT_DATE THEN 1 
+                ELSE 0 
+            END) as active_packages,
+            SUM(base_price) as total_budget,
+            SUM(COALESCE(group_max, 0)) as total_capacity
+        FROM travel_packages
+    ");
+    
+    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+    
+    $totalPackages = $stats['total_packages'] ?? 0;
+    $activePackages = $stats['active_packages'] ?? 0;
+    $totalBudget = $stats['total_budget'] ?? 0;
+    $totalLeads = $stats['total_capacity'] ?? 0;
+    
+} catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
+    $packages = [];
+    $totalPackages = 0;
+    $activePackages = 0;
+    $totalBudget = 0;
+    $totalLeads = 0;
+}
 
-// Upcoming campaigns
-$upcomingCampaigns = [
-    [
-        'name' => 'Winter Luxury Escapes',
-        'start_date' => 'Nov 15, 2024',
-        'status' => 'Planned'
-    ],
-    [
-        'name' => 'Spring Festival Tours',
-        'start_date' => 'Feb 1, 2025',
-        'status' => 'Planned'
-    ]
-];
+// Calculate conversion rate (mock calculation based on capacity)
+$conversionRate = $totalLeads > 0 ? round(($activePackages / $totalLeads) * 100, 1) : 0;
 
-// Recent leads data
-$recentLeads = [
-    [
-        'name' => 'Jennifer Wilson',
-        'email' => 'j.wilson@email.com',
-        'source' => 'Website',
-        'interest' => 'Japan Luxury',
-        'status' => 'New',
-        'date' => 'Today'
-    ],
-    [
-        'name' => 'Robert Chen',
-        'email' => 'r.chen@email.com',
-        'source' => 'Social Media',
-        'interest' => 'Bali Retreat',
-        'status' => 'Contacted',
-        'date' => '2 days ago'
-    ],
-    [
-        'name' => 'Maria Rodriguez',
-        'email' => 'm.rodriguez@email.com',
-        'source' => 'Referral',
-        'interest' => 'Thailand Islands',
-        'status' => 'Qualified',
-        'date' => '3 days ago'
-    ],
-    [
-        'name' => 'James Thompson',
-        'email' => 'j.thompson@email.com',
-        'source' => 'Email Campaign',
-        'interest' => 'Vietnam Culture',
-        'status' => 'Hot Lead',
-        'date' => '5 days ago'
-    ]
-];
+// Get leads count for this month (you'll need to implement this based on your leads table)
+try {
+    $leadsStmt = $pdo->query("
+        SELECT COUNT(*) as leads_this_month 
+        FROM leads 
+        WHERE MONTH(created_at) = MONTH(CURRENT_DATE) 
+        AND YEAR(created_at) = YEAR(CURRENT_DATE)
+    ");
+    
+    $leadsResult = $leadsStmt->fetch(PDO::FETCH_ASSOC);
+    $leadsThisMonth = $leadsResult['leads_this_month'] ?? 892; // Fallback to default if no leads table
+    
+} catch (PDOException $e) {
+    error_log("Leads query error: " . $e->getMessage());
+    $leadsThisMonth = 892; // Default fallback
+}
 
-// Top performing content
-$topContent = [
-    [
-        'title' => 'Japan Luxury Guide',
-        'type' => 'Blog Post',
-        'views' => 2458
-    ],
-    [
-        'title' => 'Bali Retreat Video',
-        'type' => 'Video',
-        'views' => 1892
-    ],
-    [
-        'title' => 'Thailand Islands',
-        'type' => 'Instagram Post',
-        'engagements' => 1567
-    ],
-    [
-        'title' => 'Vietnam Culture Guide',
-        'type' => 'Blog Post',
-        'views' => 1234
-    ]
-];
+// Recent leads data (mock data if no leads table exists)
+$recentLeads = [];
+try {
+    $recentLeadsStmt = $pdo->query("
+        SELECT 
+            CONCAT(first_name, ' ', last_name) as name,
+            email,
+            source,
+            interest,
+            status,
+            DATE_FORMAT(created_at, '%b %d') as date_formatted,
+            CASE 
+                WHEN DATEDIFF(CURRENT_DATE, created_at) = 0 THEN 'Today'
+                WHEN DATEDIFF(CURRENT_DATE, created_at) = 1 THEN 'Yesterday'
+                ELSE CONCAT(DATEDIFF(CURRENT_DATE, created_at), ' days ago')
+            END as relative_date
+        FROM leads 
+        ORDER BY created_at DESC 
+        LIMIT 4
+    ");
+    
+    $recentLeads = $recentLeadsStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Fallback mock data if leads table doesn't exist
+    $recentLeads = [
+        [
+            'name' => 'Jennifer Wilson',
+            'email' => 'j.wilson@email.com',
+            'source' => 'Website',
+            'interest' => 'Japan Luxury',
+            'status' => 'New',
+            'relative_date' => 'Today'
+        ],
+        [
+            'name' => 'Robert Chen',
+            'email' => 'r.chen@email.com',
+            'source' => 'Social Media',
+            'interest' => 'Bali Retreat',
+            'status' => 'Contacted',
+            'relative_date' => '2 days ago'
+        ],
+        [
+            'name' => 'Maria Rodriguez',
+            'email' => 'm.rodriguez@email.com',
+            'source' => 'Referral',
+            'interest' => 'Thailand Islands',
+            'status' => 'Qualified',
+            'relative_date' => '3 days ago'
+        ],
+        [
+            'name' => 'James Thompson',
+            'email' => 'j.thompson@email.com',
+            'source' => 'Email Campaign',
+            'interest' => 'Vietnam Culture',
+            'status' => 'Hot Lead',
+            'relative_date' => '5 days ago'
+        ]
+    ];
+}
 
-// Geographic performance
-$geoPerformance = [
-    ['region' => 'North America', 'percentage' => 42],
-    ['region' => 'Europe', 'percentage' => 28],
-    ['region' => 'Asia Pacific', 'percentage' => 18],
-    ['region' => 'Other Regions', 'percentage' => 12]
-];
+// Status and type styling functions (same as in your package page)
+function getStatusClasses($status) {
+    $classes = [
+        'Active' => 'bg-green-100 text-green-800 border-green-200',
+        'On Track' => 'bg-green-100 text-green-800 border-green-200',
+        'Paused' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        'Completed' => 'bg-blue-100 text-blue-800 border-blue-200',
+        'Planned' => 'bg-blue-100 text-blue-800 border-blue-200',
+        'Draft' => 'bg-gray-100 text-gray-800 border-gray-200',
+        'Starting Soon' => 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    ];
+    return $classes[$status] ?? 'bg-gray-100 text-gray-800 border-gray-200';
+}
 
-// Report templates
-$reportTemplates = [
-    [
-        'title' => 'Monthly Performance',
-        'description' => 'Comprehensive monthly marketing report',
-        'icon' => 'chart-line'
-    ],
-    [
-        'title' => 'Campaign ROI Analysis',
-        'description' => 'Detailed campaign performance and ROI',
-        'icon' => 'bullseye'
-    ],
-    [
-        'title' => 'Lead Generation Report',
-        'description' => 'Lead sources and conversion metrics',
-        'icon' => 'users'
-    ]
-];
+function getCategoryClasses($category) {
+    $classes = [
+        'luxury' => 'bg-gradient-to-r from-amber-100 to-amber-50 border-amber-200 text-amber-800',
+        'adventure' => 'bg-gradient-to-r from-green-100 to-green-50 border-green-200 text-green-800',
+        'wellness' => 'bg-gradient-to-r from-blue-100 to-blue-50 border-blue-200 text-blue-800',
+        'family' => 'bg-gradient-to-r from-purple-100 to-purple-50 border-purple-200 text-purple-800',
+        'cultural' => 'bg-gradient-to-r from-red-100 to-red-50 border-red-200 text-red-800',
+        'beach' => 'bg-gradient-to-r from-cyan-100 to-cyan-50 border-cyan-200 text-cyan-800',
+        'honeymoon' => 'bg-gradient-to-r from-pink-100 to-pink-50 border-pink-200 text-pink-800',
+        'business' => 'bg-gradient-to-r from-gray-100 to-gray-50 border-gray-200 text-gray-800'
+    ];
+    return $classes[$category] ?? 'bg-gradient-to-r from-gray-100 to-gray-50 border-gray-200 text-gray-800';
+}
 
-// Marketing features
-$marketingFeatures = [
-    [
-        'title' => 'Manage Promotional Content',
-        'description' => 'Create and manage promotional banners, ads, and marketing materials.',
-        'icon' => 'megaphone',
-        'link' => '#',
-        'action_text' => 'Access Tool'
-    ],
-    [
-        'title' => 'Write Package Descriptions',
-        'description' => 'Create compelling descriptions for travel packages and experiences.',
-        'icon' => 'edit',
-        'link' => '#',
-        'action_text' => 'Access Tool'
-    ],
-    [
-        'title' => 'Add New Packages',
-        'description' => 'Add new travel packages with images, pricing, and inclusions.',
-        'icon' => 'box-open',
-        'link' => '#',
-        'action_text' => 'Add Package'
-    ],
-    [
-        'title' => 'Promotional Offers',
-        'description' => 'Set up special promotions, discounts, and limited-time offers.',
-        'icon' => 'tags',
-        'link' => '#',
-        'action_text' => 'Manage Offers'
-    ],
-    [
-        'title' => 'Marketing Campaigns',
-        'description' => 'Create and schedule multi-channel marketing campaigns.',
-        'icon' => 'bullhorn',
-        'link' => '#',
-        'action_text' => 'Create Campaign'
-    ],
-    [
-        'title' => 'Discount Codes',
-        'description' => 'Generate and manage discount codes for promotions.',
-        'icon' => 'percentage',
-        'link' => '#',
-        'action_text' => 'Create Codes'
-    ],
-    [
-        'title' => 'Email Newsletters',
-        'description' => 'Design and send beautiful email newsletters to your subscribers.',
-        'icon' => 'envelope',
-        'link' => '#',
-        'action_text' => 'Design Newsletter',
-        'span_cols' => true,
-        'extra_info' => '12,450 subscribers'
-    ]
-];
-
-// Quick actions
-$quickActions = [
-    ['text' => 'Add New Package', 'icon' => 'plus', 'link' => '#'],
-    ['text' => 'Launch Campaign', 'icon' => 'rocket', 'link' => '#'],
-    ['text' => 'Generate Discount Code', 'icon' => 'tag', 'link' => '#'],
-    ['text' => 'Send Newsletter', 'icon' => 'paper-plane', 'link' => '#']
-];
-
-// Campaign planning quick actions
-$campaignQuickActions = [
-    ['text' => 'New Campaign', 'icon' => 'plus', 'link' => '#'],
-    ['text' => 'Generate Report', 'icon' => 'chart-bar', 'link' => '#'],
-    ['text' => 'Audience Insights', 'icon' => 'users', 'link' => '#'],
-    ['text' => 'Promote Content', 'icon' => 'bullhorn', 'link' => '#']
-];
-
-// Lead statistics
-$leadStats = [
-    ['label' => 'Total Leads', 'value' => '3,842', 'class' => 'text-gray-900'],
-    ['label' => 'New This Month', 'value' => $leadsThisMonth, 'class' => 'text-amber-600'],
-    ['label' => 'Conversion Rate', 'value' => '4.8%', 'class' => 'text-green-600'],
-    ['label' => 'Avg. Response Time', 'value' => '2.4 hrs', 'class' => 'text-gray-900'],
-    ['label' => 'Hot Leads', 'value' => '124', 'class' => 'text-red-600']
-];
+function getCategoryIcon($category) {
+    $icons = [
+        'luxury' => 'fas fa-crown',
+        'adventure' => 'fas fa-mountain',
+        'wellness' => 'fas fa-spa',
+        'family' => 'fas fa-home',
+        'cultural' => 'fas fa-landmark',
+        'beach' => 'fas fa-umbrella-beach',
+        'honeymoon' => 'fas fa-heart',
+        'business' => 'fas fa-briefcase'
+    ];
+    return $icons[$category] ?? 'fas fa-suitcase';
+}
 
 // Footer links
 $footerLinks = [
     'Marketing Features' => [
         ['text' => 'All Features', 'link' => '#features'],
-        ['text' => 'Add Packages', 'link' => '#'],
-        ['text' => 'Campaigns', 'link' => '#'],
-        ['text' => 'Discount Codes', 'link' => '#'],
-        ['text' => 'Email Newsletters', 'link' => '#']
+        ['text' => 'Packages', 'link' => 'marketing_campaigns.php'],
+        ['text' => 'Reports', 'link' => 'marketing_report.php'],
+        ['text' => 'Partnerships', 'link' => 'partnership.php'],
+        ['text' => 'My Profile', 'link' => 'marketing_profile.php']
     ],
     'Resources' => [
         ['text' => 'Documentation', 'link' => '#'],
@@ -292,24 +249,6 @@ $footerLinks = [
         ['text' => 'Logout', 'link' => 'login.php']
     ]
 ];
-
-// Helper function to get status classes
-function getStatusClasses($status) {
-    $classes = [
-        'Active' => 'bg-green-100 text-green-800',
-        'On Track' => 'bg-green-100 text-green-800',
-        'Paused' => 'bg-yellow-100 text-yellow-800',
-        'Completed' => 'bg-blue-100 text-blue-800',
-        'Planned' => 'bg-blue-100 text-blue-800',
-        'Starting Soon' => 'bg-yellow-100 text-yellow-800',
-        'New' => 'bg-green-100 text-green-800',
-        'Contacted' => 'bg-blue-100 text-blue-800',
-        'Qualified' => 'bg-purple-100 text-purple-800',
-        'Hot Lead' => 'bg-red-100 text-red-800'
-    ];
-    
-    return $classes[$status] ?? 'bg-gray-100 text-gray-800';
-}
 
 // Current year for footer
 $currentYear = date('Y');
@@ -500,10 +439,6 @@ $currentYear = date('Y');
             <i class="fas fa-bullhorn w-6 text-center"></i>
             Packages
           </a>
-          <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-users w-6 text-center"></i>
-            Leads
-          </a>-->
           <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-file-alt w-6 text-center"></i>
             Reports
@@ -512,6 +447,10 @@ $currentYear = date('Y');
             <i class="fas fa-handshake w-6 text-center"></i>
             Partnerships
           </a>
+           <a href="marketing_feedback.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+                        Customer Feedback
+                    </a>
           <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-user w-6 text-center"></i>
             My Profile
@@ -526,7 +465,7 @@ $currentYear = date('Y');
               <div class="text-sm text-gray-600">Marketing Manager</div>
             </div>
           </div>
-          <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
+          <a href="login.php" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
             <i class="fas fa-sign-out-alt text-amber-500"></i>
             <span>Logout</span>
           </a>
@@ -569,11 +508,6 @@ $currentYear = date('Y');
             Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-users text-xs text-amber-500 mr-2"></i>
-            Leads
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>-->
           <a href="marketing_report.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
             Reports
@@ -583,6 +517,11 @@ $currentYear = date('Y');
             <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
             Partnerships
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
+          <a href="marketing_feedback.php" class="text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+            Customer Feedback
+            <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-amber-500"></span>
           </a>
         </div>
 
@@ -635,10 +574,10 @@ $currentYear = date('Y');
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-semibold text-gray-600">Total Packages</h3>
             <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-              <i class="fas fa-bullhorn text-white"></i>
+              <i class="fas fa-box-open text-white"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $totalCampaigns ?></div>
+          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $totalPackages ?></div>
           <p class="text-xs text-gray-500">Created in TravelEase</p>
         </div>
 
@@ -649,8 +588,8 @@ $currentYear = date('Y');
               <i class="fas fa-play-circle text-white"></i>
             </div>
           </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $activeCampaigns ?></div>
-          <p class="text-xs text-gray-500">Currently running</p>
+          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $activePackages ?></div>
+          <p class="text-xs text-gray-500">Currently available</p>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
@@ -663,65 +602,76 @@ $currentYear = date('Y');
           <div class="text-2xl font-bold text-gray-900 mb-2"><?= $leadsThisMonth ?></div>
           <p class="text-xs text-gray-500">From all channels</p>
         </div>
+
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold stat-card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-gray-600">Conversion Rate</h3>
+            <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
+              <i class="fas fa-chart-line text-white"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold text-gray-900 mb-2"><?= $conversionRate ?>%</div>
+          <p class="text-xs text-gray-500">Overall conversion</p>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
         <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col lg:col-span-2 border border-amber-100 hover-lift">
           <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Campaign Management</h2>
+            <h2 class="text-lg font-semibold text-gray-800">Package Management</h2>
             <span class="text-xs px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">Marketing</span>
           </div>
           <p class="text-sm text-gray-500 mb-4">
-            Create, edit and monitor your marketing campaigns across digital & offline channels.
+            Create, edit and manage travel packages with images, descriptions, and pricing.
           </p>
           <div class="mt-auto flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
-            <a href="#"
+            <a href="marketing_campaigns.php"
                class="flex-1 text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
-              View Campaigns
+              View All Packages
             </a>
             <a href="create_campaign.php"
                class="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
-              New Campaign
+              Create New Package
             </a>
           </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col border border-amber-100 hover-lift">
           <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Leads & Conversions</h2>
-            <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Leads</span>
-          </div>
-          <p class="text-sm text-gray-500 mb-4">
-            Track inquiries, follow up potential travelers, and see which campaigns convert into bookings.
-          </p>
-          <div class="mt-auto flex flex-col space-y-3">
-            <a href="#"
-               class="text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
-              View Leads
-            </a>
-            <a href="#"
-               class="text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
-              Campaign Bookings
-            </a>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col border border-amber-100 hover-lift">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Performance & Reports</h2>
+            <h2 class="text-lg font-semibold text-gray-800">Reports & Analytics</h2>
             <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Analytics</span>
           </div>
           <p class="text-sm text-gray-500 mb-4">
-            Compare channels, measure ROI, and export basic marketing performance reports.
+            View performance reports, campaign analytics, and marketing insights.
           </p>
           <div class="mt-auto flex flex-col space-y-3">
-            <a href="#"
+            <a href="marketing_report.php"
                class="text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
               View Reports
             </a>
-            <a href="#"
+            <a href="marketing_report.php?type=analytics"
                class="text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
-              Campaign Insights
+              Campaign Analytics
+            </a>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-5 flex flex-col border border-amber-100 hover-lift">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-800">Partnerships</h2>
+            <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Collaboration</span>
+          </div>
+          <p class="text-sm text-gray-500 mb-4">
+            Manage hotel partnerships, tour operators, and travel collaborations.
+          </p>
+          <div class="mt-auto flex flex-col space-y-3">
+            <a href="partnership.php"
+               class="text-center text-sm font-medium py-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition">
+              View Partnerships
+            </a>
+            <a href="partnership.php?action=add"
+               class="text-center text-sm font-medium py-2.5 rounded-xl border border-primary-300 text-primary-700 hover:bg-primary-50 transition">
+              Add New Partner
             </a>
           </div>
         </div>
@@ -729,25 +679,41 @@ $currentYear = date('Y');
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue Trends</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Package Performance</h3>
           <div class="chart-container">
             <canvas id="revenueChart"></canvas>
           </div>
         </div>
 
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Traffic Sources</h3>
-          <div class="chart-container">
-            <canvas id="trafficChart"></canvas>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Leads</h3>
+          <div class="space-y-3">
+            <?php foreach ($recentLeads as $lead): ?>
+            <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-amber-50 hover:bg-amber-50 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-amber-100 to-amber-200 flex items-center justify-center">
+                  <i class="fas fa-user text-amber-600"></i>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-900"><?= htmlspecialchars($lead['name']) ?></div>
+                  <div class="text-sm text-gray-600"><?= htmlspecialchars($lead['email']) ?></div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($lead['interest']) ?></div>
+                <div class="text-xs text-gray-500"><?= htmlspecialchars($lead['relative_date']) ?></div>
+              </div>
+            </div>
+            <?php endforeach; ?>
           </div>
         </div>
       </div>
 
       <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold mb-8">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900">Campaign Performance</h3>
-          <a href="#" class="px-4 py-2 rounded-xl gold-gradient text-white text-sm font-semibold hover:shadow-lg transition-all">
-            <i class="fas fa-plus mr-2"></i> New Campaign
+          <h3 class="text-lg font-semibold text-gray-900">Recent Packages</h3>
+          <a href="marketing_campaigns.php" class="px-4 py-2 rounded-xl gold-gradient text-white text-sm font-semibold hover:shadow-lg transition-all">
+            <i class="fas fa-eye mr-2"></i> View All
           </a>
         </div>
         
@@ -755,37 +721,63 @@ $currentYear = date('Y');
           <table class="w-full">
             <thead>
               <tr class="border-b border-amber-100">
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Package Name</th>
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Budget</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Spent</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Leads</th>
-                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">ROI</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Price</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Duration</th>
+                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($campaigns as $campaign): ?>
+              <?php if (empty($packages)): ?>
+              <tr>
+                <td colspan="6" class="py-6 text-center text-gray-500">
+                  No packages found. <a href="create_campaign.php" class="text-amber-600 hover:text-amber-700 font-medium">Create your first package</a>
+                </td>
+              </tr>
+              <?php else: ?>
+              <?php foreach ($packages as $package): 
+                $status = $package['display_status'] ?? $package['status'];
+                $category = $package['category'] ?? 'luxury';
+                $categoryLabel = ucfirst($category);
+              ?>
               <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
-                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($campaign['name']) ?></td>
+                <td class="py-3 px-4 text-sm text-gray-700 font-medium"><?= htmlspecialchars($package['name']) ?></td>
                 <td class="py-3 px-4">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold <?= getStatusClasses($campaign['status']) ?>">
-                    <?= htmlspecialchars($campaign['status']) ?>
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold border <?= getStatusClasses($status) ?>">
+                    <?= htmlspecialchars($status) ?>
                   </span>
                 </td>
-                <td class="py-3 px-4 text-sm text-gray-700">$<?= number_format($campaign['budget']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700">$<?= number_format($campaign['spent']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700"><?= number_format($campaign['leads']) ?></td>
-                <td class="py-3 px-4 text-sm text-gray-700 font-semibold text-green-600"><?= htmlspecialchars($campaign['roi']) ?></td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold border <?= getCategoryClasses($category) ?>">
+                    <i class="<?= getCategoryIcon($category) ?> mr-1"></i> <?= htmlspecialchars($categoryLabel) ?>
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-sm text-gray-700">$<?= number_format($package['base_price']) ?></td>
+                <td class="py-3 px-4 text-sm text-gray-700"><?= htmlspecialchars($package['duration_days'] ?? 'N/A') ?> days</td>
+                <td class="py-3 px-4">
+                  <div class="flex gap-2">
+                    <a href="view_package.php?id=<?= $package['id'] ?>" class="text-amber-600 hover:text-amber-700 p-1" title="View">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="edit_package.php?id=<?= $package['id'] ?>" class="text-blue-600 hover:text-blue-700 p-1" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="marketing_report.php?package=<?= urlencode($package['name']) ?>" class="text-green-600 hover:text-green-700 p-1" title="Analytics">
+                      <i class="fas fa-chart-bar"></i>
+                    </a>
+                  </div>
+                </td>
               </tr>
               <?php endforeach; ?>
+              <?php endif; ?>
             </tbody>
           </table>
         </div>
       </div>
     </div>
   </section>
-
-  
 
   <!--footer-->
   <footer class="border-t border-amber-100 bg-amber-50">
@@ -839,7 +831,6 @@ $currentYear = date('Y');
     </div>
   </footer>
 
-  <!--mobile menu php part-->
   <script>
     const menuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
@@ -896,7 +887,7 @@ $currentYear = date('Y');
           data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
             datasets: [{
-              label: 'Revenue ($)',
+              label: 'Package Revenue ($)',
               data: [185000, 210000, 195000, 245000, 265000, 284000, 275000],
               borderColor: '#f59e0b',
               backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -910,68 +901,21 @@ $currentYear = date('Y');
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-              y: { beginAtZero: false, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+              y: { 
+                beginAtZero: false, 
+                grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                ticks: {
+                  callback: function(value) {
+                    return '$' + value.toLocaleString();
+                  }
+                }
+              },
               x: { grid: { display: false } }
             }
           }
         });
       }
-
-      const trafficCtx = document.getElementById('trafficChart')?.getContext('2d');
-      if (trafficCtx) {
-        new Chart(trafficCtx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Organic Search', 'Social Media', 'Email', 'Direct', 'Referral'],
-            datasets: [{
-              data: [35, 25, 15, 12, 13],
-              backgroundColor: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
-          }
-        });
-      }
-
-      const funnelCtx = document.getElementById('funnelChart')?.getContext('2d');
-      if (funnelCtx) {
-        new Chart(funnelCtx, {
-          type: 'bar',
-          data: {
-            labels: ['Awareness', 'Interest', 'Consideration', 'Intent', 'Conversion'],
-            datasets: [{
-              data: [5000, 3500, 2000, 800, 240],
-              backgroundColor: ['#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b'],
-              borderWidth: 0,
-              borderRadius: 4
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-              y: { grid: { display: false } }
-            }
-          }
-        });
-      }
     }
-
-    document.querySelectorAll('.feature-card').forEach(card => {
-      card.addEventListener('click', function() {
-        const link = this.getAttribute('onclick')?.match(/href='([^']+)'/)?.[1];
-        if (link) {
-          window.location.href = link;
-        }
-      });
-    });
   </script>
 </body>
 </html>
