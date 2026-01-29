@@ -239,28 +239,28 @@ try {
                 extend: {
                     colors: {
                         primary: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            200: '#e9d5ff',
+                            300: '#d8b4fe',
+                            400: '#c084fc',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7e22ce',
+                            800: '#6b21a8',
+                            900: '#581c87',
                         },
                         secondary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f9a8d4',
+                            400: '#f472b6',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            800: '#9d174d',
+                            900: '#831843',
                         }
                     },
                     animation: {
@@ -311,20 +311,36 @@ try {
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 25%, #a855f7 50%, #c084fc 75%, #f3e8ff 100%);
+            background-attachment: fixed;
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
         }
         
         .country-region.active {
-            outline: 3px solid #fbbf24;
+            outline: 3px solid #c084fc;
             outline-offset: 2px;
             transform: scale(1.05);
             transition: all 0.3s ease;
         }
         
         .glass-card {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(108, 43, 217, 0.1);
         }
         
         .hover-lift {
@@ -333,33 +349,33 @@ try {
         
         .hover-lift:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(108, 43, 217, 0.15);
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
             color: white;
             font-weight: 600;
             transition: all 0.3s ease;
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 10px 20px rgba(168, 85, 247, 0.4);
         }
         
         .btn-secondary {
-            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-            color: #0369a1;
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+            color: #db2777;
             font-weight: 600;
             transition: all 0.3s ease;
         }
         
         .btn-secondary:hover {
-            background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
+            background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(2, 132, 199, 0.2);
+            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
         }
         
         .stat-card {
@@ -387,7 +403,7 @@ try {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+            box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
             animation: pulse-ring 2s infinite;
         }
         
@@ -423,7 +439,7 @@ try {
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #fbbf24, #f59e0b, #d97706);
+            background: linear-gradient(90deg, #c084fc, #a855f7, #7c3aed);
         }
         
         .quick-action-btn {
@@ -497,7 +513,7 @@ try {
         }
         
         .theme-toggle.active {
-            background: #fbbf24;
+            background: #a855f7;
         }
         
         .theme-toggle-slider {
@@ -516,13 +532,16 @@ try {
         }
         
         .dark-mode {
-            background: #111827;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #5b21b6 75%, #7c3aed 100%);
             color: #f9fafb;
+            background-attachment: fixed;
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
         }
         
         .dark-mode .glass-card {
-            background: rgba(30, 41, 59, 0.8);
-            border-color: rgba(71, 85, 105, 0.3);
+            background: rgba(30, 27, 75, 0.85);
+            border-color: rgba(99, 102, 241, 0.3);
         }
         
         /* Custom scrollbar */
@@ -531,33 +550,102 @@ try {
         }
         
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: rgba(168, 85, 247, 0.5);
             border-radius: 10px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: rgba(168, 85, 247, 0.7);
         }
         
         .dark-mode .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: rgba(30, 27, 75, 0.5);
         }
         
         .dark-mode .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569;
+            background: rgba(199, 210, 254, 0.5);
         }
         
         .dark-mode .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
+            background: rgba(199, 210, 254, 0.7);
+        }
+        
+        /* Purple theme enhancements */
+        header.glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(216, 180, 254, 0.3);
+        }
+        
+        .dark-mode header.glass-card {
+            background: rgba(30, 27, 75, 0.95);
+            border-bottom: 1px solid rgba(129, 140, 248, 0.3);
+        }
+        
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid rgba(216, 180, 254, 0.3);
+        }
+        
+        .dark-mode footer {
+            background: rgba(30, 27, 75, 0.95);
+            border-top: 1px solid rgba(129, 140, 248, 0.3);
+        }
+        
+        /* Map country colors */
+        .map-country rect {
+            fill: #f3e8ff;
+            stroke: #c084fc;
+        }
+        
+        .dark-mode .map-country rect {
+            fill: #4c1d95;
+            stroke: #a855f7;
+        }
+        
+        /* Text colors for better contrast */
+        .dark-mode .text-gray-900 {
+            color: #f3f4f6;
+        }
+        
+        .dark-mode .text-gray-700 {
+            color: #d1d5db;
+        }
+        
+        .dark-mode .text-gray-500 {
+            color: #9ca3af;
+        }
+        
+        .dark-mode .text-gray-600 {
+            color: #d1d5db;
+        }
+        
+        /* Button hover states for dark mode */
+        .dark-mode .btn-primary {
+            background: linear-gradient(135deg, #7c3aed 0%, #6b21a8 100%);
+        }
+        
+        .dark-mode .btn-primary:hover {
+            background: linear-gradient(135deg, #6b21a8 0%, #581c87 100%);
+            box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4);
+        }
+        
+        .dark-mode .btn-secondary {
+            background: linear-gradient(135deg, #831843 0%, #9d174d 100%);
+            color: #fbcfe8;
+        }
+        
+        .dark-mode .btn-secondary:hover {
+            background: linear-gradient(135deg, #9d174d 0%, #be185d 100%);
+            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3);
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen transition-colors duration-300" id="body">
+<body class="min-h-screen transition-colors duration-300" id="body">
     <!-- Top Navbar -->
     <header class="glass-card shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
@@ -651,6 +739,11 @@ try {
                         <i class="fas fa-plus"></i>
                         <span>Book Trip</span>
                     </button>
+                    <button onclick="window.location.href='client_map.php'" 
+                            class="quick-action-btn btn-secondary px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>Map Planner</span>
+                    </button>
                     <div class="relative">
                         <button id="quick-menu-btn" 
                                 class="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700 hover:text-primary-500 hover:border-primary-300">
@@ -668,6 +761,10 @@ try {
                             <a href="weather_check.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
                                 <i class="fas fa-cloud-sun text-primary-500"></i>
                                 <span>Weather Check</span>
+                            </a>
+                            <a href="client_map.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                                <i class="fas fa-map-marked-alt text-primary-500"></i>
+                                <span>My Map Planner</span>
                             </a>
                             <hr class="my-1">
                             <a href="help_center.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
@@ -757,6 +854,10 @@ try {
                         Travel Tips
                     </button>
                 </div>
+                <button onclick="window.location.href='client_map.php'"
+                        class="btn-secondary py-2 rounded-lg text-sm font-semibold w-full">
+                    My Map Planner
+                </button>
             </div>
         </div>
     </header>
@@ -806,7 +907,7 @@ try {
 
                             <div class="flex flex-wrap items-center gap-3">
                                 <!-- Badge with icon -->
-                                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary-50 to-yellow-50 border border-primary-200">
+                                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary-50 to-purple-50 border border-primary-200">
                                     <div class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
                                         <i class="fas fa-crown text-primary-600 text-xs"></i>
                                     </div>
@@ -951,65 +1052,65 @@ try {
                     <svg id="asia-map" viewBox="0 0 800 400" class="w-full h-full" style="transform-origin: center; transition: transform 0.3s ease;">
                         <!-- India -->
                         <g class="country-region map-country cursor-pointer" data-country-region="India">
-                            <rect x="320" y="200" width="90" height="60" fill="#FEF3C7" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="330" y="235" font-size="12" fill="#92400E" font-weight="600">India</text>
-                            <circle cx="355" cy="210" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="320" y="200" width="90" height="60" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="330" y="235" font-size="12" fill="#6B21A8" font-weight="600">India</text>
+                            <circle cx="355" cy="210" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Sri Lanka -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Sri Lanka">
-                            <rect x="360" y="270" width="40" height="40" fill="#FFFBEB" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="362" y="295" font-size="11" fill="#92400E" font-weight="600">Sri Lanka</text>
-                            <circle cx="380" cy="280" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="360" y="270" width="40" height="40" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="362" y="295" font-size="11" fill="#6B21A8" font-weight="600">Sri Lanka</text>
+                            <circle cx="380" cy="280" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Japan -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Japan">
-                            <rect x="550" y="130" width="60" height="60" fill="#FEF3C7" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="560" y="160" font-size="12" fill="#92400E" font-weight="600">Japan</text>
-                            <circle cx="580" cy="140" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="550" y="130" width="60" height="60" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="560" y="160" font-size="12" fill="#6B21A8" font-weight="600">Japan</text>
+                            <circle cx="580" cy="140" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Thailand -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Thailand">
-                            <rect x="400" y="220" width="70" height="50" fill="#FFFBEB" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="405" y="250" font-size="11" fill="#92400E" font-weight="600">Thailand</text>
-                            <circle cx="435" cy="230" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="400" y="220" width="70" height="50" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="405" y="250" font-size="11" fill="#6B21A8" font-weight="600">Thailand</text>
+                            <circle cx="435" cy="230" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Maldives -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Maldives">
-                            <rect x="340" y="310" width="25" height="25" fill="#FEF3C7" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="305" y="306" font-size="10" fill="#92400E" font-weight="600">Maldives</text>
-                            <circle cx="353" cy="323" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="340" y="310" width="25" height="25" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="305" y="306" font-size="10" fill="#6B21A8" font-weight="600">Maldives</text>
+                            <circle cx="353" cy="323" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Nepal -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Nepal">
-                            <rect x="335" y="170" width="70" height="25" fill="#FFFBEB" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="345" y="187" font-size="11" fill="#92400E" font-weight="600">Nepal</text>
-                            <circle cx="370" cy="183" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="335" y="170" width="70" height="25" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="345" y="187" font-size="11" fill="#6B21A8" font-weight="600">Nepal</text>
+                            <circle cx="370" cy="183" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Bangladesh -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Bangladesh">
-                            <rect x="410" y="190" width="55" height="35" fill="#FEF3C7" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="412" y="210" font-size="10" fill="#92400E" font-weight="600">Bangladesh</text>
-                            <circle cx="438" cy="208" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="410" y="190" width="55" height="35" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="412" y="210" font-size="10" fill="#6B21A8" font-weight="600">Bangladesh</text>
+                            <circle cx="438" cy="208" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Pakistan -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Pakistan">
-                            <rect x="260" y="190" width="55" height="45" fill="#FFFBEB" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="262" y="210" font-size="10" fill="#92400E" font-weight="600">Pakistan</text>
-                            <circle cx="288" cy="213" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="260" y="190" width="55" height="45" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="262" y="210" font-size="10" fill="#6B21A8" font-weight="600">Pakistan</text>
+                            <circle cx="288" cy="213" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
 
                         <!-- Bhutan -->
                         <g class="country-region map-country cursor-pointer" data-country-region="Bhutan">
-                            <rect x="380" y="175" width="40" height="20" fill="#FEF3C7" stroke="#FBBF24" stroke-width="2"></rect>
-                            <text x="382" y="190" font-size="10" fill="#92400E" font-weight="600">Bhutan</text>
-                            <circle cx="400" cy="185" r="3" fill="#F59E0B" class="pulse-ring"></circle>
+                            <rect x="380" y="175" width="40" height="20" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
+                            <text x="382" y="190" font-size="10" fill="#6B21A8" font-weight="600">Bhutan</text>
+                            <circle cx="400" cy="185" r="3" fill="#A855F7" class="pulse-ring"></circle>
                         </g>
                     </svg>
 
@@ -1312,6 +1413,9 @@ try {
                                         <?= htmlspecialchars($p['country_name'] . ' - ' . $p['title']); ?>
                                     </option>
                                 <?php endforeach; ?>
+                                <?php if (empty($reviewEligiblePackages)): ?>
+                                    <option value="" disabled>No packages available</option>
+                                <?php endif; ?>
                             </select>
                             <?php if (empty($reviewEligiblePackages)): ?>
                                 <p class="text-xs text-gray-500 mt-2">Book a trip first to leave a review.</p>
@@ -1535,6 +1639,17 @@ try {
                     <div>
                         <p class="font-semibold text-gray-900">Local Guides</p>
                         <p class="text-xs text-gray-500 mt-1">Find expert guides</p>
+                    </div>
+                </button>
+
+                <button onclick="window.location.href='client_map.php'"
+                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-100 to-yellow-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-map-marked-alt text-yellow-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">My Map Planner</p>
+                        <p class="text-xs text-gray-500 mt-1">Pin places & add photos</p>
                     </div>
                 </button>
             </div>
