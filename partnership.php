@@ -18,8 +18,6 @@ $partnershipTypes = [
     'influencer' => 'Influencers & Ambassadors',
     'tourism_board' => 'Tourism Boards',
     'travel_agent' => 'Travel Agents',
-    'affiliate' => 'Affiliate Partners',
-    'corporate' => 'Corporate Partners'
 ];
 
 // Partnership statuses
@@ -425,6 +423,10 @@ $footerLinks = [
                     <i class="fas fa-handshake w-6 text-center"></i>
                     Partnerships
                 </a>
+                 <a href="marketing_feedback.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
+                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+                        Customer Feedback
+                    </a>
                 <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
                     <i class="fas fa-user w-6 text-center"></i>
                     My Profile
@@ -499,6 +501,11 @@ $footerLinks = [
                             Partnerships
                             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
                     </a>
+                    <a href="marketing_feedback.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+            Customer Feedback
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
                 </div>
 
                 <!-- Profile Section -->
@@ -604,7 +611,7 @@ $footerLinks = [
                     </button>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     <?php foreach ($partnershipTypes as $key => $type): 
                         $icons = [
                             'hotel' => 'fa-hotel',
@@ -613,8 +620,6 @@ $footerLinks = [
                             'influencer' => 'fa-users',
                             'tourism_board' => 'fa-landmark',
                             'travel_agent' => 'fa-suitcase',
-                            'affiliate' => 'fa-link',
-                            'corporate' => 'fa-building'
                         ];
                         $counts = [
                             'hotel' => 8,
@@ -623,8 +628,6 @@ $footerLinks = [
                             'influencer' => 12,
                             'tourism_board' => 3,
                             'travel_agent' => 15,
-                            'affiliate' => 24,
-                            'corporate' => 7
                         ];
                     ?>
                     <div class="text-center cursor-pointer hover:scale-105 transition-transform" onclick="filterPartnerships('<?= $key ?>')">

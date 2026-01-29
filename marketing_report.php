@@ -10,91 +10,175 @@ $managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
 $profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
 $currentYear = date('Y');
 
-// Reports data
+// Updated Reports data - Travel specific
 $reports = [
     [
         'id' => 1,
-        'title' => 'Monthly Performance Report',
-        'type' => 'Performance',
+        'title' => 'Package Performance Analysis',
+        'type' => 'Package',
         'period' => 'October 2024',
         'status' => 'Generated',
-        'size' => '2.4 MB',
+        'size' => '3.2 MB',
         'date' => 'Nov 1, 2024',
-        'downloads' => 24
+        'downloads' => 28
     ],
     [
         'id' => 2,
-        'title' => 'Campaign ROI Analysis',
-        'type' => 'ROI',
+        'title' => 'Campaign ROI Report',
+        'type' => 'Campaign',
         'period' => 'Q3 2024',
         'status' => 'Generated',
-        'size' => '3.1 MB',
+        'size' => '2.8 MB',
         'date' => 'Oct 15, 2024',
-        'downloads' => 18
+        'downloads' => 22
     ],
     [
         'id' => 3,
-        'title' => 'Lead Generation Report',
-        'type' => 'Leads',
+        'title' => 'Partnership Performance',
+        'type' => 'Partnership',
         'period' => 'September 2024',
         'status' => 'Generated',
-        'size' => '1.8 MB',
+        'size' => '2.1 MB',
         'date' => 'Oct 5, 2024',
-        'downloads' => 32
+        'downloads' => 19
     ],
     [
         'id' => 4,
-        'title' => 'Social Media Performance',
-        'type' => 'Social Media',
+        'title' => 'Customer Feedback Analysis',
+        'type' => 'Feedback',
         'period' => 'October 2024',
-        'status' => 'Pending',
-        'size' => 'N/A',
-        'date' => 'Scheduled: Nov 5',
-        'downloads' => 0
-    ],
-    [
-        'id' => 5,
-        'title' => 'Email Campaign Analytics',
-        'type' => 'Email',
-        'period' => 'Q3 2024',
         'status' => 'Generated',
-        'size' => '2.7 MB',
-        'date' => 'Oct 10, 2024',
+        'size' => '1.9 MB',
+        'date' => 'Nov 3, 2024',
         'downloads' => 15
     ],
     [
-        'id' => 6,
-        'title' => 'Website Traffic Analysis',
-        'type' => 'Traffic',
+        'id' => 5,
+        'title' => 'Email Campaign Performance',
+        'type' => 'Email',
         'period' => 'October 2024',
+        'status' => 'Generated',
+        'size' => '2.5 MB',
+        'date' => 'Oct 25, 2024',
+        'downloads' => 17
+    ],
+    [
+        'id' => 6,
+        'title' => 'Seasonal Package Forecast',
+        'type' => 'Forecast',
+        'period' => 'Q4 2024',
         'status' => 'In Progress',
         'size' => 'N/A',
         'date' => 'Processing',
         'downloads' => 0
+    ],
+    [
+        'id' => 7,
+        'title' => 'Social Media Engagement',
+        'type' => 'Social Media',
+        'period' => 'October 2024',
+        'status' => 'Generated',
+        'size' => '2.3 MB',
+        'date' => 'Nov 2, 2024',
+        'downloads' => 24
+    ],
+    [
+        'id' => 8,
+        'title' => 'Annual Marketing Review',
+        'type' => 'Annual',
+        'period' => '2024',
+        'status' => 'Scheduled',
+        'size' => 'N/A',
+        'date' => 'Scheduled: Dec 15',
+        'downloads' => 0
     ]
 ];
 
-// Report templates
+// Report templates with detailed structure
 $templates = [
     [
-        'name' => 'Monthly Performance',
-        'description' => 'Comprehensive monthly marketing performance',
-        'icon' => 'chart-line'
+        'name' => 'Package Performance',
+        'description' => 'Travel package bookings, revenue, and conversion',
+        'icon' => 'suitcase-rolling',
+        'sections' => [
+            'Executive Summary',
+            'Booking Trends by Package Type',
+            'Revenue Analysis',
+            'Customer Demographics',
+            'Seasonality Insights',
+            'Recommendations'
+        ],
+        'metrics' => ['revenue', 'bookings', 'conversion_rate', 'avg_booking_value']
     ],
     [
         'name' => 'Campaign ROI',
-        'description' => 'Detailed campaign ROI analysis',
-        'icon' => 'bullseye'
+        'description' => 'Marketing campaign ROI and effectiveness',
+        'icon' => 'bullhorn',
+        'sections' => [
+            'Campaign Overview',
+            'Cost Analysis',
+            'Conversion Metrics',
+            'ROI Calculation',
+            'Channel Performance',
+            'Learnings & Next Steps'
+        ],
+        'metrics' => ['roi', 'cpc', 'ctr', 'conversion_rate', 'cpa']
     ],
     [
-        'name' => 'Lead Generation',
-        'description' => 'Lead sources and conversion metrics',
-        'icon' => 'users'
+        'name' => 'Partnership Analysis',
+        'description' => 'Partner performance and revenue sharing',
+        'icon' => 'handshake',
+        'sections' => [
+            'Partnership Overview',
+            'Revenue Sharing Report',
+            'Referral Performance',
+            'Customer Feedback',
+            'Partnership Health Score',
+            'Renewal Recommendations'
+        ],
+        'metrics' => ['revenue_share', 'referral_rate', 'customer_satisfaction', 'partner_score']
     ],
     [
-        'name' => 'Social Media',
-        'description' => 'Social media engagement and reach',
-        'icon' => 'hashtag'
+        'name' => 'Feedback Insights',
+        'description' => 'Customer satisfaction and NPS analysis',
+        'icon' => 'comments',
+        'sections' => [
+            'NPS Score & Trends',
+            'Sentiment Analysis',
+            'Common Themes',
+            'Service Improvement Areas',
+            'Positive Feedback Highlights',
+            'Action Plan'
+        ],
+        'metrics' => ['nps_score', 'csat_score', 'sentiment_score', 'response_rate']
+    ],
+    [
+        'name' => 'Seasonal Forecast',
+        'description' => 'Upcoming season demand prediction',
+        'icon' => 'calendar-alt',
+        'sections' => [
+            'Market Trends Analysis',
+            'Historical Performance',
+            'Demand Forecasting',
+            'Competitor Analysis',
+            'Pricing Strategy',
+            'Marketing Recommendations'
+        ],
+        'metrics' => ['demand_forecast', 'price_sensitivity', 'market_share', 'growth_rate']
+    ],
+    [
+        'name' => 'Channel Performance',
+        'description' => 'Marketing channel effectiveness',
+        'icon' => 'chart-bar',
+        'sections' => [
+            'Channel Overview',
+            'Performance Metrics',
+            'Cost Analysis',
+            'ROI by Channel',
+            'Audience Insights',
+            'Optimization Strategy'
+        ],
+        'metrics' => ['channel_roi', 'engagement_rate', 'traffic_share', 'conversion_rate']
     ]
 ];
 
@@ -110,20 +194,50 @@ function getStatusClasses($status) {
 
 function getTypeClasses($type) {
     $classes = [
-        'Performance' => 'bg-amber-100 text-amber-800',
-        'ROI' => 'bg-green-100 text-green-800',
-        'Leads' => 'bg-blue-100 text-blue-800',
-        'Social Media' => 'bg-pink-100 text-pink-800',
+        'Package' => 'bg-blue-100 text-blue-800',
+        'Campaign' => 'bg-purple-100 text-purple-800',
+        'Partnership' => 'bg-green-100 text-green-800',
+        'Feedback' => 'bg-amber-100 text-amber-800',
         'Email' => 'bg-indigo-100 text-indigo-800',
-        'Traffic' => 'bg-purple-100 text-purple-800'
+        'Forecast' => 'bg-teal-100 text-teal-800',
+        'Social Media' => 'bg-pink-100 text-pink-800',
+        'Annual' => 'bg-red-100 text-red-800'
     ];
     return $classes[$type] ?? 'bg-gray-100 text-gray-800';
 }
+
+// Handle template selection
+$selectedTemplate = null;
+if (isset($_GET['template'])) {
+    $templateIndex = intval($_GET['template']);
+    if (isset($templates[$templateIndex])) {
+        $selectedTemplate = $templates[$templateIndex];
+    }
+}
+
+// Handle form submission for generating report
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'generate_report') {
+        // Process report generation
+        $templateName = $_POST['template_name'] ?? '';
+        $reportTitle = $_POST['report_title'] ?? 'Custom Report';
+        $timePeriod = $_POST['time_period'] ?? 'last_month';
+        $includeMetrics = $_POST['metrics'] ?? [];
+        $additionalNotes = $_POST['notes'] ?? '';
+        
+        // Here you would generate the actual report
+        // For now, we'll just show a success message
+        $_SESSION['report_message'] = "Report '$reportTitle' generated successfully!";
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?success=1');
+        exit;
+    }
+}
+
 $footerLinks = [
     'Marketing Tools' => [
-        ['text' => 'Dashboard', 'link' => 'marketing_dashboard1.php'],
-        ['text' => 'Campaigns', 'link' => 'marketing_campaigns.php'],
-        ['text' => 'Lead Management', 'link' => 'marketing_leads.php'],
+        ['text' => 'Dashboard', 'link' => 'marketing_dashboard.php'],
+        ['text' => 'Packages', 'link' => 'marketing_campaigns.php'],
+        ['text' => 'Partnerships', 'link' => 'partnership.php'],
         ['text' => 'Report Generator', 'link' => 'marketing_report.php']
     ],
     'Resources' => [
@@ -192,52 +306,64 @@ $footerLinks = [
       background-clip: text;
     }
     .mobile-menu {
-  display: none;
+      display: none;
     }
-
     .mobile-menu.open {
-  display: block;
+      display: block;
     }
-
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+    @keyframes slideIn {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
     }
-
-@keyframes slideOut {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-100%);
-  }
+    @keyframes slideOut {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
     }
-
     .mobile-menu.open > div:last-child {
-  animation: slideIn 0.3s ease-out forwards;
+      animation: slideIn 0.3s ease-out forwards;
     }
-
     .mobile-menu.closing > div:last-child {
-  animation: slideOut 0.3s ease-in forwards;
+      animation: slideOut 0.3s ease-in forwards;
     }
     .chart-container {
       position: relative;
       height: 250px;
     }
+    .template-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .template-modal.active {
+      display: flex;
+    }
+    .template-content {
+      background: white;
+      border-radius: 1rem;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="min-h-screen">
- <div class="loading-bar fixed top-0 left-0 z-50"></div>
 
+  <div class="loading-bar fixed top-0 left-0 z-50"></div>
+
+  <!-- Mobile Menu (unchanged) -->
   <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
     <div class="fixed top-0 left-0 h-full w-80 max-w-full bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
       <div class="p-6">
-        <!-- Updated Mobile Menu Logo -->
+        <!-- Mobile Menu Logo -->
         <div class="flex items-center justify-between mb-8">
           <div class="flex items-center gap-3">
             <div class="h-12 w-12 rounded-2xl overflow-hidden">
@@ -259,22 +385,18 @@ $footerLinks = [
             <i class="fas fa-bullhorn w-6 text-center"></i>
             Packages
           </a>
-          <!--<a href="marketing_leads.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-users w-6 text-center"></i>
-            Leads
-          </a>-->
           <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-file-alt w-6 text-center"></i>
             Reports
           </a>
-           <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+          <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-handshake w-6 text-center"></i>
             Partnerships
           </a>
-           <a href="marketing_feedback.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
-                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
-                        Customer Feedback
-                    </a>
+          <a href="marketing_feedback.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
+            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+            Customer Feedback
+          </a>
           <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
             <i class="fas fa-user w-6 text-center"></i>
             My Profile
@@ -289,7 +411,7 @@ $footerLinks = [
               <div class="text-sm text-gray-600">Marketing Manager</div>
             </div>
           </div>
-          <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
+          <a href="login.php" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
             <i class="fas fa-sign-out-alt text-amber-500"></i>
             <span>Logout</span>
           </a>
@@ -301,7 +423,7 @@ $footerLinks = [
   <header class="fixed top-0 left-0 right-0 z-30 glass-effect border-b border-amber-100/50 backdrop-blur-xl">
     <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-20">
-        <!-- Updated Main Header Logo -->
+        <!-- Main Header Logo -->
         <div class="flex items-center gap-3">
           <a href="#" class="flex items-center gap-3 group">
             <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
@@ -326,35 +448,29 @@ $footerLinks = [
             </span>
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-
           <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
             Packages
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <!--<a href="marketing_leads.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-users text-xs text-amber-500 mr-2"></i>
-            Leads
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>-->
           <a href="marketing_report.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
             Reports
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-           <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
             Partnerships
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-           <a href="marketing_feedback.php" class="text-amber-600 transition-all duration-300 relative group">
-                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
-                        Customer Feedback
-                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-amber-500"></span>
-                    </a>
+          <a href="marketing_feedback.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+            Customer Feedback
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
         </div>
 
-    <div class="hidden lg:flex items-center gap-4">
+        <div class="hidden lg:flex items-center gap-4">
           <div class="flex items-center gap-3">
             <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-amber-500">
             <div class="text-right">
@@ -381,6 +497,19 @@ $footerLinks = [
 
   <main class="pt-24 pb-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Success Message -->
+      <?php if (isset($_GET['success'])): ?>
+        <div class="mb-6 p-4 bg-green-100 text-green-800 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-check-circle"></i>
+            <span><?= $_SESSION['report_message'] ?? 'Report generated successfully!' ?></span>
+          </div>
+          <button onclick="this.parentElement.remove()" class="text-green-600 hover:text-green-800">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      <?php endif; ?>
+
       <!-- Page Header -->
       <div class="mb-8">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -388,7 +517,7 @@ $footerLinks = [
             <h1 class="text-3xl sm:text-4xl font-black mb-2">
               <span class="text-gradient">Reports & Analytics</span>
             </h1>
-            <p class="text-lg text-gray-700">Generate and analyze marketing performance reports.</p>
+            <p class="text-lg text-gray-700">Generate and analyze travel marketing performance reports.</p>
           </div>
           <div class="mt-4 md:mt-0">
             <a href="generate_report.php" class="inline-flex items-center text-sm font-medium px-5 py-2.5 rounded-xl gold-gradient text-white hover:shadow-lg transition-all">
@@ -467,8 +596,8 @@ $footerLinks = [
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Report Templates</h3>
           <div class="grid grid-cols-2 gap-3">
-            <?php foreach ($templates as $template): ?>
-            <div class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors cursor-pointer">
+            <?php foreach ($templates as $index => $template): ?>
+            <div class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors">
               <div class="flex items-center gap-3 mb-2">
                 <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
                   <i class="fas fa-<?= htmlspecialchars($template['icon']) ?> text-white"></i>
@@ -477,9 +606,9 @@ $footerLinks = [
                   <h4 class="font-semibold text-gray-900 text-sm"><?= htmlspecialchars($template['name']) ?></h4>
                 </div>
               </div>
-              <p class="text-xs text-gray-600"><?= htmlspecialchars($template['description']) ?></p>
-              <button class="mt-3 w-full py-1.5 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
-                Use Template
+              <p class="text-xs text-gray-600 mb-3"><?= htmlspecialchars($template['description']) ?></p>
+              <button onclick="previewTemplate(<?= $index ?>)" class="w-full py-1.5 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
+                Preview & Use Template
               </button>
             </div>
             <?php endforeach; ?>
@@ -492,12 +621,15 @@ $footerLinks = [
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-semibold text-gray-900">All Reports</h3>
           <div class="flex items-center gap-3">
-            <select class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
-              <option>Filter by Type</option>
-              <option>Performance</option>
-              <option>ROI</option>
-              <option>Leads</option>
-              <option>Social Media</option>
+            <select id="reportFilter" class="p-2 rounded-xl border border-amber-200 bg-white text-sm">
+              <option value="">All Report Types</option>
+              <option value="Package">Package</option>
+              <option value="Campaign">Campaign</option>
+              <option value="Partnership">Partnership</option>
+              <option value="Feedback">Feedback</option>
+              <option value="Email">Email</option>
+              <option value="Forecast">Forecast</option>
+              <option value="Social Media">Social Media</option>
             </select>
             <input type="text" placeholder="Search reports..." class="p-2 rounded-xl border border-amber-200 bg-white text-sm w-48">
           </div>
@@ -517,9 +649,9 @@ $footerLinks = [
                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="reportsTableBody">
               <?php foreach ($reports as $report): ?>
-              <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors">
+              <tr class="border-b border-amber-50 hover:bg-amber-50 transition-colors report-row" data-type="<?= htmlspecialchars($report['type']) ?>">
                 <td class="py-3 px-4">
                   <div class="font-medium text-gray-900"><?= htmlspecialchars($report['title']) ?></div>
                 </td>
@@ -563,71 +695,6 @@ $footerLinks = [
           </table>
         </div>
       </div>
-
-      <!-- Custom Report Generator -->
-      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow mt-8">
-        <h3 class="text-lg font-semibold text-gray-900 mb-6">Generate Custom Report</h3>
-        
-        <form class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-              <select class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                <option>Performance Overview</option>
-                <option>Campaign Analysis</option>
-                <option>Lead Generation</option>
-                <option>Package Performance</option>
-                <option>Promotional ROI</option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Report Format</label>
-              <select class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                <option>PDF Document</option>
-                <option>Excel Spreadsheet</option>
-                <option>CSV Data</option>
-                <option>HTML Report</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-              <input type="date" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-              <input type="date" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-            </div>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Include Data From</label>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <div class="flex items-center">
-                <input type="checkbox" class="rounded text-amber-600" checked>
-                <label class="ml-2 text-sm text-gray-700">Campaigns</label>
-              </div>
-              <div class="flex items-center">
-                <input type="checkbox" class="rounded text-amber-600" checked>
-                <label class="ml-2 text-sm text-gray-700">Leads</label>
-              </div>
-              <div class="flex items-center">
-                <input type="checkbox" class="rounded text-amber-600">
-                <label class="ml-2 text-sm text-gray-700">Revenue</label>
-              </div>
-              <div class="flex items-center">
-                <input type="checkbox" class="rounded text-amber-600">
-                <label class="ml-2 text-sm text-gray-700">Website</label>
-              </div>
-            </div>
-          </div>
-          
-          <button type="submit" class="w-full py-3 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all">
-            <i class="fas fa-magic mr-2"></i> Generate Custom Report
-          </button>
         </form>
       </div>
     </div>
@@ -637,7 +704,7 @@ $footerLinks = [
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid gap-8 md:grid-cols-4 mb-8">
-        <!-- Updated Footer Logo -->
+        <!-- Footer Logo -->
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-10 w-10 rounded-xl overflow-hidden bg-white p-1">
@@ -685,220 +752,144 @@ $footerLinks = [
     </div>
   </footer>
 
- <script>
-  const menuButton = document.getElementById('mobile-menu-button');
-  const mobileMenu = document.getElementById('mobile-menu');
-  const mobileMenuClose = document.getElementById('mobile-menu-close');
-  const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
-  
-  let isMenuOpen = false;
+  <script>
 
-  function openMobileMenu() {
-    mobileMenu.classList.remove('hidden');
-    mobileMenu.classList.remove('closing');
-    setTimeout(() => {
-      mobileMenu.classList.add('open');
-    }, 10);
-    document.body.style.overflow = 'hidden';
-    isMenuOpen = true;
-  }
-
-  function closeMobileMenu() {
-    mobileMenu.classList.remove('open');
-    mobileMenu.classList.add('closing');
-    setTimeout(() => {
-      mobileMenu.classList.add('hidden');
-      mobileMenu.classList.remove('closing');
-    }, 300);
-    document.body.style.overflow = '';
-    isMenuOpen = false;
-  }
-
-  function toggleMobileMenu() {
-    if (isMenuOpen) {
-      closeMobileMenu();
-    } else {
-      openMobileMenu();
+    function closeTemplateModal() {
+      document.getElementById('templateModal').classList.remove('active');
     }
-  }
 
-  // Initialize event listeners for mobile menu
-  if (menuButton) {
-    menuButton.addEventListener('click', openMobileMenu);
-  }
-
-  if (mobileMenuClose) {
-    mobileMenuClose.addEventListener('click', closeMobileMenu);
-  }
-
-  if (mobileMenuBackdrop) {
-    mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
-  }
-
-  // Close menu when clicking on menu links
-  document.querySelectorAll('#mobile-menu a').forEach(link => {
-    link.addEventListener('click', closeMobileMenu);
-  });
-
-  // Close menu on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isMenuOpen) {
-      closeMobileMenu();
+    // Scroll to report generator
+    function scrollToGenerator() {
+      document.getElementById('reportGenerator').scrollIntoView({ behavior: 'smooth' });
     }
-  });
 
-  // Smooth scrolling for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-      // Don't prevent default for mobile menu links
-      if (this.getAttribute('href') === '#') return;
+    // Time period toggle
+    document.addEventListener('DOMContentLoaded', function() {
+      const timePeriodSelect = document.querySelector('select[name="time_period"]');
+      const customDateRange = document.getElementById('customDateRange');
       
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
+      if (timePeriodSelect && customDateRange) {
+        timePeriodSelect.addEventListener('change', function() {
+          if (this.value === 'custom') {
+            customDateRange.classList.remove('hidden');
+          } else {
+            customDateRange.classList.add('hidden');
+          }
         });
-        
-        // Close mobile menu if open
-        if (isMenuOpen) {
-          closeMobileMenu();
-        }
+      }
+
+      // Report filtering
+      const reportFilter = document.getElementById('reportFilter');
+      if (reportFilter) {
+        reportFilter.addEventListener('change', function() {
+          const filterValue = this.value.toLowerCase();
+          const rows = document.querySelectorAll('.report-row');
+          
+          rows.forEach(row => {
+            const type = row.getAttribute('data-type').toLowerCase();
+            if (!filterValue || type === filterValue.toLowerCase()) {
+              row.style.display = '';
+            } else {
+              row.style.display = 'none';
+            }
+          });
+        });
+      }
+
+      // Check if we need to open modal
+      if (window.location.hash === '#templateModal') {
+        setTimeout(() => {
+          document.getElementById('templateModal').classList.add('active');
+        }, 100);
       }
     });
-  });
 
-  // Feature card click handling
-  document.querySelectorAll('.feature-card').forEach(card => {
-    card.addEventListener('click', function() {
-      const link = this.getAttribute('onclick')?.match(/href='([^']+)'/)?.[1];
-      if (link) {
-        window.location.href = link;
-      }
-    });
-  });
-
-  // Initialize all charts
-  function initializeCharts() {
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
-    if (revenueCtx) {
-      new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-          datasets: [{
-            label: 'Revenue ($)',
-            data: [185000, 210000, 195000, 245000, 265000, 284000, 275000],
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: false, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    }
-
-    // Traffic Chart
-    const trafficCtx = document.getElementById('trafficChart')?.getContext('2d');
-    if (trafficCtx) {
-      new Chart(trafficCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Organic Search', 'Social Media', 'Email', 'Direct', 'Referral'],
-          datasets: [{
-            data: [35, 25, 15, 12, 13],
-            backgroundColor: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
-        }
-      });
-    }
-
-    // Funnel Chart
-    const funnelCtx = document.getElementById('funnelChart')?.getContext('2d');
-    if (funnelCtx) {
-      new Chart(funnelCtx, {
-        type: 'bar',
-        data: {
-          labels: ['Awareness', 'Interest', 'Consideration', 'Intent', 'Conversion'],
-          datasets: [{
-            data: [5000, 3500, 2000, 800, 240],
-            backgroundColor: ['#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b'],
-            borderWidth: 0,
-            borderRadius: 4
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-            y: { grid: { display: false } }
-          }
-        }
-      });
-    }
-
-    // Reports Chart (from second script)
-    const reportsCtx = document.getElementById('reportsChart')?.getContext('2d');
-    if (reportsCtx) {
-      new Chart(reportsCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Performance', 'ROI', 'Leads', 'Social Media', 'Email', 'Traffic'],
-          datasets: [{
-            data: [2, 1, 1, 1, 1, 1],
-            backgroundColor: [
-              '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#8b5cf6'
-            ],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom'
+    // Reports Chart
+    window.addEventListener('load', function() {
+      const reportsCtx = document.getElementById('reportsChart')?.getContext('2d');
+      if (reportsCtx) {
+        new Chart(reportsCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Package', 'Campaign', 'Partnership', 'Feedback', 'Email', 'Social Media'],
+            datasets: [{
+              data: [2, 1, 1, 1, 1, 1],
+              backgroundColor: [
+                '#3b82f6', // Blue for Package
+                '#8b5cf6', // Purple for Campaign
+                '#10b981', // Green for Partnership
+                '#f59e0b', // Amber for Feedback
+                '#8b5cf6', // Indigo for Email
+                '#ec4899'  // Pink for Social Media
+              ],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
             }
           }
+        });
+      }
+
+      // Mobile menu functionality (from your original code)
+      const menuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileMenuClose = document.getElementById('mobile-menu-close');
+      const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+      
+      let isMenuOpen = false;
+
+      function openMobileMenu() {
+        mobileMenu.classList.remove('hidden');
+        mobileMenu.classList.remove('closing');
+        setTimeout(() => {
+          mobileMenu.classList.add('open');
+        }, 10);
+        document.body.style.overflow = 'hidden';
+        isMenuOpen = true;
+      }
+
+      function closeMobileMenu() {
+        mobileMenu.classList.remove('open');
+        mobileMenu.classList.add('closing');
+        setTimeout(() => {
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('closing');
+        }, 300);
+        document.body.style.overflow = '';
+        isMenuOpen = false;
+      }
+
+      if (menuButton) {
+        menuButton.addEventListener('click', openMobileMenu);
+      }
+
+      if (mobileMenuClose) {
+        mobileMenuClose.addEventListener('click', closeMobileMenu);
+      }
+
+      if (mobileMenuBackdrop) {
+        mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
+      }
+
+      // Close menu when clicking on menu links
+      document.querySelectorAll('#mobile-menu a').forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
+      });
+
+      // Close menu on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isMenuOpen) {
+          closeMobileMenu();
         }
       });
-    }
-  }
-
-  // Window load event handler
-  window.addEventListener('load', () => {
-    const loadingBar = document.querySelector('.loading-bar');
-    if (loadingBar) {
-      loadingBar.style.opacity = '0';
-      setTimeout(() => {
-        loadingBar.remove();
-      }, 500);
-    }
-    
-    // Initialize all charts
-    initializeCharts();
-  });
-</script>
+    });
+  </script>
 </body>
 </html>
