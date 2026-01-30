@@ -739,11 +739,6 @@ try {
                         <i class="fas fa-plus"></i>
                         <span>Book Trip</span>
                     </button>
-                    <button onclick="window.location.href='client_map.php'" 
-                            class="quick-action-btn btn-secondary px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
-                        <i class="fas fa-map-marked-alt"></i>
-                        <span>Map Planner</span>
-                    </button>
                     <div class="relative">
                         <button id="quick-menu-btn" 
                                 class="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700 hover:text-primary-500 hover:border-primary-300">
@@ -761,10 +756,6 @@ try {
                             <a href="weather_check.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
                                 <i class="fas fa-cloud-sun text-primary-500"></i>
                                 <span>Weather Check</span>
-                            </a>
-                            <a href="client_map.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
-                                <i class="fas fa-map-marked-alt text-primary-500"></i>
-                                <span>My Map Planner</span>
                             </a>
                             <hr class="my-1">
                             <a href="help_center.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
@@ -854,10 +845,6 @@ try {
                         Travel Tips
                     </button>
                 </div>
-                <button onclick="window.location.href='client_map.php'"
-                        class="btn-secondary py-2 rounded-lg text-sm font-semibold w-full">
-                    My Map Planner
-                </button>
             </div>
         </div>
     </header>
@@ -1641,17 +1628,6 @@ try {
                         <p class="text-xs text-gray-500 mt-1">Find expert guides</p>
                     </div>
                 </button>
-
-                <button onclick="window.location.href='client_map.php'"
-                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-100 to-yellow-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i class="fas fa-map-marked-alt text-yellow-600 text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-gray-900">My Map Planner</p>
-                        <p class="text-xs text-gray-500 mt-1">Pin places & add photos</p>
-                    </div>
-                </button>
             </div>
         </section>
     </main>
@@ -2109,5 +2085,128 @@ try {
             }
         });
     </script>
+  <!-- TravelEase AI Chatbot (Guest/User) -->
+  <div id="teChatLauncher" class="fixed bottom-5 right-5 z-[9999]">
+    <button id="teChatOpenBtn" class="group flex items-center gap-3 rounded-full px-4 py-3 shadow-xl border border-white/20 bg-white/10 backdrop-blur-lg hover:bg-white/15 transition">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-yellow-400 text-white shadow">
+        <i class="fa-solid fa-robot"></i>
+      </span>
+      <span class="hidden sm:block text-sm font-semibold text-white">Ask TravelEase</span>
+    </button>
+  </div>
+
+  <div id="teChatPanel" class="fixed bottom-5 right-5 z-[9999] w-[92vw] max-w-sm hidden">
+    <div class="rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-white/10 backdrop-blur-xl">
+      <div class="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-700/80 via-purple-600/60 to-yellow-400/50">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white">
+            <i class="fa-solid fa-comment-dots"></i>
+          </span>
+          <div class="leading-tight">
+            <div class="text-sm font-bold text-white">TravelEase Assistant</div>
+            <div class="text-[11px] text-white/90">Ask questions • Book • Cancel • Email • PDF</div>
+          </div>
+        </div>
+        <button id="teChatCloseBtn" class="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition" aria-label="Close chat">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="teChatBody" class="h-80 p-3 space-y-2 overflow-y-auto bg-black/10">
+        <div class="mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-white/10 bg-white/10 p-2 text-sm text-white">
+          Hi! I’m your TravelEase assistant. Tell me what you want to do (book/cancel/email/PDF) or ask anything about the system.
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-white/10 bg-white/5">
+        <div class="flex gap-2">
+          <input id="teChatInput" class="flex-1 rounded-xl px-3 py-2 text-sm bg-white/10 border border-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-400/60" placeholder="Type a message..." />
+          <button id="teChatSendBtn" class="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition">
+            Send
+          </button>
+        </div>
+        <div id="teChatHint" class="mt-2 text-[11px] text-white/60">
+          Tip: For bookings, include destination + dates (YYYY-MM-DD).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const openBtn = document.getElementById('teChatOpenBtn');
+      const closeBtn = document.getElementById('teChatCloseBtn');
+      const panel = document.getElementById('teChatPanel');
+      const launcher = document.getElementById('teChatLauncher');
+      const body = document.getElementById('teChatBody');
+      const input = document.getElementById('teChatInput');
+      const sendBtn = document.getElementById('teChatSendBtn');
+
+      function showPanel() {
+        panel.classList.remove('hidden');
+        launcher.classList.add('hidden');
+        setTimeout(() => input && input.focus(), 50);
+      }
+      function hidePanel() {
+        panel.classList.add('hidden');
+        launcher.classList.remove('hidden');
+      }
+
+      function addMsg(text, who) {
+        const div = document.createElement('div');
+        div.className = (who === 'user')
+          ? 'ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-purple-700/60 border border-white/10 p-2 text-sm text-white'
+          : 'mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-white/10 bg-white/10 p-2 text-sm text-white';
+        div.textContent = text;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+        return div;
+      }
+
+      async function sendMsg() {
+        const msg = (input.value || '').trim();
+        if (!msg) return;
+
+        addMsg(msg, 'user');
+        input.value = '';
+
+        const typing = addMsg('Typing…', 'bot');
+
+        try {
+          const res = await fetch('chat_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+          });
+
+          const data = await res.json().catch(() => ({}));
+          typing.remove();
+
+          const botText = (typeof data.reply === 'string' && data.reply.trim() !== '')
+            ? data.reply
+            : (typeof data.error === 'string' && data.error.trim() !== '')
+              ? data.error
+              : 'Sorry, something went wrong.';
+
+          if (!res.ok) {
+            addMsg(botText, 'bot');
+            return;
+          }
+
+          addMsg(botText, 'bot');
+        } catch (e) {
+          typing.remove();
+          addMsg('Network error connecting to chatbot.', 'bot');
+        }
+      }
+
+      openBtn && openBtn.addEventListener('click', showPanel);
+      closeBtn && closeBtn.addEventListener('click', hidePanel);
+      sendBtn && sendBtn.addEventListener('click', sendMsg);
+      input && input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMsg();
+      });
+    })();
+  </script>
 </body>
 </html>
