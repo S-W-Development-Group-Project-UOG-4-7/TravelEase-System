@@ -487,7 +487,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="hidden lg:flex items-center gap-8 text-sm font-semibold">
-          <a href="#overview" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+          <a href="marketing_dashboard.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <span class="flex items-center gap-2">
               <i class="fas fa-chart-line text-xs text-amber-500"></i>
               Overview
@@ -510,10 +510,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Reports
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-          <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Packages
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+                            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
+                            Partnerships
+                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
            <a href="marketing_feedback.php" class="text-amber-600 transition-all duration-300 relative group">
                         <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
