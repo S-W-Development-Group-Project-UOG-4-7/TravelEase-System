@@ -135,7 +135,7 @@ $currentYear = date('Y');
             <i class="fas fa-calendar-check mr-2"></i>
             Bookings
           </a>
-          <a href="support_customers.php" class="text-gray-700 hover:text-primary-600 transition-colors">
+          <a href="support_customer.php" class="text-gray-700 hover:text-primary-600 transition-colors">
             <i class="fas fa-users mr-2"></i>
             Customers
           </a>
