@@ -56,6 +56,7 @@ $userName = $_SESSION['full_name'] ?? 'User';
         <ul class="list-disc ml-5 space-y-1">
           <li>Click map → add a pin</li>
           <li>Use draw tool → create a route</li>
+          <li>Use edit tool -> edit/delete routes</li>
           <li>Select pin → upload photos</li>
         </ul>
       </div>
@@ -143,7 +144,6 @@ $userName = $_SESSION['full_name'] ?? 'User';
 
   // Layers
   const pinsLayer = L.layerGroup().addTo(map);
-  const routesLayer = L.layerGroup().addTo(map);
 
   // Draw controls
   const drawnItems = new L.FeatureGroup();
@@ -215,6 +215,37 @@ $userName = $_SESSION['full_name'] ?? 'User';
         return;
       }
 
+      await loadRoutes();
+    }
+  });
+
+  // Edit existing routes
+  map.on(L.Draw.Event.EDITED, async function (event) {
+    const layers = event.layers;
+    const updates = [];
+    layers.eachLayer(layer => {
+      const routeId = layer._routeId;
+      if (!routeId) return;
+      const geo = layer.toGeoJSON();
+      updates.push(apiPost('api/routes_update.php', { id: routeId, geojson: geo }));
+    });
+    if (updates.length) {
+      await Promise.all(updates);
+      await loadRoutes();
+    }
+  });
+
+  // Delete routes via edit toolbar
+  map.on(L.Draw.Event.DELETED, async function (event) {
+    const layers = event.layers;
+    const deletes = [];
+    layers.eachLayer(layer => {
+      const routeId = layer._routeId;
+      if (!routeId) return;
+      deletes.push(apiPost('api/routes_delete.php', { id: routeId }));
+    });
+    if (deletes.length) {
+      await Promise.all(deletes);
       await loadRoutes();
     }
   });
@@ -334,25 +365,42 @@ $userName = $_SESSION['full_name'] ?? 'User';
 
   // Load routes
   async function loadRoutes() {
-    routesLayer.clearLayers();
+    drawnItems.clearLayers();
     const routes = await apiGet('api/routes_list.php');
     const list = document.getElementById('routesList');
     list.innerHTML = "";
 
     routes.forEach(r => {
-      // draw GeoJSON
+      // draw GeoJSON into editable group
       const geo = r.geojson;
-      const layer = L.geoJSON(geo).addTo(routesLayer);
+      const gj = L.geoJSON(geo);
+      let firstLayer = null;
+      gj.eachLayer(l => {
+        l._routeId = r.id;
+        l._routeName = r.name;
+        if (!firstLayer) firstLayer = l;
+        drawnItems.addLayer(l);
+      });
 
       const item = document.createElement('div');
-      item.className = "p-2 rounded-lg border hover:bg-gray-50 cursor-pointer";
+      item.className = "p-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-start justify-between gap-2";
       item.innerHTML = `
-        <div class="font-semibold">${escapeHtml(r.name)}</div>
-        <div class="text-xs text-gray-500">Route ID: ${r.id}</div>
+        <div>
+          <div class="font-semibold">${escapeHtml(r.name)}</div>
+          <div class="text-xs text-gray-500">Route ID: ${r.id}</div>
+        </div>
+        <button class="text-xs text-red-600 hover:underline" data-id="${r.id}">Delete</button>
       `;
       item.addEventListener('click', () => {
-        const b = layer.getBounds();
+        const b = gj.getBounds();
         if (b.isValid()) map.fitBounds(b.pad(0.2));
+      });
+      item.querySelector("button").addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        if (!confirm("Delete this route?")) return;
+        const out = await apiPost('api/routes_delete.php', { id: r.id });
+        if (!out.ok) alert(out.error || "Failed to delete");
+        await loadRoutes();
       });
       list.appendChild(item);
     });

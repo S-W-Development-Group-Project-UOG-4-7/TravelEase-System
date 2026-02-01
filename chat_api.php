@@ -76,7 +76,8 @@ function openai_responses_api(string $apiKey, array $payload): array {
   $res = curl_exec($ch);
   $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
   $err = curl_error($ch);
-  curl_close($ch);
+  // PHP 8.4+ deprecates curl_close(); let GC release the handle.
+  $ch = null;
 
   return [$http, $res, $err];
 }
@@ -220,7 +221,8 @@ function tool_send_email(array $secrets, string $to, string $subject, string $bo
     $res = curl_exec($ch);
     $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err = curl_error($ch);
-    curl_close($ch);
+    // PHP 8.4+ deprecates curl_close(); let GC release the handle.
+    $ch = null;
 
     if ($err) return ['ok' => false, 'error' => 'EMAIL_WEBHOOK_CURL', 'detail' => $err];
     if ($http < 200 || $http >= 300) return ['ok' => false, 'error' => 'EMAIL_WEBHOOK_FAILED', 'http' => $http, 'raw' => $res];
