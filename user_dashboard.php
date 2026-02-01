@@ -178,7 +178,7 @@ try {
     // Latest reviews for packages user booked (initial render)
     $stmt = $pdo->prepare("
         SELECT
-            r.id, r.rating, r.review_text, r.created_at,
+            r.id, r.user_id, r.rating, r.review_text, r.created_at,
             u.full_name AS reviewer_name,
             p.title AS package_title,
             c.name AS country_name
@@ -759,7 +759,7 @@ try {
                 
                 <!-- Notification Bell -->
                 <div class="relative">
-                    <button id="notification-btn" class="text-gray-700 hover:text-primary-500 transition">
+                    <button id="notification-btn" type="button" class="text-gray-700 hover:text-primary-500 transition">
                         <i class="fas fa-bell text-lg"></i>
                         <div class="notification-dot hidden" id="notification-dot"></div>
                     </button>
@@ -815,7 +815,7 @@ try {
                         <span>Map View</span>
                     </a>
                     <div class="relative">
-                        <button id="quick-menu-btn" 
+                        <button id="quick-menu-btn" type="button"
                                 class="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700 hover:text-primary-500 hover:border-primary-300">
                             <i class="fas fa-ellipsis-h"></i>
                         </button>
@@ -843,7 +843,7 @@ try {
                 
                 <!-- User avatar with dropdown -->
                 <div class="relative">
-                    <button id="user-menu-btn" class="flex items-center gap-2">
+                    <button id="user-menu-btn" type="button" class="flex items-center gap-2">
                         <div class="relative">
                             <img
                                 src="<?= htmlspecialchars($profileImageUrl); ?>"
@@ -884,7 +884,7 @@ try {
                 </div>
                 
                 <!-- Mobile menu button -->
-                <button id="mobile-menu-btn" class="md:hidden text-gray-700">
+                <button id="mobile-menu-btn" type="button" class="md:hidden text-gray-700">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
@@ -1417,7 +1417,7 @@ try {
 
                     <p class="text-sm text-gray-600 mt-2">Rate a package you booked. Updates appear instantly.</p>
 
-                    <form id="reviewForm" class="mt-5 space-y-4">
+                    <form id="reviewForm" class="mt-5 space-y-4" action="javascript:void(0)" method="POST" onsubmit="return false;">
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Package</label>
                             <select name="package_id"
@@ -1486,14 +1486,21 @@ try {
                             </div>
                         <?php else: ?>
                             <?php foreach ($latestReviews as $rv): ?>
-                                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4">
+                                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="<?= (int)$rv['id']; ?>">
                                     <div class="flex items-center justify-between gap-3">
                                         <div class="font-bold text-gray-900 text-sm">
                                             <?= htmlspecialchars($rv['package_title']); ?>
                                             <span class="text-xs text-gray-500 font-semibold">· <?= htmlspecialchars($rv['country_name']); ?></span>
                                         </div>
-                                        <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
-                                            <?= (int)$rv['rating']; ?>/5
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                                <?= (int)$rv['rating']; ?>/5
+                                            </div>
+                                            <?php if ((int)$rv['user_id'] === (int)$userId): ?>
+                                                <button type="button" data-review-delete="<?= (int)$rv['id']; ?>" class="text-xs text-red-600 hover:underline">
+                                                    Delete
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <p class="text-sm text-gray-700 mt-2"><?= htmlspecialchars($rv['review_text']); ?></p>
@@ -1625,7 +1632,7 @@ try {
                     </div>
                 </button>
                 
-                <button onclick="window.location.href='https://www.weather.com/'"
+                <button onclick="window.open('https://www.weather.com/','_blank','noopener')"
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-cloud-sun text-blue-600 text-xl"></i>
@@ -1636,7 +1643,7 @@ try {
                     </div>
                 </button>
                 
-                <button onclick="window.location.href='https://www.travelers-checklist.com/'"
+                <button onclick="window.open('https://www.travelers-checklist.com/','_blank','noopener')"
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-clipboard-check text-purple-600 text-xl"></i>
@@ -1647,7 +1654,7 @@ try {
                     </div>
                 </button>
                 
-                <button onclick="window.location.href='local_guides.php'"
+                <button onclick="window.open('https://www.withlocals.com/', '_blank', 'noopener')"
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-map-signs text-red-600 text-xl"></i>
@@ -1735,8 +1742,8 @@ try {
         </button>
     </div>
 
-    <div id="chatPanel" class="fixed inset-0 md:bottom-5 md:right-5 md:w-[92vw] md:max-w-sm md:h-auto z-[9999] hidden">
-        <div class="h-full md:h-auto md:rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white flex flex-col">
+    <div id="chatPanel" class="fixed bottom-20 right-5 w-[92vw] max-w-sm z-[9999] hidden">
+        <div class="md:rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white flex flex-col max-h-[70vh]">
             <div class="px-4 py-3 flex items-center justify-between bg-primary-600 text-white">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-comment-dots"></i>
@@ -1764,9 +1771,66 @@ try {
         </div>
     </div>
 
+    <script>
+        // Chatbot open/close (standalone to avoid dependency on other scripts)
+        (function () {
+            const chatOpenBtn = document.getElementById('chatOpenBtn');
+            const chatCloseBtn = document.getElementById('chatCloseBtn');
+            const chatPanel = document.getElementById('chatPanel');
+            const chatLauncher = document.getElementById('chatLauncher');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            function showChat() {
+                if (!chatPanel || !chatLauncher) return;
+                chatPanel.classList.remove('hidden');
+                chatLauncher.classList.add('hidden');
+                setTimeout(() => chatInput && chatInput.focus(), 50);
+            }
+
+            function hideChat() {
+                if (!chatPanel || !chatLauncher) return;
+                chatPanel.classList.add('hidden');
+                chatLauncher.classList.remove('hidden');
+            }
+
+            if (chatOpenBtn && !chatOpenBtn.dataset.bound) {
+                chatOpenBtn.dataset.bound = '1';
+                chatOpenBtn.addEventListener('click', showChat);
+            }
+            if (chatCloseBtn && !chatCloseBtn.dataset.bound) {
+                chatCloseBtn.dataset.bound = '1';
+                chatCloseBtn.addEventListener('click', hideChat);
+            }
+            if (chatSendBtn && !chatSendBtn.dataset.bound) {
+                chatSendBtn.dataset.bound = '1';
+                chatSendBtn.addEventListener('click', () => {});
+            }
+        })();
+    </script>
+
     <!-- Interactive map + greeting / typing script -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const currentUserId = <?= (int)$userId; ?>;
+            // ----- Toast helper -----
+            function showToast(message, type = 'info', duration = 2200) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                const colorMap = {
+                    success: 'bg-green-600',
+                    error: 'bg-red-600',
+                    info: 'bg-gray-900'
+                };
+                toast.className = `text-white ${colorMap[type] || colorMap.info} px-4 py-3 rounded-xl shadow-lg text-sm`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
             // ----- Map filter -----
             const packageCards = document.querySelectorAll('[data-package-country]');
             const activeLabel = document.getElementById('active-country-label');
@@ -1902,7 +1966,7 @@ try {
                     .asia-country:hover { filter: brightness(1.05); }
                     .asia-country.active { stroke: #111827 !important; stroke-width: 2; }
                     .non-asia { display: none !important; }
-                    #ocean { fill: #f3f4f6 !important; }
+                    #ocean { display: none !important; }
                 `;
                 mapSvg.appendChild(styleEl);
 
@@ -1972,25 +2036,29 @@ try {
                 });
 
                 // Auto-fit to Asia bounds (show Asia only) and center in panel
-                try {
-                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                    asiaElements.forEach(el => {
-                        const b = el.getBBox();
-                        minX = Math.min(minX, b.x);
-                        minY = Math.min(minY, b.y);
-                        maxX = Math.max(maxX, b.x + b.width);
-                        maxY = Math.max(maxY, b.y + b.height);
-                    });
-                    if (isFinite(minX)) {
+                function fitAsiaToPanel() {
+                    try {
+                        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                        asiaElements.forEach(el => {
+                            const b = el.getBBox();
+                            minX = Math.min(minX, b.x);
+                            minY = Math.min(minY, b.y);
+                            maxX = Math.max(maxX, b.x + b.width);
+                            maxY = Math.max(maxY, b.y + b.height);
+                        });
+                        if (!isFinite(minX)) return;
+
                         const width = maxX - minX;
                         const height = maxY - minY;
-                        const pad = 0.05;
+                        const pad = 0.06;
                         let vbW = width * (1 + pad);
                         let vbH = height * (1 + pad);
 
-                        // Match panel aspect ratio so Asia stays centered in the grid
-                        const panel = mapObj.getBoundingClientRect();
-                        const panelRatio = panel.width / panel.height;
+                        const rect = mapObj.getBoundingClientRect();
+                        const parentRect = mapObj.parentElement ? mapObj.parentElement.getBoundingClientRect() : rect;
+                        const w = rect.width || parentRect.width;
+                        const h = rect.height || parentRect.height;
+                        const panelRatio = (w && h) ? (w / h) : (vbW / vbH);
                         const vbRatio = vbW / vbH;
 
                         if (vbRatio > panelRatio) {
@@ -2004,6 +2072,26 @@ try {
                         const x = cx - vbW / 2;
                         const y = cy - vbH / 2;
                         mapSvg.setAttribute('viewBox', `${x} ${y} ${vbW} ${vbH}`);
+                    } catch (e) {
+                        // If getBBox fails, keep full viewBox
+                    }
+                }
+
+                try {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    asiaElements.forEach(el => {
+                        const b = el.getBBox();
+                        minX = Math.min(minX, b.x);
+                        minY = Math.min(minY, b.y);
+                        maxX = Math.max(maxX, b.x + b.width);
+                        maxY = Math.max(maxY, b.y + b.height);
+                    });
+                    if (isFinite(minX)) {
+                        // initial fit
+                        fitAsiaToPanel();
+                        // re-fit after layout settles
+                        setTimeout(fitAsiaToPanel, 50);
+                        setTimeout(fitAsiaToPanel, 250);
                     }
                 } catch (e) {
                     // If getBBox fails, keep full viewBox
@@ -2249,15 +2337,19 @@ try {
             }
 
             function reviewCardHTML(rv) {
+                const canDelete = parseInt(rv.user_id, 10) === currentUserId;
                 return `
-                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4">
+                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="${parseInt(rv.id, 10)}">
                     <div class="flex items-center justify-between gap-3">
                         <div class="font-bold text-gray-900 text-sm">
                             ${escapeHtml(rv.package_title)}
                             <span class="text-xs text-gray-500 font-semibold">· ${escapeHtml(rv.country_name)}</span>
                         </div>
-                        <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
-                            ${parseInt(rv.rating, 10)}/5
+                        <div class="flex items-center gap-2">
+                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                ${parseInt(rv.rating, 10)}/5
+                            </div>
+                            ${canDelete ? `<button type="button" data-review-delete="${parseInt(rv.id, 10)}" class="text-xs text-red-600 hover:underline">Delete</button>` : ''}
                         </div>
                     </div>
                     <p class="text-sm text-gray-700 mt-2">${escapeHtml(rv.review_text)}</p>
@@ -2297,8 +2389,11 @@ try {
                     e.preventDefault();
 
                     const statusEl = document.getElementById('review-status');
-                    statusEl.textContent = 'Submitting...';
-                    statusEl.className = 'text-xs font-semibold text-gray-500';
+                    if (statusEl) {
+                        statusEl.textContent = 'Submitting...';
+                        statusEl.className = 'text-xs font-semibold text-gray-500';
+                    }
+                    showToast('Submitting your review...', 'info', 1800);
 
                     const fd = new FormData(e.target);
 
@@ -2307,13 +2402,19 @@ try {
                         const data = await res.json();
 
                         if (!data.ok) {
-                            statusEl.textContent = data.message || 'Failed';
-                            statusEl.className = 'text-xs font-semibold text-red-600';
+                            if (statusEl) {
+                                statusEl.textContent = data.message || 'Failed';
+                                statusEl.className = 'text-xs font-semibold text-red-600';
+                            }
+                            showToast(data.message || 'Failed to submit review.', 'error');
                             return;
                         }
 
-                        statusEl.textContent = data.message || 'Submitted!';
-                        statusEl.className = 'text-xs font-semibold text-green-600';
+                        if (statusEl) {
+                            statusEl.textContent = data.message || 'Submitted!';
+                            statusEl.className = 'text-xs font-semibold text-green-600';
+                        }
+                        showToast(data.message || 'Review submitted successfully!', 'success');
 
                         if (data.review) {
                             const list = document.getElementById('reviewsList');
@@ -2325,8 +2426,41 @@ try {
                         e.target.reset();
                     } catch (err) {
                         console.error('Error submitting review:', err);
-                        statusEl.textContent = 'Network error';
-                        statusEl.className = 'text-xs font-semibold text-red-600';
+                        if (statusEl) {
+                            statusEl.textContent = 'Network error';
+                            statusEl.className = 'text-xs font-semibold text-red-600';
+                        }
+                        showToast('Network error. Please try again.', 'error');
+                    }
+                });
+            }
+
+            // Handle review delete (event delegation)
+            const reviewsList = document.getElementById('reviewsList');
+            if (reviewsList) {
+                reviewsList.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('[data-review-delete]');
+                    if (!btn) return;
+                    const id = parseInt(btn.getAttribute('data-review-delete'), 10);
+                    if (!id) return;
+                    if (!confirm('Delete this review?')) return;
+                    try {
+                        const res = await fetch('review_delete.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ id })
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || !data.ok) {
+                            showToast?.(data.message || 'Delete failed', 'error');
+                            return;
+                        }
+                        const card = reviewsList.querySelector(`[data-review-card="${id}"]`);
+                        if (card) card.remove();
+                        showToast?.('Review deleted', 'success');
+                    } catch (err) {
+                        showToast?.('Network error. Please try again.', 'error');
                     }
                 });
             }
@@ -2445,5 +2579,8 @@ try {
             });
         })();
     </script>
+    <!-- Toast notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
 </body>
 </html>
