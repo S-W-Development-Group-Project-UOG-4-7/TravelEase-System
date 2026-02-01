@@ -511,15 +511,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-                            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
-                            Partnerships
-                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
+            Partnerships
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
-           <a href="marketing_feedback.php" class="text-amber-600 transition-all duration-300 relative group">
-                        <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
-                        Customer Feedback
-                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-amber-500"></span>
-                    </a>
+          <a href="marketing_feedback.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
+            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
+            Customer Feedback
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
         </div>
 
         <div class="hidden lg:flex items-center gap-4">
@@ -742,6 +742,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Base Price (USD) *</label>
                         <input type="number" step="0.01" min="0" id="basePrice" name="base_price"
+                            placeholder="Enter the base price for this package"
                                value="<?= h($form['base_price']) ?>"
                                class="w-full p-4 rounded-xl border border-amber-200 bg-white" required>
                     </div>
@@ -750,12 +751,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Group Min</label>
                             <input type="number" min="1" id="groupSizeMin" name="group_min"
+                                placeholder="Minimum number of travelers for the package"
                                    value="<?= $form['group_min'] !== null ? h($form['group_min']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
+                                   
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Group Max</label>
                             <input type="number" min="1" id="groupSizeMax" name="group_max"
+                                placeholder="Maximum number of travelers for the package"
                                    value="<?= $form['group_max'] !== null ? h($form['group_max']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
@@ -765,12 +769,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Early Bird Discount (%)</label>
                             <input type="number" min="0" max="100" id="earlyBirdDiscount" name="early_bird_discount"
+                                placeholder="Early bird discount percentage"
                                    value="<?= $form['early_bird_discount'] !== null ? h($form['early_bird_discount']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Early Bird Days</label>
                             <input type="number" min="0" id="earlyBirdDays" name="early_bird_days"
+                                placeholder="Number of days before departure for early bird discount"
                                    value="<?= $form['early_bird_days'] !== null ? h($form['early_bird_days']) : '' ?>"
                                    class="w-full p-4 rounded-xl border border-amber-200 bg-white">
                         </div>
