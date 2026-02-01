@@ -1,12 +1,13 @@
 <?php
 // db.php
+
 $host = 'localhost';
 $port = '5432';
 $db   = 'travelease_db';
-$user = 'travelease_user';   // change if needed
-$pass = 'strongpassword';    // change if needed
+$user = 'travelease_user';
+$pass = 'strongpassword';
 
-$dsn = "pgsql:host=$host;port=$port;dbname=$db";
+$dsn = "pgsql:host=$host;port=$port;dbname=$db;options='--client_encoding=UTF8'";
 
 try {
     $pdo = new PDO($dsn, $user, $pass, [
@@ -14,5 +15,6 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 } catch (PDOException $e) {
-    die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
+    error_log($e->getMessage());
+    die('Database connection failed. Please try again later.');
 }

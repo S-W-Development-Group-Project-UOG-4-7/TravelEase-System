@@ -178,7 +178,7 @@ try {
     // Latest reviews for packages user booked (initial render)
     $stmt = $pdo->prepare("
         SELECT
-            r.id, r.rating, r.review_text, r.created_at,
+            r.id, r.user_id, r.rating, r.review_text, r.created_at,
             u.full_name AS reviewer_name,
             p.title AS package_title,
             c.name AS country_name
@@ -601,10 +601,87 @@ try {
             fill: #f3e8ff;
             stroke: #c084fc;
         }
+
+        .map-country rect,
+        .map-country path {
+            transition: all 0.2s ease;
+        }
+
+        .map-wrap {
+            position: relative;
+            background: radial-gradient(120% 120% at 10% 10%, #f5f3ff 0%, #eef2ff 45%, #fdf2f8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(124,58,237,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(124,58,237,0.06) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .map-country:hover rect,
+        .map-country:hover path {
+            fill: #ede9fe;
+            stroke: #7c3aed;
+        }
+
+        .map-country.active rect,
+        .map-country.active path {
+            fill: #ddd6fe;
+            stroke: #6d28d9;
+            stroke-width: 2.5;
+        }
+
+        .map-label {
+            font-size: 11px;
+            font-weight: 700;
+            fill: #5b21b6;
+        }
+
+        .map-pin {
+            fill: #a855f7;
+            animation: mapPulse 2s infinite;
+        }
+
+        @keyframes mapPulse {
+            0% { r: 3; opacity: 0.9; }
+            50% { r: 5; opacity: 0.6; }
+            100% { r: 3; opacity: 0.9; }
+        }
         
         .dark-mode .map-country rect {
             fill: #4c1d95;
             stroke: #a855f7;
+        }
+
+        .dark-mode .map-wrap {
+            background: radial-gradient(120% 120% at 10% 10%, #1e1b4b 0%, #312e81 45%, #4c1d95 100%);
+        }
+
+        .dark-mode .map-wrap::before {
+            background-image:
+                linear-gradient(to right, rgba(199,210,254,0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(199,210,254,0.08) 1px, transparent 1px);
+        }
+
+        .dark-mode .map-label {
+            fill: #e9d5ff;
+        }
+
+        .globe-object {
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            transition: transform 0.3s ease;
+            display: block;
         }
         
         /* Text colors for better contrast */
@@ -682,7 +759,7 @@ try {
                 
                 <!-- Notification Bell -->
                 <div class="relative">
-                    <button id="notification-btn" class="text-gray-700 hover:text-primary-500 transition">
+                    <button id="notification-btn" type="button" class="text-gray-700 hover:text-primary-500 transition">
                         <i class="fas fa-bell text-lg"></i>
                         <div class="notification-dot hidden" id="notification-dot"></div>
                     </button>
@@ -721,14 +798,7 @@ try {
                     </div>
                 </div>
                 
-                <!-- Theme Toggle -->
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">Light</span>
-                    <button id="theme-toggle" class="theme-toggle">
-                        <span class="theme-toggle-slider"></span>
-                    </button>
-                    <span class="text-xs text-gray-500">Dark</span>
-                </div>
+                <!-- Theme Toggle removed -->
             </nav>
 
             <div class="flex items-center gap-3">
@@ -739,13 +809,13 @@ try {
                         <i class="fas fa-plus"></i>
                         <span>Book Trip</span>
                     </button>
-                    <button onclick="window.location.href='client_map.php'" 
-                            class="quick-action-btn btn-secondary px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
-                        <i class="fas fa-map-marked-alt"></i>
-                        <span>Map Planner</span>
-                    </button>
+                    <a href="client_map.php"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-blue-600 text-white shadow hover:bg-blue-700 transition">
+                        <i class="fas fa-map"></i>
+                        <span>Map View</span>
+                    </a>
                     <div class="relative">
-                        <button id="quick-menu-btn" 
+                        <button id="quick-menu-btn" type="button"
                                 class="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700 hover:text-primary-500 hover:border-primary-300">
                             <i class="fas fa-ellipsis-h"></i>
                         </button>
@@ -754,17 +824,13 @@ try {
                                 <i class="fas fa-lightbulb text-primary-500"></i>
                                 <span>Travel Tips</span>
                             </a>
-                            <a href="currency_converter.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                            <a href="https://www.xe.com/currencyconverter/" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm" target="_blank" rel="noopener noreferrer">
                                 <i class="fas fa-exchange-alt text-primary-500"></i>
                                 <span>Currency Converter</span>
                             </a>
-                            <a href="weather_check.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                            <a href="https://www.weather.com/" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm" target="_blank" rel="noopener noreferrer">
                                 <i class="fas fa-cloud-sun text-primary-500"></i>
                                 <span>Weather Check</span>
-                            </a>
-                            <a href="client_map.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
-                                <i class="fas fa-map-marked-alt text-primary-500"></i>
-                                <span>My Map Planner</span>
                             </a>
                             <hr class="my-1">
                             <a href="help_center.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
@@ -777,7 +843,7 @@ try {
                 
                 <!-- User avatar with dropdown -->
                 <div class="relative">
-                    <button id="user-menu-btn" class="flex items-center gap-2">
+                    <button id="user-menu-btn" type="button" class="flex items-center gap-2">
                         <div class="relative">
                             <img
                                 src="<?= htmlspecialchars($profileImageUrl); ?>"
@@ -818,7 +884,7 @@ try {
                 </div>
                 
                 <!-- Mobile menu button -->
-                <button id="mobile-menu-btn" class="md:hidden text-gray-700">
+                <button id="mobile-menu-btn" type="button" class="md:hidden text-gray-700">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
@@ -839,6 +905,10 @@ try {
                     <i class="fas fa-globe-asia"></i>
                     <span>Countries</span>
                 </a>
+                <a href="client_map.php" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
+                    <i class="fas fa-map"></i>
+                    <span>Map View</span>
+                </a>
                 <a href="user_profile.php" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
                     <i class="fas fa-user-circle"></i>
                     <span>Profile</span>
@@ -849,15 +919,15 @@ try {
                             class="btn-primary py-2 rounded-lg text-sm font-semibold">
                         Book Trip
                     </button>
+                    <button onclick="window.location.href='client_map.php'"
+                            class="bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                        Map View
+                    </button>
                     <button onclick="window.location.href='travel_tips.php'"
                             class="btn-secondary py-2 rounded-lg text-sm font-semibold">
                         Travel Tips
                     </button>
                 </div>
-                <button onclick="window.location.href='client_map.php'"
-                        class="btn-secondary py-2 rounded-lg text-sm font-semibold w-full">
-                    My Map Planner
-                </button>
             </div>
         </div>
     </header>
@@ -1028,7 +1098,7 @@ try {
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">Explore Asia</h2>
                             <p class="text-xs text-gray-500 mt-1">
-                                Click a country on the map to filter recommended packages.
+                                Full Asia map view (globe projection).
                             </p>
                         </div>
                     </div>
@@ -1036,7 +1106,7 @@ try {
                         <button id="clear-map-filter"
                                 class="text-xs font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1">
                             <i class="fas fa-times"></i>
-                            Clear filter
+                            Reset view
                         </button>
                         <button id="zoom-in" class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center">
                             <i class="fas fa-search-plus text-gray-600"></i>
@@ -1047,72 +1117,14 @@ try {
                     </div>
                 </div>
 
-                <div class="relative w-full h-64 sm:h-80 rounded-2xl border-2 border-primary-100 bg-gradient-to-br from-primary-50 to-white overflow-hidden">
-                    <!-- Interactive Map SVG -->
-                    <svg id="asia-map" viewBox="0 0 800 400" class="w-full h-full" style="transform-origin: center; transition: transform 0.3s ease;">
-                        <!-- India -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="India">
-                            <rect x="320" y="200" width="90" height="60" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="330" y="235" font-size="12" fill="#6B21A8" font-weight="600">India</text>
-                            <circle cx="355" cy="210" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Sri Lanka -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Sri Lanka">
-                            <rect x="360" y="270" width="40" height="40" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="362" y="295" font-size="11" fill="#6B21A8" font-weight="600">Sri Lanka</text>
-                            <circle cx="380" cy="280" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Japan -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Japan">
-                            <rect x="550" y="130" width="60" height="60" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="560" y="160" font-size="12" fill="#6B21A8" font-weight="600">Japan</text>
-                            <circle cx="580" cy="140" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Thailand -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Thailand">
-                            <rect x="400" y="220" width="70" height="50" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="405" y="250" font-size="11" fill="#6B21A8" font-weight="600">Thailand</text>
-                            <circle cx="435" cy="230" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Maldives -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Maldives">
-                            <rect x="340" y="310" width="25" height="25" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="305" y="306" font-size="10" fill="#6B21A8" font-weight="600">Maldives</text>
-                            <circle cx="353" cy="323" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Nepal -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Nepal">
-                            <rect x="335" y="170" width="70" height="25" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="345" y="187" font-size="11" fill="#6B21A8" font-weight="600">Nepal</text>
-                            <circle cx="370" cy="183" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Bangladesh -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Bangladesh">
-                            <rect x="410" y="190" width="55" height="35" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="412" y="210" font-size="10" fill="#6B21A8" font-weight="600">Bangladesh</text>
-                            <circle cx="438" cy="208" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Pakistan -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Pakistan">
-                            <rect x="260" y="190" width="55" height="45" fill="#FAF5FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="262" y="210" font-size="10" fill="#6B21A8" font-weight="600">Pakistan</text>
-                            <circle cx="288" cy="213" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-
-                        <!-- Bhutan -->
-                        <g class="country-region map-country cursor-pointer" data-country-region="Bhutan">
-                            <rect x="380" y="175" width="40" height="20" fill="#F3E8FF" stroke="#C084FC" stroke-width="2"></rect>
-                            <text x="382" y="190" font-size="10" fill="#6B21A8" font-weight="600">Bhutan</text>
-                            <circle cx="400" cy="185" r="3" fill="#A855F7" class="pulse-ring"></circle>
-                        </g>
-                    </svg>
+                <div class="relative w-full h-64 sm:h-80 rounded-2xl border-2 border-primary-100 overflow-hidden map-wrap">
+                    <object
+                        id="asia-map"
+                        type="image/svg+xml"
+                        data="assets/blankmap-world.svg"
+                        aria-label="Clickable map of Asia"
+                        class="globe-object"
+                    ></object>
 
                     <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm flex items-center gap-3">
                         <div class="w-3 h-3 rounded-full bg-primary-500"></div>
@@ -1123,9 +1135,13 @@ try {
                     
                     <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-mouse-pointer text-primary-600"></i>
-                            <span>Click to explore</span>
+                            <i class="fas fa-globe-asia text-primary-600"></i>
+                            <span>Click a country</span>
                         </div>
+                    </div>
+
+                    <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-[11px] text-gray-600">
+                        Map: "BlankMap-World.svg" by SVG_blank_map_world2, CC BY-SA 3.0, via Wikimedia Commons
                     </div>
                 </div>
             </div>
@@ -1401,7 +1417,7 @@ try {
 
                     <p class="text-sm text-gray-600 mt-2">Rate a package you booked. Updates appear instantly.</p>
 
-                    <form id="reviewForm" class="mt-5 space-y-4">
+                    <form id="reviewForm" class="mt-5 space-y-4" action="javascript:void(0)" method="POST" onsubmit="return false;">
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Package</label>
                             <select name="package_id"
@@ -1470,14 +1486,21 @@ try {
                             </div>
                         <?php else: ?>
                             <?php foreach ($latestReviews as $rv): ?>
-                                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4">
+                                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="<?= (int)$rv['id']; ?>">
                                     <div class="flex items-center justify-between gap-3">
                                         <div class="font-bold text-gray-900 text-sm">
                                             <?= htmlspecialchars($rv['package_title']); ?>
                                             <span class="text-xs text-gray-500 font-semibold">· <?= htmlspecialchars($rv['country_name']); ?></span>
                                         </div>
-                                        <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
-                                            <?= (int)$rv['rating']; ?>/5
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                                <?= (int)$rv['rating']; ?>/5
+                                            </div>
+                                            <?php if ((int)$rv['user_id'] === (int)$userId): ?>
+                                                <button type="button" data-review-delete="<?= (int)$rv['id']; ?>" class="text-xs text-red-600 hover:underline">
+                                                    Delete
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <p class="text-sm text-gray-700 mt-2"><?= htmlspecialchars($rv['review_text']); ?></p>
@@ -1598,7 +1621,7 @@ try {
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button onclick="window.location.href='currency_converter.php'" 
+                <button onclick="window.location.href='https://www.xe.com/currencyconverter/'" 
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-exchange-alt text-green-600 text-xl"></i>
@@ -1609,7 +1632,7 @@ try {
                     </div>
                 </button>
                 
-                <button onclick="window.location.href='weather_check.php'"
+                <button onclick="window.open('https://www.weather.com/','_blank','noopener')"
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-cloud-sun text-blue-600 text-xl"></i>
@@ -1620,7 +1643,7 @@ try {
                     </div>
                 </button>
                 
-                <button onclick="window.location.href='travel_checklist.php'"
+                <button onclick="window.open('https://www.travelers-checklist.com/','_blank','noopener')"
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-clipboard-check text-purple-600 text-xl"></i>
@@ -1631,7 +1654,7 @@ try {
                     </div>
                 </button>
                 
-                <button onclick="window.location.href='local_guides.php'"
+                <button onclick="window.open('https://www.withlocals.com/', '_blank', 'noopener')"
                         class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-map-signs text-red-600 text-xl"></i>
@@ -1639,17 +1662,6 @@ try {
                     <div>
                         <p class="font-semibold text-gray-900">Local Guides</p>
                         <p class="text-xs text-gray-500 mt-1">Find expert guides</p>
-                    </div>
-                </button>
-
-                <button onclick="window.location.href='client_map.php'"
-                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-100 to-yellow-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i class="fas fa-map-marked-alt text-yellow-600 text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-gray-900">My Map Planner</p>
-                        <p class="text-xs text-gray-500 mt-1">Pin places & add photos</p>
                     </div>
                 </button>
             </div>
@@ -1722,17 +1734,112 @@ try {
         </div>
     </footer>
 
+    <!-- Chatbot Access Button + Panel -->
+    <div id="chatLauncher" class="fixed bottom-5 right-5 z-[9999]">
+        <button id="chatOpenBtn" class="flex items-center gap-2 rounded-full px-4 py-3 bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition focus-ring">
+            <i class="fas fa-robot"></i>
+            <span class="text-sm font-semibold">Chat</span>
+        </button>
+    </div>
+
+    <div id="chatPanel" class="fixed bottom-20 right-5 w-[92vw] max-w-sm z-[9999] hidden">
+        <div class="md:rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white flex flex-col max-h-[70vh]">
+            <div class="px-4 py-3 flex items-center justify-between bg-primary-600 text-white">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-comment-dots"></i>
+                    <span class="text-sm font-bold">TravelEase Assistant</span>
+                </div>
+                <button id="chatCloseBtn" class="h-9 w-9 rounded-full bg-white/20 hover:bg-white/30 transition focus-ring" aria-label="Close chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="chatBody" class="flex-1 p-3 space-y-2 overflow-y-auto bg-gray-50">
+                <div class="mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-gray-200 bg-white p-2 text-sm text-gray-800">
+                    Hi! I’m your TravelEase assistant. Ask me about packages, bookings, or your trips.
+                </div>
+            </div>
+
+            <div class="p-3 border-t bg-white">
+                <div class="flex gap-2">
+                    <input id="chatInput" class="flex-1 rounded-xl px-3 py-2 text-sm border border-gray-200 focus:ring-2 focus:ring-primary-300 focus-ring" placeholder="Type a message..." />
+                    <button id="chatSendBtn" class="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition focus-ring">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chatbot open/close (standalone to avoid dependency on other scripts)
+        (function () {
+            const chatOpenBtn = document.getElementById('chatOpenBtn');
+            const chatCloseBtn = document.getElementById('chatCloseBtn');
+            const chatPanel = document.getElementById('chatPanel');
+            const chatLauncher = document.getElementById('chatLauncher');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            function showChat() {
+                if (!chatPanel || !chatLauncher) return;
+                chatPanel.classList.remove('hidden');
+                chatLauncher.classList.add('hidden');
+                setTimeout(() => chatInput && chatInput.focus(), 50);
+            }
+
+            function hideChat() {
+                if (!chatPanel || !chatLauncher) return;
+                chatPanel.classList.add('hidden');
+                chatLauncher.classList.remove('hidden');
+            }
+
+            if (chatOpenBtn && !chatOpenBtn.dataset.bound) {
+                chatOpenBtn.dataset.bound = '1';
+                chatOpenBtn.addEventListener('click', showChat);
+            }
+            if (chatCloseBtn && !chatCloseBtn.dataset.bound) {
+                chatCloseBtn.dataset.bound = '1';
+                chatCloseBtn.addEventListener('click', hideChat);
+            }
+            if (chatSendBtn && !chatSendBtn.dataset.bound) {
+                chatSendBtn.dataset.bound = '1';
+                chatSendBtn.addEventListener('click', () => {});
+            }
+        })();
+    </script>
+
     <!-- Interactive map + greeting / typing script -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const currentUserId = <?= (int)$userId; ?>;
+            // ----- Toast helper -----
+            function showToast(message, type = 'info', duration = 2200) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                const colorMap = {
+                    success: 'bg-green-600',
+                    error: 'bg-red-600',
+                    info: 'bg-gray-900'
+                };
+                toast.className = `text-white ${colorMap[type] || colorMap.info} px-4 py-3 rounded-xl shadow-lg text-sm`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
             // ----- Map filter -----
-            const regions = document.querySelectorAll('.country-region');
             const packageCards = document.querySelectorAll('[data-package-country]');
             const activeLabel = document.getElementById('active-country-label');
             const clearBtn = document.getElementById('clear-map-filter');
             const zoomInBtn = document.getElementById('zoom-in');
             const zoomOutBtn = document.getElementById('zoom-out');
-            const mapSvg = document.getElementById('asia-map');
+            const mapObj = document.getElementById('asia-map');
+            let mapSvg = null;
+            let asiaElements = [];
             
             let activeCountry = '';
             let currentScale = 1;
@@ -1756,43 +1863,247 @@ try {
                 }
             }
 
-            regions.forEach(region => {
-                region.addEventListener('click', () => {
-                    const country = region.getAttribute('data-country-region');
+            function setActiveCountry(country, el) {
+                // Toggle selection
+                if (activeCountry === country) {
+                    activeCountry = '';
+                } else {
+                    activeCountry = country;
+                }
 
-                    // Toggle selection
-                    if (activeCountry === country) {
-                        activeCountry = '';
-                    } else {
-                        activeCountry = country;
-                    }
+                // Update active styles
+                asiaElements.forEach(r => r.classList.remove('active'));
+                if (activeCountry && el) {
+                    el.classList.add('active');
+                }
 
-                    // Update active styles
-                    regions.forEach(r => r.classList.remove('active'));
-                    if (activeCountry) {
-                        region.classList.add('active');
-                    }
-
-                    applyFilter(activeCountry);
-                });
-            });
+                applyFilter(activeCountry);
+            }
 
             clearBtn.addEventListener('click', () => {
                 activeCountry = '';
-                regions.forEach(r => r.classList.remove('active'));
+                asiaElements.forEach(r => r.classList.remove('active'));
                 applyFilter('');
             });
             
             // Zoom functionality
             zoomInBtn.addEventListener('click', () => {
                 currentScale = Math.min(currentScale + 0.1, 1.5);
-                mapSvg.style.transform = `scale(${currentScale})`;
+                if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
             });
             
             zoomOutBtn.addEventListener('click', () => {
                 currentScale = Math.max(currentScale - 0.1, 0.8);
-                mapSvg.style.transform = `scale(${currentScale})`;
+                if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
             });
+
+            const asiaCountryMap = {
+                af: "Afghanistan",
+                am: "Armenia",
+                az: "Azerbaijan",
+                bh: "Bahrain",
+                bd: "Bangladesh",
+                bt: "Bhutan",
+                bn: "Brunei",
+                kh: "Cambodia",
+                cn: "China",
+                cy: "Cyprus",
+                ge: "Georgia",
+                in: "India",
+                id: "Indonesia",
+                ir: "Iran",
+                iq: "Iraq",
+                il: "Israel",
+                jp: "Japan",
+                jo: "Jordan",
+                kz: "Kazakhstan",
+                kw: "Kuwait",
+                kg: "Kyrgyzstan",
+                la: "Laos",
+                lb: "Lebanon",
+                my: "Malaysia",
+                hk: "Hong Kong",
+                mo: "Macau",
+                mv: "Maldives",
+                mn: "Mongolia",
+                mm: "Myanmar",
+                np: "Nepal",
+                kp: "North Korea",
+                kr: "South Korea",
+                om: "Oman",
+                pk: "Pakistan",
+                ph: "Philippines",
+                qa: "Qatar",
+                ru: "Russia",
+                sa: "Saudi Arabia",
+                sg: "Singapore",
+                lk: "Sri Lanka",
+                sy: "Syria",
+                tw: "Taiwan",
+                tj: "Tajikistan",
+                th: "Thailand",
+                tl: "Timor-Leste",
+                tr: "Turkey",
+                tm: "Turkmenistan",
+                ae: "United Arab Emirates",
+                uz: "Uzbekistan",
+                vn: "Vietnam",
+                ye: "Yemen",
+                ps: "Palestine"
+            };
+
+            function initAsiaMap() {
+                if (!mapObj || !mapObj.contentDocument) return;
+                mapSvg = mapObj.contentDocument.documentElement;
+                if (!mapSvg) return;
+
+                mapSvg.setAttribute('viewBox', '0 0 2754 1398');
+                mapSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+                const styleEl = mapObj.contentDocument.createElementNS('http://www.w3.org/2000/svg', 'style');
+                styleEl.textContent = `
+                    .asia-country { stroke: #ffffff !important; stroke-width: 1.1; cursor: pointer; }
+                    .asia-country:hover { filter: brightness(1.05); }
+                    .asia-country.active { stroke: #111827 !important; stroke-width: 2; }
+                    .non-asia { display: none !important; }
+                    #ocean { display: none !important; }
+                `;
+                mapSvg.appendChild(styleEl);
+
+                const allLand = mapSvg.querySelectorAll('.landxx, .coastxx');
+                allLand.forEach(el => el.classList.add('non-asia'));
+
+                const colorMap = {
+                    ru: "#4aaed1", kz: "#a8c43a", mn: "#e45a5a", cn: "#f5cf3b", jp: "#d93b3b",
+                    kp: "#f0a45b", kr: "#9cc85a", tw: "#58c1b8",
+                    in: "#f2a24a", pk: "#63b4c6", af: "#7b67b8", ir: "#57c389", iq: "#2f98b9",
+                    sa: "#f3cc4b", ye: "#6fa6db", om: "#8bc34a", ae: "#7fd3e1", qa: "#f7c04a",
+                    kw: "#69c6b1", bh: "#f5a65a", jo: "#7bc96f", sy: "#e57373", il: "#5aa9e6",
+                    tr: "#f7c04a", az: "#f48fb1", am: "#ef5350", ge: "#7e57c2", cy: "#f6d365",
+                    tm: "#ffb74d", uz: "#ba68c8", tj: "#64b5f6", kg: "#81c784",
+                    th: "#6cbf7a", vn: "#4db6ac", la: "#ffb74d", kh: "#5c6bc0", mm: "#4fc3f7",
+                    my: "#ef6c00", sg: "#ff7043", id: "#4caf50", ph: "#ab47bc", bn: "#66bb6a",
+                    lk: "#5aa9e6", np: "#ce93d8", bt: "#fbc02d", bd: "#f6a57b", mv: "#4db6ac",
+                    ps: "#90caf9", lb: "#f48fb1", hk: "#ffa726", mo: "#ffcc80", tl: "#ff8a65"
+                };
+
+                asiaElements = [];
+                Object.entries(asiaCountryMap).forEach(([code, name]) => {
+                    const el = mapSvg.getElementById(code);
+                    if (!el) return;
+                    el.classList.remove('non-asia');
+                    el.classList.add('asia-country', 'country-region');
+                    el.setAttribute('data-country-region', name);
+                    el.setAttribute('title', name);
+                    if (colorMap[code]) {
+                        el.style.fill = colorMap[code];
+                    }
+                    el.addEventListener('click', () => setActiveCountry(name, el));
+                    asiaElements.push(el);
+                });
+
+                // Add labels for all Asia countries
+                const labelsGroup = mapObj.contentDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+                labelsGroup.setAttribute('id', 'asia-labels');
+                labelsGroup.setAttribute('pointer-events', 'none');
+                mapSvg.appendChild(labelsGroup);
+
+                asiaElements.forEach(el => {
+                    try {
+                        const name = el.getAttribute('data-country-region') || '';
+                        if (!name) return;
+                        const b = el.getBBox();
+                        const cx = b.x + b.width / 2;
+                        const cy = b.y + b.height / 2;
+                        const size = Math.max(6, Math.min(12, Math.floor(Math.min(b.width, b.height) / 3)));
+
+                        const text = mapObj.contentDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', cx.toFixed(2));
+                        text.setAttribute('y', cy.toFixed(2));
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'middle');
+                        text.setAttribute('font-size', String(size));
+                        text.setAttribute('font-family', 'Arial, sans-serif');
+                        text.setAttribute('fill', '#111827');
+                        text.setAttribute('stroke', 'rgba(255,255,255,0.8)');
+                        text.setAttribute('stroke-width', '2');
+                        text.setAttribute('paint-order', 'stroke');
+                        text.textContent = name.toUpperCase();
+                        labelsGroup.appendChild(text);
+                    } catch (e) {
+                        // skip label if bbox fails
+                    }
+                });
+
+                // Auto-fit to Asia bounds (show Asia only) and center in panel
+                function fitAsiaToPanel() {
+                    try {
+                        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                        asiaElements.forEach(el => {
+                            const b = el.getBBox();
+                            minX = Math.min(minX, b.x);
+                            minY = Math.min(minY, b.y);
+                            maxX = Math.max(maxX, b.x + b.width);
+                            maxY = Math.max(maxY, b.y + b.height);
+                        });
+                        if (!isFinite(minX)) return;
+
+                        const width = maxX - minX;
+                        const height = maxY - minY;
+                        const pad = 0.06;
+                        let vbW = width * (1 + pad);
+                        let vbH = height * (1 + pad);
+
+                        const rect = mapObj.getBoundingClientRect();
+                        const parentRect = mapObj.parentElement ? mapObj.parentElement.getBoundingClientRect() : rect;
+                        const w = rect.width || parentRect.width;
+                        const h = rect.height || parentRect.height;
+                        const panelRatio = (w && h) ? (w / h) : (vbW / vbH);
+                        const vbRatio = vbW / vbH;
+
+                        if (vbRatio > panelRatio) {
+                            vbH = vbW / panelRatio;
+                        } else {
+                            vbW = vbH * panelRatio;
+                        }
+
+                        const cx = minX + width / 2;
+                        const cy = minY + height / 2;
+                        const x = cx - vbW / 2;
+                        const y = cy - vbH / 2;
+                        mapSvg.setAttribute('viewBox', `${x} ${y} ${vbW} ${vbH}`);
+                    } catch (e) {
+                        // If getBBox fails, keep full viewBox
+                    }
+                }
+
+                try {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    asiaElements.forEach(el => {
+                        const b = el.getBBox();
+                        minX = Math.min(minX, b.x);
+                        minY = Math.min(minY, b.y);
+                        maxX = Math.max(maxX, b.x + b.width);
+                        maxY = Math.max(maxY, b.y + b.height);
+                    });
+                    if (isFinite(minX)) {
+                        // initial fit
+                        fitAsiaToPanel();
+                        // re-fit after layout settles
+                        setTimeout(fitAsiaToPanel, 50);
+                        setTimeout(fitAsiaToPanel, 250);
+                    }
+                } catch (e) {
+                    // If getBBox fails, keep full viewBox
+                }
+            }
+
+            if (mapObj) {
+                mapObj.addEventListener('load', initAsiaMap);
+                if (mapObj.contentDocument?.readyState === 'complete') {
+                    initAsiaMap();
+                }
+            }
 
             // ----- Local-time based greeting (browser time) -----
             const greetingEl = document.getElementById('time-greeting-text');
@@ -2026,15 +2337,19 @@ try {
             }
 
             function reviewCardHTML(rv) {
+                const canDelete = parseInt(rv.user_id, 10) === currentUserId;
                 return `
-                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4">
+                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="${parseInt(rv.id, 10)}">
                     <div class="flex items-center justify-between gap-3">
                         <div class="font-bold text-gray-900 text-sm">
                             ${escapeHtml(rv.package_title)}
                             <span class="text-xs text-gray-500 font-semibold">· ${escapeHtml(rv.country_name)}</span>
                         </div>
-                        <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
-                            ${parseInt(rv.rating, 10)}/5
+                        <div class="flex items-center gap-2">
+                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                ${parseInt(rv.rating, 10)}/5
+                            </div>
+                            ${canDelete ? `<button type="button" data-review-delete="${parseInt(rv.id, 10)}" class="text-xs text-red-600 hover:underline">Delete</button>` : ''}
                         </div>
                     </div>
                     <p class="text-sm text-gray-700 mt-2">${escapeHtml(rv.review_text)}</p>
@@ -2074,8 +2389,11 @@ try {
                     e.preventDefault();
 
                     const statusEl = document.getElementById('review-status');
-                    statusEl.textContent = 'Submitting...';
-                    statusEl.className = 'text-xs font-semibold text-gray-500';
+                    if (statusEl) {
+                        statusEl.textContent = 'Submitting...';
+                        statusEl.className = 'text-xs font-semibold text-gray-500';
+                    }
+                    showToast('Submitting your review...', 'info', 1800);
 
                     const fd = new FormData(e.target);
 
@@ -2084,13 +2402,19 @@ try {
                         const data = await res.json();
 
                         if (!data.ok) {
-                            statusEl.textContent = data.message || 'Failed';
-                            statusEl.className = 'text-xs font-semibold text-red-600';
+                            if (statusEl) {
+                                statusEl.textContent = data.message || 'Failed';
+                                statusEl.className = 'text-xs font-semibold text-red-600';
+                            }
+                            showToast(data.message || 'Failed to submit review.', 'error');
                             return;
                         }
 
-                        statusEl.textContent = data.message || 'Submitted!';
-                        statusEl.className = 'text-xs font-semibold text-green-600';
+                        if (statusEl) {
+                            statusEl.textContent = data.message || 'Submitted!';
+                            statusEl.className = 'text-xs font-semibold text-green-600';
+                        }
+                        showToast(data.message || 'Review submitted successfully!', 'success');
 
                         if (data.review) {
                             const list = document.getElementById('reviewsList');
@@ -2102,12 +2426,161 @@ try {
                         e.target.reset();
                     } catch (err) {
                         console.error('Error submitting review:', err);
-                        statusEl.textContent = 'Network error';
-                        statusEl.className = 'text-xs font-semibold text-red-600';
+                        if (statusEl) {
+                            statusEl.textContent = 'Network error';
+                            statusEl.className = 'text-xs font-semibold text-red-600';
+                        }
+                        showToast('Network error. Please try again.', 'error');
                     }
                 });
             }
+
+            // Handle review delete (event delegation)
+            const reviewsList = document.getElementById('reviewsList');
+            if (reviewsList) {
+                reviewsList.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('[data-review-delete]');
+                    if (!btn) return;
+                    const id = parseInt(btn.getAttribute('data-review-delete'), 10);
+                    if (!id) return;
+                    if (!confirm('Delete this review?')) return;
+                    try {
+                        const res = await fetch('review_delete.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ id })
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || !data.ok) {
+                            showToast?.(data.message || 'Delete failed', 'error');
+                            return;
+                        }
+                        const card = reviewsList.querySelector(`[data-review-card="${id}"]`);
+                        if (card) card.remove();
+                        showToast?.('Review deleted', 'success');
+                    } catch (err) {
+                        showToast?.('Network error. Please try again.', 'error');
+                    }
+                });
+            }
+
+            // ----- Chatbot access -----
+            const chatOpenBtn = document.getElementById('chatOpenBtn');
+            const chatCloseBtn = document.getElementById('chatCloseBtn');
+            const chatPanel = document.getElementById('chatPanel');
+            const chatLauncher = document.getElementById('chatLauncher');
+            const chatBody = document.getElementById('chatBody');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            function showChat() {
+                chatPanel.classList.remove('hidden');
+                chatLauncher.classList.add('hidden');
+                setTimeout(() => chatInput && chatInput.focus(), 50);
+            }
+
+            function hideChat() {
+                chatPanel.classList.add('hidden');
+                chatLauncher.classList.remove('hidden');
+            }
+
+            function addChatMsg(text, who) {
+                const div = document.createElement('div');
+                div.className = (who === 'user')
+                    ? 'ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-primary-600 text-white p-2 text-sm'
+                    : 'mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-gray-200 bg-white p-2 text-sm text-gray-800';
+                div.textContent = text;
+                chatBody.appendChild(div);
+                chatBody.scrollTop = chatBody.scrollHeight;
+                return div;
+            }
+
+            async function sendChatMsg() {
+                const msg = (chatInput.value || '').trim();
+                if (!msg) return;
+
+                addChatMsg(msg, 'user');
+                chatInput.value = '';
+
+                const typing = addChatMsg('Typing...', 'bot');
+
+                try {
+                    const res = await fetch('chat_api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: msg })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    typing.remove();
+
+                    const botText = (typeof data.reply === 'string' && data.reply.trim() !== '')
+                        ? data.reply
+                        : (typeof data.error === 'string' && data.error.trim() !== '')
+                            ? data.error
+                            : 'Sorry, something went wrong.';
+
+                    addChatMsg(botText, 'bot');
+                } catch (e) {
+                    typing.remove();
+                    addChatMsg('Network error connecting to chatbot.', 'bot');
+                }
+            }
+
+            chatOpenBtn && chatOpenBtn.addEventListener('click', showChat);
+            chatCloseBtn && chatCloseBtn.addEventListener('click', hideChat);
+            chatSendBtn && chatSendBtn.addEventListener('click', sendChatMsg);
+            chatInput && chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') sendChatMsg();
+            });
         });
     </script>
+
+    <script>
+        // Fallback dropdown wiring in case the main script fails earlier
+        (function () {
+            const pairs = [
+                ['notification-btn', 'notification-dropdown'],
+                ['user-menu-btn', 'user-dropdown'],
+                ['quick-menu-btn', 'quick-menu'],
+                ['mobile-menu-btn', 'mobile-menu']
+            ];
+
+            function closeAll(exceptId) {
+                pairs.forEach(([btnId, ddId]) => {
+                    if (ddId === exceptId) return;
+                    const dd = document.getElementById(ddId);
+                    if (dd) dd.classList.add('hidden');
+                });
+            }
+
+            pairs.forEach(([btnId, ddId]) => {
+                const btn = document.getElementById(btnId);
+                const dd = document.getElementById(ddId);
+                if (!btn || !dd || btn.dataset.ddBound) return;
+                btn.dataset.ddBound = '1';
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeAll(ddId);
+                    dd.classList.toggle('hidden');
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                pairs.forEach(([btnId, ddId]) => {
+                    const btn = document.getElementById(btnId);
+                    const dd = document.getElementById(ddId);
+                    if (!btn || !dd) return;
+                    if (!btn.contains(e.target) && !dd.contains(e.target)) {
+                        dd.classList.add('hidden');
+                    }
+                });
+            });
+        })();
+    </script>
+    <!-- Toast notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
 </body>
 </html>

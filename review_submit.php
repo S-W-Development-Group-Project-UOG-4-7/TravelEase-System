@@ -67,6 +67,7 @@ try {
     $stmt = $pdo->prepare("
         SELECT
             r.id,
+            r.user_id,
             r.rating,
             r.review_text,
             r.created_at,

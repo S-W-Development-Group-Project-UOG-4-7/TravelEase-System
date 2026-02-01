@@ -1730,5 +1730,128 @@
 
     perfObserver.observe({entryTypes: ['navigation', 'paint', 'largest-contentful-paint']});
   </script>
+  <!-- TravelEase AI Chatbot (Guest/User) -->
+  <div id="teChatLauncher" class="fixed bottom-5 right-5 z-[9999]">
+    <button id="teChatOpenBtn" class="group flex items-center gap-3 rounded-full px-4 py-3 shadow-xl border border-white/20 bg-white/10 backdrop-blur-lg hover:bg-white/15 transition">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-yellow-400 text-white shadow">
+        <i class="fa-solid fa-robot"></i>
+      </span>
+      <span class="hidden sm:block text-sm font-semibold text-white">Ask TravelEase</span>
+    </button>
+  </div>
+
+  <div id="teChatPanel" class="fixed bottom-5 right-5 z-[9999] w-[92vw] max-w-sm hidden">
+    <div class="rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-white/10 backdrop-blur-xl">
+      <div class="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-700/80 via-purple-600/60 to-yellow-400/50">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white">
+            <i class="fa-solid fa-comment-dots"></i>
+          </span>
+          <div class="leading-tight">
+            <div class="text-sm font-bold text-white">TravelEase Assistant</div>
+            <div class="text-[11px] text-white/90">Ask questions • Book • Cancel • Email • PDF</div>
+          </div>
+        </div>
+        <button id="teChatCloseBtn" class="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition" aria-label="Close chat">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="teChatBody" class="h-80 p-3 space-y-2 overflow-y-auto bg-black/10">
+        <div class="mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-white/10 bg-white/10 p-2 text-sm text-white">
+          Hi! I’m your TravelEase assistant. Tell me what you want to do (book/cancel/email/PDF) or ask anything about the system.
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-white/10 bg-white/5">
+        <div class="flex gap-2">
+          <input id="teChatInput" class="flex-1 rounded-xl px-3 py-2 text-sm bg-white/10 border border-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-400/60" placeholder="Type a message..." />
+          <button id="teChatSendBtn" class="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition">
+            Send
+          </button>
+        </div>
+        <div id="teChatHint" class="mt-2 text-[11px] text-white/60">
+          Tip: For bookings, include destination + dates (YYYY-MM-DD).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const openBtn = document.getElementById('teChatOpenBtn');
+      const closeBtn = document.getElementById('teChatCloseBtn');
+      const panel = document.getElementById('teChatPanel');
+      const launcher = document.getElementById('teChatLauncher');
+      const body = document.getElementById('teChatBody');
+      const input = document.getElementById('teChatInput');
+      const sendBtn = document.getElementById('teChatSendBtn');
+
+      function showPanel() {
+        panel.classList.remove('hidden');
+        launcher.classList.add('hidden');
+        setTimeout(() => input && input.focus(), 50);
+      }
+      function hidePanel() {
+        panel.classList.add('hidden');
+        launcher.classList.remove('hidden');
+      }
+
+      function addMsg(text, who) {
+        const div = document.createElement('div');
+        div.className = (who === 'user')
+          ? 'ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-purple-700/60 border border-white/10 p-2 text-sm text-white'
+          : 'mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-white/10 bg-white/10 p-2 text-sm text-white';
+        div.textContent = text;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+        return div;
+      }
+
+      async function sendMsg() {
+        const msg = (input.value || '').trim();
+        if (!msg) return;
+
+        addMsg(msg, 'user');
+        input.value = '';
+
+        const typing = addMsg('Typing…', 'bot');
+
+        try {
+          const res = await fetch('chat_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+          });
+
+          const data = await res.json().catch(() => ({}));
+          typing.remove();
+
+          const botText = (typeof data.reply === 'string' && data.reply.trim() !== '')
+            ? data.reply
+            : (typeof data.error === 'string' && data.error.trim() !== '')
+              ? data.error
+              : 'Sorry, something went wrong.';
+
+          if (!res.ok) {
+            addMsg(botText, 'bot');
+            return;
+          }
+
+          addMsg(botText, 'bot');
+        } catch (e) {
+          typing.remove();
+          addMsg('Network error connecting to chatbot.', 'bot');
+        }
+      }
+
+      openBtn && openBtn.addEventListener('click', showPanel);
+      closeBtn && closeBtn.addEventListener('click', hidePanel);
+      sendBtn && sendBtn.addEventListener('click', sendMsg);
+      input && input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMsg();
+      });
+    })();
+  </script>
 </body>
 </html>
