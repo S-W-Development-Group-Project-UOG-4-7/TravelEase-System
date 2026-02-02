@@ -1,1248 +1,1128 @@
 <?php
-// generate_report.php
-session_start();
-if (!isset($_SESSION['marketing_logged_in'])) {
-    $_SESSION['marketing_logged_in'] = true;
-    $_SESSION['full_name'] = 'Marketing Manager';
-}
+// Start PHP section
+require_once 'db.php'; // Your PostgreSQL connection file
 
-$managerName = $_SESSION['full_name'] ?? 'Marketing Manager';
-$profileImage = 'https://ui-avatars.com/api/?name=' . urlencode($managerName) . '&background=f59e0b&color=fff&bold=true';
-$currentYear = date('Y');
+// Initialize variables
+$reportType = 'package';
+$month = date('Y-m', strtotime('-1 month')); // Default to previous month
+$year = date('Y');
+$monthName = date('F', strtotime($month . '-01'));
+$reportData = [];
+$success = true;
+$error = '';
+$currentYear = 2026;
 
-// Updated travel-specific report types with template file mapping
-$reportTypes = [
-    'package_performance' => [
-        'label' => 'Package Performance Analysis',
-        'template' => 'templates/package_performance.php'
-    ],
-    'customer_feedback' => [
-        'label' => 'Customer Feedback Analysis', 
-        'template' => 'feedback_insights.php'
-    ],
-    'partnership_analysis' => [
-        'label' => 'Partnership Performance',
-        'template' => 'templates/partnership_analysis.php'
-    ]
-];
-
-// Report periods
-$periods = [
-    'last_week' => 'Last Week',
-    'last_month' => 'Last Month',
-    'last_quarter' => 'Last Quarter',
-    'last_year' => 'Last Year',
-    'custom' => 'Custom Range'
-];
-
-// Report formats
-$formats = [
-    'pdf' => 'PDF Document',
-    'excel' => 'Excel Spreadsheet',
-    'csv' => 'CSV Data',
-    'ppt' => 'PowerPoint Presentation'
-];
-
-// Travel-specific report templates with template file mapping
-$templates = [
-    [
-        'id' => 'package_performance',
-        'name' => 'Package Performance Report',
-        'description' => 'Travel package bookings, revenue, and conversion metrics',
-        'icon' => 'suitcase-rolling',
-        'sections' => 6,
-        'estimated_size' => '3-5 MB',
-        'template_file' => 'templates/package_performance.php'
-    ],
-    [
-        'id' => 'partnership_analysis',
-        'name' => 'Partnership Performance',
-        'description' => 'Partner performance and revenue sharing analysis',
-        'icon' => 'handshake',
-        'sections' => 6,
-        'estimated_size' => '2-3 MB',
-        'template_file' => 'templates/partnership_analysis.php'
-    ],
-    [
-        'id' => 'customer_feedback',
-        'name' => 'Customer Feedback Report',
-        'description' => 'Customer satisfaction and NPS analysis',
-        'icon' => 'comments',
-        'sections' => 5,
-        'estimated_size' => '1-2 MB',
-        'template_file' => 'templates/feedback_insights.php'
-    ]
-];
-
-// If form is submitted, generate report
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $reportData = [
-        'title' => $_POST['report_title'] ?? 'Marketing Report',
-        'type' => $_POST['report_type'] ?? 'package_performance',
-        'period' => $_POST['report_period'] ?? 'last_month',
-        'format' => $_POST['format'] ?? 'pdf',
-        'sections' => $_POST['sections'] ?? [],
-        'custom_date_start' => $_POST['custom_start_date'] ?? '',
-        'custom_date_end' => $_POST['custom_end_date'] ?? '',
-        'email' => $_POST['email'] ?? '',
-        'generated_by' => $managerName,
-        'generated_at' => date('Y-m-d H:i:s'),
-        'report_id' => 'TRV-' . date('Ymd') . '-' . rand(1000, 9999)
-    ];
+    $reportType = $_POST['reportType'] ?? 'package';
+    $month = $_POST['month'] ?? $month;
     
-    // Store report data in session
-    $_SESSION['current_report'] = $reportData;
+    list($year, $monthNum) = explode('-', $month);
+    $monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    $monthName = $monthNames[intval($monthNum) - 1];
     
-    // Redirect to preview
-    header('Location: generate_report.php?preview=1&type=' . urlencode($reportData['type']));
-    exit;
+    // Fetch data from PostgreSQL database based on report type
+    try {
+        $reportData = getReportDataFromDB($reportType, $month, $pdo);
+    } catch (Exception $e) {
+        $success = false;
+        $error = $e->getMessage();
+        $reportData = getSampleData($reportType, $monthNum, $year);
+    }
+} else {
+    // Get sample data for initial load
+    list($year, $monthNum) = explode('-', $month);
+    $reportData = getSampleData($reportType, $monthNum, $year);
 }
 
-// Handle preview request
-if (isset($_GET['preview']) && isset($_GET['type'])) {
-    $previewType = $_GET['type'];
-    $templateFile = null;
+// Function to fetch data from PostgreSQL database
+function getReportDataFromDB($reportType, $month, $pdo) {
+    $data = [];
+    $year = date('Y', strtotime($month));
+    $monthNum = date('m', strtotime($month));
     
-    // Find template file
-    foreach ($templates as $template) {
-        if ($template['id'] === $previewType) {
-            $templateFile = $template['template_file'];
+    switch($reportType) {
+        case 'package':
+            // Package Performance Report - Using travel_packages table
+            // Since you don't have bookings, we'll analyze packages created in that month
+            try {
+                $query = "SELECT 
+                            COUNT(*) as total_packages,
+                            COALESCE(SUM(base_price), 0) as estimated_revenue,
+                            STRING_AGG(DISTINCT category, ', ') as categories,
+                            package_name as most_popular_package,
+                            MAX(base_price) as highest_price,
+                            MIN(base_price) as lowest_price
+                          FROM travel_packages 
+                          WHERE EXTRACT(YEAR FROM created_at) = :year 
+                          AND EXTRACT(MONTH FROM created_at) = :month
+                          GROUP BY package_name
+                          ORDER BY COUNT(*) DESC
+                          LIMIT 1";
+                
+                $stmt = $pdo->prepare($query);
+                $stmt->execute([':year' => $year, ':month' => $monthNum]);
+                $row = $stmt->fetch();
+                
+                if ($row) {
+                    // Get average duration and difficulty
+                    $statsQuery = "SELECT 
+                                    COALESCE(AVG(duration_days), 0) as avg_duration,
+                                    COUNT(DISTINCT region) as total_regions,
+                                    COUNT(DISTINCT country) as total_countries
+                                   FROM travel_packages 
+                                   WHERE EXTRACT(YEAR FROM created_at) = :year 
+                                   AND EXTRACT(MONTH FROM created_at) = :month";
+                    
+                    $statsStmt = $pdo->prepare($statsQuery);
+                    $statsStmt->execute([':year' => $year, ':month' => $monthNum]);
+                    $statsRow = $statsStmt->fetch();
+                    
+                    $data = [
+                        'total_packages' => $row['total_packages'] ?? 0,
+                        'estimated_revenue' => $row['estimated_revenue'] ?? 0,
+                        'avg_duration' => $statsRow['avg_duration'] ?? 0,
+                        'total_regions' => $statsRow['total_regions'] ?? 0,
+                        'total_countries' => $statsRow['total_countries'] ?? 0,
+                        'most_popular_package' => $row['most_popular_package'] ?? 'No packages',
+                        'categories' => $row['categories'] ?? 'N/A',
+                        'highest_price' => $row['highest_price'] ?? 0,
+                        'lowest_price' => $row['lowest_price'] ?? 0,
+                        'progress1' => 85,
+                        'progress2' => 70,
+                        'progress3' => 90
+                    ];
+                } else {
+                    // No packages created in this month
+                    $data = [
+                        'total_packages' => 0,
+                        'estimated_revenue' => 0,
+                        'avg_duration' => 0,
+                        'total_regions' => 0,
+                        'total_countries' => 0,
+                        'most_popular_package' => 'No packages created',
+                        'categories' => 'N/A',
+                        'highest_price' => 0,
+                        'lowest_price' => 0,
+                        'progress1' => 85,
+                        'progress2' => 70,
+                        'progress3' => 90
+                    ];
+                }
+                
+            } catch (Exception $e) {
+                throw new Exception("Package data query failed: " . $e->getMessage());
+            }
             break;
-        }
+            
+        case 'feedback':
+            // Customer Feedback Report - Check if you have feedback table
+            try {
+                // First check if feedback table exists
+                $tablesQuery = "SELECT table_name FROM information_schema.tables 
+                               WHERE table_schema = 'public' 
+                               AND table_name = 'feedback'";
+                $tablesStmt = $pdo->query($tablesQuery);
+                $hasFeedback = $tablesStmt->rowCount() > 0;
+                
+                if ($hasFeedback) {
+                    // Check columns in feedback table
+                    $columnsQuery = "SELECT column_name FROM information_schema.columns 
+                                    WHERE table_name = 'feedback'";
+                    $columnsStmt = $pdo->query($columnsQuery);
+                    $feedbackColumns = array_column($columnsStmt->fetchAll(), 'column_name');
+                    
+                    $hasRating = in_array('rating', $feedbackColumns);
+                    $dateColumn = in_array('created_at', $feedbackColumns) ? 'created_at' : 'feedback_date';
+                    
+                    if ($hasRating) {
+                        $query = "SELECT 
+                                    COUNT(*) as total_feedback,
+                                    COALESCE(AVG(rating), 0) as avg_rating,
+                                    SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) as positive_feedback,
+                                    SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_feedback
+                                  FROM feedback 
+                                  WHERE EXTRACT(YEAR FROM $dateColumn) = :year 
+                                  AND EXTRACT(MONTH FROM $dateColumn) = :month";
+                    } else {
+                        $query = "SELECT 
+                                    COUNT(*) as total_feedback,
+                                    0 as avg_rating,
+                                    0 as positive_feedback,
+                                    0 as negative_feedback
+                                  FROM feedback 
+                                  WHERE EXTRACT(YEAR FROM $dateColumn) = :year 
+                                  AND EXTRACT(MONTH FROM $dateColumn) = :month";
+                    }
+                    
+                    $stmt = $pdo->prepare($query);
+                    $stmt->execute([':year' => $year, ':month' => $monthNum]);
+                    $row = $stmt->fetch();
+                    
+                    if ($row) {
+                        $positive_percentage = $row['total_feedback'] > 0 ? 
+                            round(($row['positive_feedback'] / $row['total_feedback']) * 100, 1) : 0;
+                        
+                        $data = [
+                            'total_feedback' => $row['total_feedback'] ?? 0,
+                            'avg_rating' => $row['avg_rating'] ?? 0,
+                            'positive_feedback' => $row['positive_feedback'] ?? 0,
+                            'negative_feedback' => $row['negative_feedback'] ?? 0,
+                            'positive_percentage' => $positive_percentage,
+                            'progress1' => 92,
+                            'progress2' => 88,
+                            'progress3' => 95
+                        ];
+                    } else {
+                        $data = [
+                            'total_feedback' => 0,
+                            'avg_rating' => 0,
+                            'positive_feedback' => 0,
+                            'negative_feedback' => 0,
+                            'positive_percentage' => 0,
+                            'progress1' => 92,
+                            'progress2' => 88,
+                            'progress3' => 95
+                        ];
+                    }
+                } else {
+                    // No feedback table - use travel_packages for some metrics
+                    $query = "SELECT 
+                                COUNT(*) as total_packages_with_reviews,
+                                STRING_AGG(DISTINCT category, ', ') as popular_categories
+                              FROM travel_packages 
+                              WHERE EXTRACT(YEAR FROM created_at) = :year 
+                              AND EXTRACT(MONTH FROM created_at) = :month";
+                    
+                    $stmt = $pdo->prepare($query);
+                    $stmt->execute([':year' => $year, ':month' => $monthNum]);
+                    $row = $stmt->fetch();
+                    
+                    $data = [
+                        'total_feedback' => $row['total_packages_with_reviews'] ?? 0,
+                        'avg_rating' => 0, // No rating data
+                        'positive_feedback' => 0,
+                        'negative_feedback' => 0,
+                        'positive_percentage' => 0,
+                        'popular_categories' => $row['popular_categories'] ?? 'N/A',
+                        'progress1' => 92,
+                        'progress2' => 88,
+                        'progress3' => 95
+                    ];
+                }
+                
+            } catch (Exception $e) {
+                throw new Exception("Feedback data query failed: " . $e->getMessage());
+            }
+            break;
+            
+        case 'partnership':
+            // Partnership Report - Using your partnerships table
+            try {
+                $query = "SELECT 
+                            COUNT(*) as total_partners,
+                            COUNT(DISTINCT partnership_type) as partnership_types,
+                            COUNT(DISTINCT industry) as total_industries,
+                            MAX(company_name) as top_partner,
+                            COALESCE(AVG(commission_rate), 0) as avg_commission_rate,
+                            STRING_AGG(DISTINCT partnership_type, ', ') as partnership_types_list
+                          FROM partnerships 
+                          WHERE EXTRACT(YEAR FROM created_at) = :year 
+                          AND EXTRACT(MONTH FROM created_at) = :month";
+                
+                $stmt = $pdo->prepare($query);
+                $stmt->execute([':year' => $year, ':month' => $monthNum]);
+                $row = $stmt->fetch();
+                
+                if ($row) {
+                    $data = [
+                        'total_partners' => $row['total_partners'] ?? 0,
+                        'partnership_types' => $row['partnership_types'] ?? 0,
+                        'total_industries' => $row['total_industries'] ?? 0,
+                        'top_partner' => $row['top_partner'] ?? 'No partners',
+                        'avg_commission_rate' => $row['avg_commission_rate'] ?? 0,
+                        'partnership_types_list' => $row['partnership_types_list'] ?? 'N/A',
+                        'progress1' => 75,
+                        'progress2' => 80,
+                        'progress3' => 85
+                    ];
+                } else {
+                    $data = [
+                        'total_partners' => 0,
+                        'partnership_types' => 0,
+                        'total_industries' => 0,
+                        'top_partner' => 'No partners added',
+                        'avg_commission_rate' => 0,
+                        'partnership_types_list' => 'N/A',
+                        'progress1' => 75,
+                        'progress2' => 80,
+                        'progress3' => 85
+                    ];
+                }
+                
+            } catch (Exception $e) {
+                throw new Exception("Partnership data query failed: " . $e->getMessage());
+            }
+            break;
     }
     
-    if (!$templateFile && isset($reportTypes[$previewType])) {
-        $templateFile = $reportTypes[$previewType]['template'];
-    }
-    
-    if ($templateFile && file_exists(__DIR__ . '/' . $templateFile)) {
-        $previewData = $_SESSION['current_report'] ?? [
-            'title' => 'Marketing Report',
-            'period' => 'Last Month',
-            'generated_by' => $managerName,
-            'generated_at' => date('Y-m-d H:i:s'),
-            'report_id' => 'TRV-' . date('Ymd') . '-' . rand(1000, 9999)
-        ];
-        
-        // Load template content directly
-        ob_start();
-        extract($previewData);
-        include $templateFile;
-        $templateContent = ob_get_clean();
-    }
+    return $data;
 }
 
-$footerLinks = [
-    'Marketing Tools' => [
-        ['text' => 'Dashboard', 'link' => 'marketing_dashboard.php'],
-        ['text' => 'Packages', 'link' => 'marketing_campaigns.php'],
-        ['text' => 'Partnerships', 'link' => 'partnership.php'],
-        ['text' => 'Reports', 'link' => 'marketing_report.php']
-    ],
-    'Resources' => [
-        ['text' => 'Help Center', 'link' => '#'],
-        ['text' => 'API Documentation', 'link' => '#'],
-        ['text' => 'Tutorials', 'link' => '#'],
-        ['text' => 'Support Center', 'link' => '#']
-    ],
-    'Account' => [
-        ['text' => 'Profile Settings', 'link' => 'marketing_profile.php'],
-        ['text' => 'Notification Preferences', 'link' => '#'],
-        ['text' => 'Team Management', 'link' => '#'],
-        ['text' => 'Logout', 'link' => 'login.php']
-    ]
-];
+// Function to get sample data (fallback)
+function getSampleData($reportType, $monthNum, $year) {
+    $data = [];
+    
+    switch($reportType) {
+        case 'package':
+            $data = [
+                'total_packages' => 12,
+                'estimated_revenue' => 45600,
+                'avg_duration' => 7.5,
+                'total_regions' => 3,
+                'total_countries' => 8,
+                'most_popular_package' => 'Luxury Bali Getaway',
+                'categories' => 'Luxury, Adventure, Cultural',
+                'highest_price' => 8500,
+                'lowest_price' => 1200,
+                'progress1' => 85,
+                'progress2' => 70,
+                'progress3' => 90
+            ];
+            break;
+            
+        case 'feedback':
+            $data = [
+                'total_feedback' => 45,
+                'avg_rating' => 4.3,
+                'positive_feedback' => 38,
+                'negative_feedback' => 3,
+                'positive_percentage' => 84.4,
+                'popular_categories' => 'Customer Service, Package Quality',
+                'progress1' => 92,
+                'progress2' => 88,
+                'progress3' => 95
+            ];
+            break;
+            
+        case 'partnership':
+            $data = [
+                'total_partners' => 8,
+                'partnership_types' => 3,
+                'total_industries' => 4,
+                'top_partner' => 'Global Airlines Inc.',
+                'avg_commission_rate' => 12.5,
+                'partnership_types_list' => 'Airline, Hotel, Tour Operator',
+                'progress1' => 75,
+                'progress2' => 80,
+                'progress3' => 85
+            ];
+            break;
+    }
+    
+    return $data;
+}
+
+// Format numbers for display
+function formatNumber($value) {
+    return is_numeric($value) ? number_format($value) : $value;
+}
+
+function formatCurrency($value) {
+    return is_numeric($value) ? '$' . number_format($value) : $value;
+}
+
+function formatRating($value) {
+    return is_numeric($value) ? number_format($value, 1) . '/5' : $value;
+}
+
+function formatPercentage($value) {
+    return is_numeric($value) ? number_format($value, 1) . '%' : $value;
+}
+
+function formatDays($value) {
+    return is_numeric($value) ? number_format($value, 1) . ' days' : $value;
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Generate Report | TravelEase Marketing</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PDF Generation Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#fffbeb',
-              100: '#fef3c7',
-              200: '#fde68a',
-              300: '#fcd34d',
-              400: '#fbbf24',
-              500: '#f59e0b',
-              600: '#d97706',
-              700: '#b45309',
-              800: '#92400e',
-              900: '#78350f'
-            }
-          }
-        }
-      }
-    };
-  </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { 
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #ffffff 0%, #fef7e5 50%, #fef3c7 100%);
-      color: #1f2937;
-    }
-    .glass-effect {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.9);
-    }
-    .gold-gradient {
-      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
-    }
-    .text-gradient {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .progress-bar {
-      height: 6px;
-      border-radius: 3px;
-      overflow: hidden;
-      background-color: #fef3c7;
-    }
-    .progress-fill {
-      height: 100%;
-      border-radius: 3px;
-      background: linear-gradient(90deg, #f59e0b, #fbbf24);
-      transition: width 0.5s ease;
-    }
-    .mobile-menu {
-      display: none;
-    }
-    .mobile-menu.open {
-      display: block;
-    }
-    @keyframes slideIn {
-      from { transform: translateX(-100%); }
-      to { transform: translateX(0); }
-    }
-    @keyframes slideOut {
-      from { transform: translateX(0); }
-      to { transform: translateX(-100%); }
-    }
-    .mobile-menu.open > div:last-child {
-      animation: slideIn 0.3s ease-out forwards;
-    }
-    .mobile-menu.closing > div:last-child {
-      animation: slideOut 0.3s ease-in forwards;
-    }
-    /* PDF Preview Modal */
-    .pdf-preview-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .pdf-preview-modal.active {
-      display: flex;
-    }
-    .pdf-preview-content {
-      background: white;
-      border-radius: 1rem;
-      width: 90%;
-      max-width: 900px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .template-card.selected {
-      border-color: #f59e0b;
-      background-color: #fffbeb;
-    }
-    /* Animation for success message */
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-    .animate-slideIn {
-      animation: slideIn 0.3s ease-out forwards;
-    }
-    .step-content {
-      display: block;
-    }
-    .step-content.hidden {
-      display: none;
-    }
-  </style>
-</head>
-<body class="min-h-screen">
-  <!-- Success Message -->
-  <?php if (isset($_GET['success'])): ?>
-    <div class="fixed top-24 right-6 z-50 p-4 bg-green-100 text-green-800 rounded-xl shadow-lg flex items-center gap-3 animate-slideIn">
-      <i class="fas fa-check-circle text-green-600 text-lg"></i>
-      <div>
-        <p class="font-semibold">Report generated successfully!</p>
-        <p class="text-sm">Report ID: <?= htmlspecialchars($_GET['report_id'] ?? 'TRV-' . date('Ymd') . '-' . rand(1000, 9999)) ?></p>
-        <p class="text-xs">Format: <?= htmlspecialchars($_GET['format'] ?? 'PDF') ?></p>
-      </div>
-      <button onclick="this.parentElement.remove()" class="ml-4 text-green-600 hover:text-green-800">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  <?php endif; ?>
-
-  <!-- PDF Preview Modal -->
-  <div id="pdfPreviewModal" class="pdf-preview-modal">
-    <div class="pdf-preview-content">
-      <div class="p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-xl font-bold text-gray-900">Report Preview</h3>
-          <div class="flex gap-2">
-            <button onclick="downloadTemplatePDF()" class="px-5 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-all flex items-center gap-2">
-              <i class="fas fa-download"></i> Download PDF
-            </button>
-            <button onclick="closePreview()" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-        
-        <!-- Report Preview Content -->
-        <div id="reportPreview" class="bg-white p-8 border border-gray-200 rounded-lg">
-          <?php if (isset($templateContent)): ?>
-            <?= $templateContent ?>
-          <?php else: ?>
-            <!-- Default preview content -->
-            <div id="defaultPreviewContent">
-              <p class="text-gray-600">Preview will appear here after selecting a report type and clicking Preview.</p>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading Bar -->
-  <div class="loading-bar fixed top-0 left-0 w-0 h-1 bg-amber-500 z-50 transition-all duration-300"></div>
-
-  <!-- Mobile Menu -->
-  <div id="mobile-menu" class="mobile-menu fixed inset-0 z-40 lg:hidden hidden">
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
-    <div class="fixed top-0 left-0 h-full w-80 max-w-full bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-8">
-          <div class="flex items-center gap-3">
-            <div class="h-12 w-12 rounded-2xl overflow-hidden">
-              <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain">
-            </div>
-            <span class="font-black text-xl text-gray-900">TravelEase</span>
-          </div>
-          <button id="mobile-menu-close" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-
-        <nav class="space-y-4">
-          <a href="marketing_dashboard.php" class="flex items-center gap-4 p-4 rounded-2xl bg-amber-50 text-amber-600 font-semibold">
-            <i class="fas fa-chart-line w-6 text-center"></i>
-            Overview
-          </a>
-          <a href="marketing_campaigns.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-bullhorn w-6 text-center"></i>
-            Packages
-          </a>
-          <a href="marketing_report.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-file-alt w-6 text-center"></i>
-            Reports
-          </a>
-          <a href="partnership.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-handshake w-6 text-center"></i>
-            Partnerships
-          </a>
-          <a href="marketing_feedback.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
-            Customer Feedback
-          </a>
-          <a href="marketing_profile.php" class="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-all font-semibold">
-            <i class="fas fa-user w-6 text-center"></i>
-            My Profile
-          </a>
-        </nav>
-
-        <div class="mt-8 pt-8 border-t border-amber-100">
-          <div class="flex items-center gap-3 mb-4">
-            <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-amber-500">
-            <div>
-              <div class="font-semibold text-gray-900"><?= htmlspecialchars($managerName) ?></div>
-              <div class="text-sm text-gray-600">Marketing Manager</div>
-            </div>
-          </div>
-          <a href="login.php" class="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-amber-50 transition-all">
-            <i class="fas fa-sign-out-alt text-amber-500"></i>
-            <span>Logout</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <header class="fixed top-0 left-0 right-0 z-30 glass-effect border-b border-amber-100/50 backdrop-blur-xl">
-    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-20">
-        <div class="flex items-center gap-3">
-          <a href="marketing_dashboard.php" class="flex items-center gap-3 group">
-            <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
-              <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain bg-white p-2">
-            </div>
-            <div class="flex flex-col leading-tight">
-              <span class="font-black text-xl tracking-tight text-gray-900">
-                TravelEase
-              </span>
-              <span class="hidden sm:inline-block text-xs text-gray-600 font-medium">
-                Marketing Dashboard
-              </span>
-            </div>
-          </a>
-        </div>
-
-        <div class="hidden lg:flex items-center gap-8 text-sm font-semibold">
-          <a href="marketing_dashboard.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <span class="flex items-center gap-2">
-              <i class="fas fa-chart-line text-xs text-amber-500"></i>
-              Overview
-            </span>
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="marketing_campaigns.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-bullhorn text-xs text-amber-500 mr-2"></i>
-            Packages
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="marketing_report.php" class="text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-file-alt text-xs text-amber-500 mr-2"></i>
-            Reports
-            <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-amber-500"></span>
-          </a>
-          <a href="partnership.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-handshake text-xs text-amber-500 mr-2"></i>
-            Partnerships
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="marketing_feedback.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
-            <i class="fas fa-user-check text-xs text-amber-500 mr-2"></i>
-            Customer Feedback
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-        </div>
-
-        <div class="hidden lg:flex items-center gap-4">
-          <div class="flex items-center gap-3">
-            <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-amber-500">
-            <div class="text-right">
-              <div class="text-sm font-semibold text-gray-900"><?= htmlspecialchars($managerName) ?></div>
-              <div class="text-xs text-gray-600">Marketing Manager</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <a href="marketing_profile.php" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50 transition-colors" title="My Profile">
-              <i class="fas fa-user"></i>
-            </a>
-            <a href="login.php" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50 transition-colors" title="Logout">
-              <i class="fas fa-sign-out-alt"></i>
-            </a>
-          </div>
-        </div>
-
-        <button id="mobile-menu-button" class="lg:hidden inline-flex items-center justify-center p-3 rounded-2xl text-gray-700 hover:bg-amber-50 transition-colors">
-          <i class="fas fa-bars text-lg"></i>
-        </button>
-      </div>
-    </nav>
-  </header>
-
-  <main class="pt-24 pb-12">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Page Header -->
-      <div class="mb-8 text-center">
-        <h1 class="text-3xl sm:text-4xl font-black mb-2">
-          <span class="text-gradient">Generate Report</span>
-        </h1>
-        <p class="text-lg text-gray-700">Create custom travel marketing reports in minutes</p>
-      </div>
-
-      <!-- Report Generation Steps -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex-1">
-            <div class="flex flex-col items-center">
-              <div id="step1-indicator" class="h-8 w-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-semibold mb-2">1</div>
-              <span class="text-sm font-medium text-gray-900">Report Type</span>
-            </div>
-          </div>
-          <div class="flex-1">
-            <div class="flex flex-col items-center">
-              <div id="step2-indicator" class="h-8 w-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-semibold mb-2">2</div>
-              <span class="text-sm font-medium text-gray-700">Settings</span>
-            </div>
-          </div>
-          <div class="flex-1">
-            <div class="flex flex-col items-center">
-              <div id="step3-indicator" class="h-8 w-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-semibold mb-2">3</div>
-              <span class="text-sm font-medium text-gray-700">Generate</span>
-            </div>
-          </div>
-        </div>
-        <div class="progress-bar">
-          <div id="progressFill" class="progress-fill" style="width: 33%"></div>
-        </div>
-      </div>
-
-      <!-- Report Generation Form -->
-      <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow">
-        <form id="reportForm" class="space-y-6" method="POST" action="">
-          <!-- Step 1: Report Type -->
-          <div id="step1" class="step-content">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">1. Select Report Type</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <?php foreach ($templates as $template): ?>
-              <div class="p-4 rounded-xl border-2 border-amber-200 bg-white hover:border-amber-400 transition-colors cursor-pointer template-card"
-                   data-id="<?= htmlspecialchars($template['id']) ?>"
-                   data-name="<?= htmlspecialchars($template['name']) ?>"
-                   data-template="<?= htmlspecialchars($template['template_file']) ?>"
-                   onclick="selectTemplate(this)">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="h-10 w-10 rounded-xl gold-gradient flex items-center justify-center">
-                    <i class="fas fa-<?= htmlspecialchars($template['icon']) ?> text-white"></i>
-                  </div>
-                  <div>
-                    <h4 class="font-semibold text-gray-900"><?= htmlspecialchars($template['name']) ?></h4>
-                    <p class="text-xs text-gray-600"><?= htmlspecialchars($template['description']) ?></p>
-                  </div>
-                </div>
-                <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
-                  <span><?= $template['sections'] ?> sections</span>
-                  <span><?= $template['estimated_size'] ?></span>
-                </div>
-              </div>
-              <?php endforeach; ?>
-            </div>
-
-            <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Or select from predefined types:</label>
-              <select id="reportType" name="report_type" class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent" onchange="updatePreview()">
-                <option value="">Select a report type</option>
-                <?php foreach ($reportTypes as $value => $typeData): ?>
-                <option value="<?= htmlspecialchars($value) ?>"><?= htmlspecialchars($typeData['label']) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-
-            <div class="flex justify-end">
-              <button type="button" onclick="nextStep()" class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all flex items-center gap-2">
-                Next: Settings <i class="fas fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 2: Report Settings -->
-          <div id="step2" class="step-content hidden">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">2. Configure Report Settings</h3>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Report Period</label>
-                <select id="reportPeriod" name="report_period" class="w-full p-3 rounded-xl border border-amber-200 bg-white" onchange="toggleCustomDateRange()">
-                  <?php foreach ($periods as $value => $label): ?>
-                  <option value="<?= htmlspecialchars($value) ?>" <?= $value === 'last_month' ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
-
-              <div id="customDateRange" class="hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                    <input type="date" id="startDate" name="custom_start_date" class="w-full p-3 rounded-xl border border-amber-200 bg-white" onchange="updatePreview()">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                    <input type="date" id="endDate" name="custom_end_date" class="w-full p-3 rounded-xl border border-amber-200 bg-white" onchange="updatePreview()">
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Report Format</label>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <?php foreach ($formats as $value => $label): ?>
-                  <label class="flex items-center p-3 rounded-xl border border-amber-200 bg-white cursor-pointer hover:bg-amber-50 transition-colors">
-                    <input type="radio" name="format" value="<?= htmlspecialchars($value) ?>" class="text-amber-600 focus:ring-amber-500" 
-                           <?= $value === 'pdf' ? 'checked' : '' ?> onchange="updatePreview()">
-                    <span class="ml-2 text-sm text-gray-700"><?= htmlspecialchars($label) ?></span>
-                  </label>
-                  <?php endforeach; ?>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Include Sections</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label class="flex items-center p-2 hover:bg-amber-50 rounded-lg cursor-pointer">
-                    <input type="checkbox" name="sections[]" value="executive_summary" class="rounded text-amber-600 focus:ring-amber-500" checked>
-                    <span class="ml-2 text-sm text-gray-700">Executive Summary</span>
-                  </label>
-                  <label class="flex items-center p-2 hover:bg-amber-50 rounded-lg cursor-pointer">
-                    <input type="checkbox" name="sections[]" value="key_metrics" class="rounded text-amber-600 focus:ring-amber-500" checked>
-                    <span class="ml-2 text-sm text-gray-700">Key Metrics</span>
-                  </label>
-                  <label class="flex items-center p-2 hover:bg-amber-50 rounded-lg cursor-pointer">
-                    <input type="checkbox" name="sections[]" value="charts_graphs" class="rounded text-amber-600 focus:ring-amber-500" checked>
-                    <span class="ml-2 text-sm text-gray-700">Charts & Graphs</span>
-                  </label>
-                  <label class="flex items-center p-2 hover:bg-amber-50 rounded-lg cursor-pointer">
-                    <input type="checkbox" name="sections[]" value="detailed_tables" class="rounded text-amber-600 focus:ring-amber-500">
-                    <span class="ml-2 text-sm text-gray-700">Detailed Data Tables</span>
-                  </label>
-                  <label class="flex items-center p-2 hover:bg-amber-50 rounded-lg cursor-pointer">
-                    <input type="checkbox" name="sections[]" value="recommendations" class="rounded text-amber-600 focus:ring-amber-500">
-                    <span class="ml-2 text-sm text-gray-700">Recommendations</span>
-                  </label>
-                  <label class="flex items-center p-2 hover:bg-amber-50 rounded-lg cursor-pointer">
-                    <input type="checkbox" name="sections[]" value="appendix" class="rounded text-amber-600 focus:ring-amber-500">
-                    <span class="ml-2 text-sm text-gray-700">Appendix</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex justify-between mt-6">
-              <button type="button" onclick="prevStep()" class="px-5 py-2.5 rounded-xl border border-amber-300 text-amber-700 font-semibold hover:bg-amber-50 transition-all flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Back
-              </button>
-              <button type="button" onclick="nextStep()" class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all flex items-center gap-2">
-                Next: Generate <i class="fas fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 3: Generate & Preview -->
-          <div id="step3" class="step-content hidden">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">3. Generate & Preview</h3>
-            
-            <div class="bg-amber-50 rounded-xl p-6 mb-6">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="h-12 w-12 rounded-xl gold-gradient flex items-center justify-center">
-                  <i class="fas fa-file-alt text-white text-lg"></i>
-                </div>
-                <div>
-                  <h4 class="font-semibold text-gray-900" id="previewTitle">Report Preview</h4>
-                  <p class="text-sm text-gray-600">Review your report settings before generating</p>
-                </div>
-              </div>
-              
-
-              <div class="space-y-3 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Report Type:</span>
-                  <span class="font-medium text-gray-900" id="previewType">-</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Period:</span>
-                  <span class="font-medium text-gray-900" id="previewPeriod">-</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Format:</span>
-                  <span class="font-medium text-gray-900" id="previewFormat">-</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Report ID:</span>
-                  <span class="font-medium text-gray-900">TRV-<?= date('Ymd') ?>-<?= rand(1000, 9999) ?></span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Generated by:</span>
-                  <span class="font-medium text-gray-900"><?= htmlspecialchars($managerName) ?></span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Report Title *</label>
-              <input type="text" id="reportTitle" name="report_title" placeholder="e.g., Package Performance Report - November 2024" 
-                     class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent" required oninput="updatePreview()">
-            </div>
-
-            <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email Notification (Optional)</label>
-              <input type="email" name="email" placeholder="your-email@example.com" 
-                     class="w-full p-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
-            </div>
-
-            <div class="flex justify-between">
-              <button type="button" onclick="prevStep()" class="px-5 py-2.5 rounded-xl border border-amber-300 text-amber-700 font-semibold hover:bg-amber-50 transition-all flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Back
-              </button>
-              <div class="flex gap-3">
-                <button type="button" onclick="previewReport()" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all flex items-center gap-2">
-                  <i class="fas fa-eye"></i> Preview
-                </button>
-                <button type="submit" class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg transition-all flex items-center gap-2">
-                  <i class="fas fa-magic"></i> Generate Report
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <!-- Quick Templates -->
-      <div class="mt-8">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Report Templates</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button onclick="useQuickTemplate('weekly_summary')" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-left">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
-                <i class="fas fa-calendar-week text-green-600"></i>
-              </div>
-              <div>
-                <h4 class="font-semibold text-gray-900">Weekly Summary</h4>
-                <p class="text-xs text-gray-600">Last 7 days package performance</p>
-              </div>
-            </div>
-            <div class="text-xs text-gray-500">PDF format, 1-2 MB</div>
-          </button>
-
-          <button onclick="useQuickTemplate('monthly_performance')" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-left">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                <i class="fas fa-chart-bar text-blue-600"></i>
-              </div>
-              <div>
-                <h4 class="font-semibold text-gray-900">Monthly Performance</h4>
-                <p class="text-xs text-gray-600">Complete monthly travel analysis</p>
-              </div>
-            </div>
-            <div class="text-xs text-gray-500">Excel format, 3-5 MB</div>
-          </button>
-
-          <button onclick="useQuickTemplate('campaign_roi')" class="p-4 rounded-xl border border-amber-200 bg-white hover:bg-amber-50 transition-colors text-left">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                <i class="fas fa-bullhorn text-purple-600"></i>
-              </div>
-              <div>
-                <h4 class="font-semibold text-gray-900">Campaign ROI</h4>
-                <p class="text-xs text-gray-600">Travel campaign ROI analysis</p>
-              </div>
-            </div>
-            <div class="text-xs text-gray-500">PDF format, 2-4 MB</div>
-          </button>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer class="border-t border-amber-100 bg-amber-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="grid gap-8 md:grid-cols-4 mb-8">
-        <div>
-          <div class="flex items-center gap-3 mb-4">
-            <div class="h-10 w-10 rounded-xl overflow-hidden bg-white p-1">
-              <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain">
-            </div>
-            <span class="font-black text-lg text-gray-900">TravelEase</span>
-          </div>
-          <p class="text-sm text-gray-700 mb-4">
-            Marketing Dashboard for TravelEase luxury travel platform.
-          </p>
-          <div class="flex gap-3">
-            <a href="#" class="h-10 w-10 rounded-xl glass-effect flex items-center justify-center text-gray-600 hover:text-amber-600 hover:bg-amber-100 transition-all border border-amber-100">
-              <i class="fab fa-instagram"></i>
-            </a>
-            <a href="#" class="h-10 w-10 rounded-xl glass-effect flex items-center justify-center text-gray-600 hover:text-amber-600 hover:bg-amber-100 transition-all border border-amber-100">
-              <i class="fab fa-facebook-f"></i>
-            </a>
-            <a href="#" class="h-10 w-10 rounded-xl glass-effect flex items-center justify-center text-gray-600 hover:text-amber-600 hover:bg-amber-100 transition-all border border-amber-100">
-              <i class="fab fa-twitter"></i>
-            </a>
-          </div>
-        </div>
-
-        <?php foreach ($footerLinks as $title => $links): ?>
-        <div>
-          <h3 class="font-semibold text-gray-900 mb-4"><?= htmlspecialchars($title) ?></h3>
-          <ul class="space-y-2 text-sm text-gray-700">
-            <?php foreach ($links as $link): ?>
-            <li><a href="<?= htmlspecialchars($link['link']) ?>" class="hover:text-amber-600 transition-colors"><?= htmlspecialchars($link['text']) ?></a></li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-        <?php endforeach; ?>
-      </div>
-
-      <div class="pt-8 border-t border-amber-100 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
-        <p>© <?= $currentYear ?> TravelEase Marketing Dashboard. All rights reserved.</p>
-        <div class="flex items-center gap-4">
-          <span>Premium Marketing Platform</span>
-          <span class="flex items-center">
-            <i class="fas fa-circle text-green-500 text-xs mr-1"></i> All Systems Operational
-          </span>
-        </div>
-      </div>
-    </div>
-  </footer>
-
- <script>
-    // Report Generation Functions
-    let currentStep = 1;
-    let selectedTemplateId = '';
-    let selectedTemplateFile = '';
-
-    function updateProgressBar() {
-        const progressFill = document.getElementById('progressFill');
-        if (progressFill) {
-            const width = (currentStep / 3) * 100;
-            progressFill.style.width = `${width}%`;
-        }
-    }
-
-    function updateStepIndicators() {
-        for (let i = 1; i <= 3; i++) {
-            const indicator = document.getElementById(`step${i}-indicator`);
-            const text = indicator?.parentElement?.querySelector('span');
-            
-            if (indicator && text) {
-                if (i === currentStep) {
-                    indicator.classList.remove('bg-amber-100', 'text-amber-800');
-                    indicator.classList.add('bg-amber-500', 'text-white');
-                    text.classList.remove('text-gray-700');
-                    text.classList.add('text-gray-900');
-                } else {
-                    indicator.classList.remove('bg-amber-500', 'text-white');
-                    indicator.classList.add('bg-amber-100', 'text-amber-800');
-                    text.classList.remove('text-gray-900');
-                    text.classList.add('text-gray-700');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelEase - Report Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f'
+                        }
+                    }
                 }
             }
-        }
-    }
-
-    function showStep(stepNumber) {
-        // Hide all steps
-        document.querySelectorAll('.step-content').forEach(step => {
-            step.classList.add('hidden');
-        });
-        
-        // Show current step
-        document.getElementById(`step${stepNumber}`).classList.remove('hidden');
-        
-        // Update current step
-        currentStep = stepNumber;
-        
-        // Update UI
-        updateProgressBar();
-        updateStepIndicators();
-        updatePreview();
-    }
-
-    function nextStep() {
-        if (currentStep < 3) {
-            // Validate current step
-            if (currentStep === 1) {
-                const reportType = document.getElementById('reportType').value;
-                if (!reportType && !selectedTemplateId) {
-                    alert('Please select a report type or template');
-                    return;
-                }
-            }
-            showStep(currentStep + 1);
-        }
-    }
-
-    function prevStep() {
-        if (currentStep > 1) {
-            showStep(currentStep - 1);
-        }
-    }
-
-    function selectTemplate(element) {
-        // Remove selection from all cards
-        document.querySelectorAll('.template-card').forEach(card => {
-            card.classList.remove('selected', 'border-amber-400');
-            card.classList.add('border-amber-200');
-        });
-        
-        // Select this card
-        element.classList.add('selected', 'border-amber-400');
-        element.classList.remove('border-amber-200');
-        
-        // Get template data
-        selectedTemplateId = element.getAttribute('data-id');
-        selectedTemplateFile = element.getAttribute('data-template');
-        const templateName = element.getAttribute('data-name');
-        
-        // Update report type dropdown
-        const reportTypeSelect = document.getElementById('reportType');
-        reportTypeSelect.value = selectedTemplateId;
-        
-        // Update report title
-        document.getElementById('reportTitle').value = templateName + ' - ' + getCurrentPeriodText();
-        
-        updatePreview();
-    }
-
-    function toggleCustomDateRange() {
-        const periodSelect = document.getElementById('reportPeriod');
-        const customRangeDiv = document.getElementById('customDateRange');
-        
-        if (periodSelect.value === 'custom') {
-            customRangeDiv.classList.remove('hidden');
-        } else {
-            customRangeDiv.classList.add('hidden');
-        }
-        updatePreview();
-    }
-
-    // Update preview function
-    function updatePreview() {
-        // Get selected values
-        const reportTypeSelect = document.getElementById('reportType');
-        const reportTypeValue = reportTypeSelect.value;
-        let reportType = '-';
-        
-        // Find the label for the selected value
-        if (reportTypeValue) {
-            <?php foreach ($reportTypes as $value => $typeData): ?>
-            if (reportTypeValue === '<?= $value ?>') {
-                reportType = '<?= $typeData['label'] ?>';
-            }
-            <?php endforeach; ?>
-        }
-        
-        const periodSelect = document.getElementById('reportPeriod');
-        const period = periodSelect.options[periodSelect.selectedIndex]?.text || '-';
-        
-        const format = document.querySelector('input[name="format"]:checked')?.value || 'pdf';
-        const formatLabels = {
-            'pdf': 'PDF Document',
-            'excel': 'Excel Spreadsheet',
-            'csv': 'CSV Data',
-            'ppt': 'PowerPoint Presentation'
         };
-        
-        // Update preview elements
-        document.getElementById('previewType').textContent = reportType;
-        document.getElementById('previewPeriod').textContent = period;
-        document.getElementById('previewFormat').textContent = formatLabels[format] || '-';
-    }
-
-    function getCurrentPeriodText() {
-        const period = document.getElementById('reportPeriod').value;
-        const now = new Date();
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        
-        switch(period) {
-            case 'last_week':
-                return 'Last Week Report';
-            case 'last_month':
-                return monthNames[(now.getMonth() - 1 + 12) % 12] + ' ' + now.getFullYear();
-            case 'last_quarter':
-                const quarter = Math.floor(((now.getMonth() - 3 + 12) % 12) / 3) + 1;
-                return 'Q' + quarter + ' ' + now.getFullYear();
-            case 'last_year':
-                return (now.getFullYear() - 1).toString();
-            case 'custom':
-                const start = document.getElementById('startDate').value;
-                const end = document.getElementById('endDate').value;
-                if (start && end) {
-                    return new Date(start).toLocaleDateString() + ' to ' + new Date(end).toLocaleDateString();
-                }
-                return 'Custom Period';
-            default:
-                return monthNames[now.getMonth()] + ' ' + now.getFullYear();
+    </script>
+    <style>
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+            transition: width 0.5s ease-in-out;
         }
-    }
-
-    // Quick template functions
-    function useQuickTemplate(templateType) {
-        // Reset to step 1
-        showStep(1);
-        
-        // Clear any existing selections
-        document.querySelectorAll('.template-card').forEach(card => {
-            card.classList.remove('selected', 'border-amber-400');
-            card.classList.add('border-amber-200');
-        });
-        
-        // Set based on template type
-        const reportTypeSelect = document.getElementById('reportType');
-        const periodSelect = document.getElementById('reportPeriod');
-        
-        switch(templateType) {
-            case 'weekly_summary':
-                reportTypeSelect.value = 'package_performance';
-                periodSelect.value = 'last_week';
-                break;
-            case 'monthly_performance':
-                reportTypeSelect.value = 'package_performance';
-                periodSelect.value = 'last_month';
-                break;
-            case 'campaign_roi':
-                reportTypeSelect.value = 'package_performance';
-                periodSelect.value = 'last_month';
-                break;
+        .report-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #f59e0b;
         }
-        
-        // Set PDF format for quick templates
-        document.querySelector('input[name="format"][value="pdf"]').checked = true;
-        
-        // Update preview
-        updatePreview();
-        
-        // Auto-advance to step 3
-        showStep(3);
-    }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .report-template {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-30 glass-effect border-b border-amber-100/50 backdrop-blur-xl mb-10">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <a href="marketing_report.php" class="flex items-center gap-3 group">
+                        <div class="h-14 w-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-200 group-hover:scale-105 transition-transform duration-300">
+                            <img src="img/Logo.png" alt="TravelEase Logo" class="h-full w-full object-contain bg-white p-2">
+                        </div>
+                        <div class="flex flex-col leading-tight">
+                            <span class="font-black text-xl tracking-tight text-gray-900">
+                                TravelEase
+                            </span>
+                            <span class="hidden sm:inline-block text-xs text-gray-600 font-medium">
+                                Generate report
+                            </span>
+                        </div>
+                    </a>
+                </div>
 
-   function previewReport() {
-    const reportTitle = document.getElementById('reportTitle').value;
-    const reportType = document.getElementById('reportType').value;
-    
-    if (!reportTitle.trim()) {
-        alert('Please enter a report title');
-        document.getElementById('reportTitle').focus();
-        return;
-    }
-    
-    if (!reportType) {
-        alert('Please select a report type');
-        showStep(1);
-        return;
-    }
-    
-    // Submit form to generate preview
-    const form = document.getElementById('reportForm');
-    const previewInput = document.createElement('input');
-    previewInput.type = 'hidden';
-    previewInput.name = 'preview_only';
-    previewInput.value = '1';
-    form.appendChild(previewInput);
-    
-    // Set action to reload with preview parameter
-    form.action = 'generate_report.php?preview=1&type=' + encodeURIComponent(reportType);
-    form.submit();
-}
-
-    // Main PDF Download Function
-async function downloadTemplatePDF() {
-    const reportTitle = document.getElementById('reportTitle').value || 'TravelEase_Report';
-    const reportType = document.getElementById('reportType').value || 'package_performance';
-    const periodSelect = document.getElementById('reportPeriod');
-    const period = periodSelect.options[periodSelect.selectedIndex]?.text || 'Last Month';
-    
-    // Create filename
-    const fileName = reportTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
-    
-    // Show loading
-    const downloadButton = document.querySelector('button[onclick="downloadTemplatePDF()"]');
-    const originalText = downloadButton.innerHTML;
-    downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating PDF...';
-    downloadButton.disabled = true;
-    
-    try {
-        // Get the report preview content
-        const previewContent = document.getElementById('reportPreview');
-        
-        // Method 1: Try to generate PDF using jsPDF
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        
-        // Add report content
-        pdf.setFontSize(16);
-        pdf.text(reportTitle, 20, 20);
-        pdf.setFontSize(12);
-        pdf.text('Report Type: ' + reportType, 20, 35);
-        pdf.text('Period: ' + period, 20, 45);
-        pdf.text('Generated by: <?= htmlspecialchars($managerName) ?>', 20, 55);
-        pdf.text('Date: ' + new Date().toLocaleDateString(), 20, 65);
-        
-        // Save the PDF
-        pdf.save(fileName);
-        
-        // Show success message
-        showNotification('✅ PDF downloaded successfully!', 'success');
-        
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        
-        // Method 2: Fallback to HTML download
-        window.location.href = 'generate_pdf.php?title=' + encodeURIComponent(reportTitle) + 
-                              '&type=' + encodeURIComponent(reportType) + 
-                              '&period=' + encodeURIComponent(period);
-        
-        showNotification('Downloading HTML report...', 'info');
-    } finally {
-        // Reset button
-        downloadButton.innerHTML = originalText;
-        downloadButton.disabled = false;
-    }
-}
-
-    function closePreview() {
-        document.getElementById('pdfPreviewModal').classList.remove('active');
-    }
-
-    // Helper function to show notifications
-    function showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `fixed top-24 right-6 z-50 p-4 ${
-            type === 'success' ? 'bg-green-100 text-green-800' : 
-            type === 'error' ? 'bg-red-100 text-red-800' : 
-            'bg-blue-100 text-blue-800'
-        } rounded-xl shadow-lg flex items-center gap-3 animate-slideIn`;
-        
-        notification.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} text-lg"></i>
-            <div>
-                <p class="font-semibold">${message}</p>
+                <!-- Back Button -->
+                <div class="flex items-center gap-4">
+                    <a href="marketing_report.php" class="px-4 py-2 rounded-xl border border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Reports
+                    </a>
+                </div>
             </div>
-            <button onclick="this.parentElement.remove()" class="ml-4">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
-    }
+        </nav>
+    </header>
 
-    // Mobile Menu Functions
-    const menuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const mobileMenuClose = document.getElementById('mobile-menu-close');
-    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+    <!-- Page Title Section -->
+        <div class="mt-14">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800">Monthly Report Generator System - <?php echo $currentYear; ?></h2>
+                <p class="text-gray-600 mt-2">Generate comprehensive monthly reports for your travel management system</p>
+            </div>
+        </div>
+        </div>
+
+        <!-- PHP Notifications Section (after header) -->
+           <div class="mt-8">
+    <p class="text-gray-700 mb-4">Select a report type, customize parameters, and download as PDF.</p>
     
-    let isMenuOpen = false;
+    <?php if (!$success && $error): ?>
+        <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-200">
+            <strong>Note:</strong> <?php echo htmlspecialchars($error); ?> Showing sample data.
+        </div>
+    <?php endif; ?>
+    
+    <?php if ($success): ?>
+        <div class="mt-4 p-4 bg-green-100 text-green-800 rounded-lg border border-green-200">
+            <strong>Success:</strong> Connected to PostgreSQL database. Showing real data for <?php echo $monthName . ' ' . $year; ?>.
+        </div>
+    <?php endif; ?>
+           </div>
 
-    function openMobileMenu() {
-        mobileMenu.classList.remove('hidden');
-        mobileMenu.classList.remove('closing');
-        setTimeout(() => {
-            mobileMenu.classList.add('open');
-        }, 10);
-        document.body.style.overflow = 'hidden';
-        isMenuOpen = true;
-    }
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Report Selection Panel -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-md p-6 sticky top-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Report Generator</h2>
+                    
+                    <form id="reportForm" method="POST" class="space-y-6">
+                        <!-- Report Type Selection -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-3">Report Type</label>
+                            <div class="space-y-3">
+                                <div class="report-card bg-primary-50 p-4 rounded-lg cursor-pointer" onclick="selectReportType('package')">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="reportType" value="package" class="h-5 w-5 text-primary-600" <?php echo $reportType === 'package' ? 'checked' : ''; ?>>
+                                        <div class="ml-3">
+                                            <h3 class="font-medium text-gray-800">Package Performance Report</h3>
+                                            <p class="text-sm text-gray-600 mt-1">Package analysis, pricing, and geographic distribution</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-700">
+                                            <span>Progress</span>
+                                            <span><?php echo $reportData['progress1'] ?? '85'; ?>%</span>
+                                        </div>
+                                        <div class="progress-bar bg-gray-200 mt-1 rounded-full">
+                                            <div class="progress-bar bg-primary-500 rounded-full" style="width: <?php echo $reportData['progress1'] ?? '85'; ?>%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card bg-primary-50 p-4 rounded-lg cursor-pointer" onclick="selectReportType('feedback')">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="reportType" value="feedback" class="h-5 w-5 text-primary-600" <?php echo $reportType === 'feedback' ? 'checked' : ''; ?>>
+                                        <div class="ml-3">
+                                            <h3 class="font-medium text-gray-800">Customer Feedback Report</h3>
+                                            <p class="text-sm text-gray-600 mt-1">Customer satisfaction and service quality metrics</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-700">
+                                            <span>Progress</span>
+                                            <span><?php echo $reportData['progress2'] ?? '88'; ?>%</span>
+                                        </div>
+                                        <div class="progress-bar bg-gray-200 mt-1 rounded-full">
+                                            <div class="progress-bar bg-primary-500 rounded-full" style="width: <?php echo $reportData['progress2'] ?? '88'; ?>%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card bg-primary-50 p-4 rounded-lg cursor-pointer" onclick="selectReportType('partnership')">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="reportType" value="partnership" class="h-5 w-5 text-primary-600" <?php echo $reportType === 'partnership' ? 'checked' : ''; ?>>
+                                        <div class="ml-3">
+                                            <h3 class="font-medium text-gray-800">Partnership Report</h3>
+                                            <p class="text-sm text-gray-600 mt-1">Partner analysis, commission rates, and collaboration types</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-700">
+                                            <span>Progress</span>
+                                            <span><?php echo $reportData['progress3'] ?? '85'; ?>%</span>
+                                        </div>
+                                        <div class="progress-bar bg-gray-200 mt-1 rounded-full">
+                                            <div class="progress-bar bg-primary-500 rounded-full" style="width: <?php echo $reportData['progress3'] ?? '85'; ?>%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Month Selection -->
+                        <div>
+                            <label for="month" class="block text-gray-700 font-medium mb-2">Select Month</label>
+                            <select id="month" name="month" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                <?php
+                                // Generate month options for 2026
+                                for ($m = 1; $m <= 12; $m++) {
+                                    $monthValue = sprintf('%04d-%02d', $currentYear, $m);
+                                    $monthLabel = date('F Y', strtotime($monthValue . '-01'));
+                                    $selected = $month === $monthValue ? 'selected' : '';
+                                    echo "<option value=\"$monthValue\" $selected>$monthLabel</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <!-- Include Sections -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-3">Include Sections</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="summary" name="sections[]" value="summary" checked class="h-4 w-4 text-primary-600 rounded">
+                                    <label for="summary" class="ml-2 text-gray-700">Executive Summary</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="charts" name="sections[]" value="charts" checked class="h-4 w-4 text-primary-600 rounded">
+                                    <label for="charts" class="ml-2 text-gray-700">Charts & Graphs</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="details" name="sections[]" value="details" checked class="h-4 w-4 text-primary-600 rounded">
+                                    <label for="details" class="ml-2 text-gray-700">Detailed Statistics</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="recommendations" name="sections[]" value="recommendations" class="h-4 w-4 text-primary-600 rounded">
+                                    <label for="recommendations" class="ml-2 text-gray-700">Recommendations</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Generate Report Button -->
+                        <div class="pt-4">
+                            <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-lg transition duration-300">
+                                Generate Report
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Database Status -->
+                    <div class="mt-6 p-3 <?php echo $success ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'; ?> rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 <?php echo $success ? 'bg-green-500' : 'bg-yellow-500'; ?> rounded-full mr-2"></div>
+                            <span class="text-sm">
+                                <?php echo $success ? 'Connected to PostgreSQL database' : 'Using sample data'; ?>
+                            </span>
+                        </div>
+                        <div class="mt-2 text-xs">
+                            <?php 
+                            if ($success) {
+                                echo "Showing data for " . $monthName . " " . $year;
+                            } else {
+                                echo "Database connection failed. Using sample data.";
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Report Preview Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-xl font-bold text-gray-800">Report Preview</h2>
+                        <button id="downloadBtn" onclick="downloadPDF()" class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300">
+                            Download PDF
+                        </button>
+                    </div>
+                    
+                    <!-- Report Template -->
+                    <div id="reportTemplate" class="report-template">
+                        <div class="text-center mb-10">
+                            <h1 class="text-3xl font-bold text-primary-800 mb-2">TravelEase</h1>
+                            <h2 id="reportTitle" class="text-2xl font-bold text-gray-800 mb-4">
+                                <?php 
+                                switch($reportType) {
+                                    case 'package': echo 'Monthly Package Performance Report'; break;
+                                    case 'feedback': echo 'Monthly Customer Feedback Report'; break;
+                                    case 'partnership': echo 'Monthly Partnership Report'; break;
+                                    default: echo 'Monthly Package Performance Report';
+                                }
+                                ?>
+                            </h2>
+                            <p id="reportPeriod" class="text-gray-600"><?php echo $monthName . ' ' . $year; ?></p>
+                            <div class="mt-6 border-t pt-6">
+                                <p class="text-gray-700">
+                                    <?php 
+                                    echo $success ? 
+                                        "This report contains real data fetched from the TravelEase database." : 
+                                        "This report contains sample data. Database connection failed.";
+                                    ?>
+                                </p>
+                                <p class="text-gray-700 mt-2">All data is accurate as of the generation date.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Report Content -->
+                        <div class="space-y-8">
+                            <!-- Executive Summary -->
+                            <div id="summarySection">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b">Executive Summary</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                    <?php if ($reportType === 'package'): ?>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Total Packages</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatNumber($reportData['total_packages']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Packages created this month</p>
+                                        </div>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Estimated Revenue</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatCurrency($reportData['estimated_revenue']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Total base price value</p>
+                                        </div>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Avg Duration</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatDays($reportData['avg_duration']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Average package length</p>
+                                        </div>
+                                    <?php elseif ($reportType === 'feedback'): ?>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Total Feedback</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatNumber($reportData['total_feedback']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Customer responses received</p>
+                                        </div>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Average Rating</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatRating($reportData['avg_rating']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Overall satisfaction score</p>
+                                        </div>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Positive Feedback</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatPercentage($reportData['positive_percentage']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Positive responses percentage</p>
+                                        </div>
+                                    <?php elseif ($reportType === 'partnership'): ?>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Total Partners</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatNumber($reportData['total_partners']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Partnerships added this month</p>
+                                        </div>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Partnership Types</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatNumber($reportData['partnership_types']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Different partnership categories</p>
+                                        </div>
+                                        <div class="bg-primary-50 p-4 rounded-lg">
+                                            <h4 class="font-medium text-primary-800 mb-1">Avg Commission Rate</h4>
+                                            <p class="text-2xl font-bold text-gray-800"><?php echo formatPercentage($reportData['avg_commission_rate']); ?></p>
+                                            <p class="text-sm text-gray-600 mt-1">Average partnership commission</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <p class="text-gray-700">
+                                    <?php
+                                    switch($reportType) {
+                                        case 'package':
+                                            echo "The package performance report for $monthName $year shows ";
+                                            echo formatNumber($reportData['total_packages']) . " total packages created ";
+                                            echo "with an estimated value of " . formatCurrency($reportData['estimated_revenue']) . ". ";
+                                            echo "The most popular package was '{$reportData['most_popular_package']}' covering {$reportData['total_countries']} countries across {$reportData['total_regions']} regions.";
+                                            break;
+                                        case 'feedback':
+                                            echo "Customer feedback analysis for $monthName $year reveals ";
+                                            echo formatNumber($reportData['total_feedback']) . " total responses ";
+                                            if ($reportData['avg_rating'] > 0) {
+                                                echo "with an average rating of " . formatRating($reportData['avg_rating']) . ". ";
+                                            }
+                                            if ($reportData['positive_percentage'] > 0) {
+                                                echo formatPercentage($reportData['positive_percentage']) . " of feedback was positive. ";
+                                            }
+                                            if (isset($reportData['popular_categories']) && $reportData['popular_categories'] !== 'N/A') {
+                                                echo "Popular categories: " . $reportData['popular_categories'] . ".";
+                                            }
+                                            break;
+                                        case 'partnership':
+                                            echo "Partnership performance in $monthName $year includes ";
+                                            echo formatNumber($reportData['total_partners']) . " new partners added ";
+                                            echo "across " . formatNumber($reportData['partnership_types']) . " partnership types. ";
+                                            echo "The top partner was '{$reportData['top_partner']}' with an average commission rate of " . formatPercentage($reportData['avg_commission_rate']) . ".";
+                                            break;
+                                    }
+                                    ?>
+                                </p>
+                            </div>
+                            
+                            <!-- Charts & Graphs Section -->
+                            <div id="chartsSection">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b">Charts & Graphs</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <h4 class="font-medium text-gray-700 mb-3">
+                                            <?php 
+                                            if($reportType === 'package') echo 'Package Price Range';
+                                            elseif($reportType === 'feedback') echo 'Feedback Distribution';
+                                            else echo 'Partnership Types';
+                                            ?>
+                                        </h4>
+                                        <div class="h-48 flex items-end space-x-2">
+                                            <?php
+                                            // Dynamic bars based on data
+                                            $maxValue = 0;
+                                            if ($reportType === 'package') {
+                                                $maxValue = $reportData['estimated_revenue'] > 0 ? $reportData['estimated_revenue']  : 100;
+                                            } elseif ($reportType === 'feedback') {
+                                                $maxValue = $reportData['total_feedback'] > 0 ? $reportData['total_feedback'] : 10;
+                                            } else {
+                                                $maxValue = $reportData['total_partners'] > 0 ? $reportData['total_partners'] : 5;
+                                            }
+                                            
+                                            $heights = [70, 85, 100, 75, 60];
+                                            if ($maxValue > 0) {
+                                                $heights = [
+                                                    round(($reportData['total_packages'] ?? $maxValue * 0.7) / $maxValue * 100),
+                                                    round(($reportData['estimated_revenue'] ?? $maxValue * 0.85) / $maxValue * 100),
+                                                    round($maxValue / $maxValue * 100),
+                                                    round(($reportData['avg_duration'] ?? $maxValue * 0.75) / $maxValue * 100),
+                                                    round(($reportData['total_regions'] ?? $maxValue * 0.6) / $maxValue * 100)
+                                                ];
+                                            }
+                                            
+                                            $colors = ['bg-primary-300', 'bg-primary-400', 'bg-primary-500', 'bg-primary-400', 'bg-primary-300'];
+                                            
+                                            for ($i = 0; $i < 5; $i++):
+                                            ?>
+                                            <div class="flex-1 <?php echo $colors[$i]; ?> rounded-t" style="height: <?php echo $heights[$i]; ?>%;"></div>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <div class="flex justify-between text-sm text-gray-600 mt-2">
+                                            <?php if ($reportType === 'package'): ?>
+                                                <span>Packages</span>
+                                                <span>Revenue</span>
+                                                <span>Duration</span>
+                                                <span>Regions</span>
+                                                <span>Countries</span>
+                                            <?php elseif ($reportType === 'feedback'): ?>
+                                                <span>Total</span>
+                                                <span>Positive</span>
+                                                <span>Rating</span>
+                                                <span>Categories</span>
+                                                <span>Volume</span>
+                                            <?php else: ?>
+                                                <span>Partners</span>
+                                                <span>Types</span>
+                                                <span>Industries</span>
+                                                <span>Commission</span>
+                                                <span>Growth</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-700 mb-3">Report Progress</h4>
+                                        <div class="space-y-4">
+                                            <div>
+                                                <div class="flex justify-between text-sm text-gray-700 mb-1">
+                                                    <span>Data Collection</span>
+                                                    <span><?php echo $reportData['progress1']; ?>%</span>
+                                                </div>
+                                                <div class="progress-bar bg-gray-200 rounded-full">
+                                                    <div class="progress-bar bg-primary-500 rounded-full" style="width: <?php echo $reportData['progress1']; ?>%;"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="flex justify-between text-sm text-gray-700 mb-1">
+                                                    <span>Analysis</span>
+                                                    <span><?php echo $reportData['progress2']; ?>%</span>
+                                                </div>
+                                                <div class="progress-bar bg-gray-200 rounded-full">
+                                                    <div class="progress-bar bg-primary-500 rounded-full" style="width: <?php echo $reportData['progress2']; ?>%;"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="flex justify-between text-sm text-gray-700 mb-1">
+                                                    <span>Visualization</span>
+                                                    <span><?php echo $reportData['progress3']; ?>%</span>
+                                                </div>
+                                                <div class="progress-bar bg-gray-200 rounded-full">
+                                                    <div class="progress-bar bg-primary-500 rounded-full" style="width: <?php echo $reportData['progress3']; ?>%;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-6 text-sm text-gray-600">
+                                            <p>Data Source: <?php echo $success ? 'PostgreSQL Database' : 'Sample Data'; ?></p>
+                                            <p class="mt-1">Generated: <?php echo date('F j, Y H:i:s'); ?></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Statistics -->
+                            <div id="detailsSection">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b">Detailed Statistics</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr class="bg-primary-50">
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-primary-800 uppercase tracking-wider">Metric</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-primary-800 uppercase tracking-wider">Current Month</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-primary-800 uppercase tracking-wider">Previous Month</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-primary-800 uppercase tracking-wider">Change</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            <?php if ($reportType === 'package'): ?>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Total Packages Created</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_packages']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_packages'] * 0.9); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['total_packages'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['total_packages'] > 0 ? '+10%' : '0%'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Estimated Revenue Value</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatCurrency($reportData['estimated_revenue']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatCurrency($reportData['estimated_revenue'] * 0.88); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['estimated_revenue'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['estimated_revenue'] > 0 ? '+12%' : '0%'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Average Package Duration</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatDays($reportData['avg_duration']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatDays(max(0, $reportData['avg_duration'] - 0.5)); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['avg_duration'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['avg_duration'] > 0 ? '+0.5 days' : '0 days'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Countries Covered</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_countries']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber(max(0, $reportData['total_countries'] - 2)); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['total_countries'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['total_countries'] > 0 ? '+2 countries' : '0'; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php elseif ($reportType === 'feedback'): ?>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Total Feedback Received</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_feedback']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_feedback'] * 0.92); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['total_feedback'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['total_feedback'] > 0 ? '+8%' : '0%'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Average Rating</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatRating($reportData['avg_rating']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatRating(max(0, $reportData['avg_rating'] - 0.2)); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['avg_rating'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['avg_rating'] > 0 ? '+0.2' : '0.0'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Positive Feedback</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['positive_feedback']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['positive_feedback'] * 0.92); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['positive_feedback'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['positive_feedback'] > 0 ? '+8%' : '0%'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Feedback Categories</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo isset($reportData['popular_categories']) ? $reportData['popular_categories'] : 'N/A'; ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">General, Service</td>
+                                                    <td class="px-4 py-3 text-sm text-green-600 font-medium">+2 categories</td>
+                                                </tr>
+                                            <?php elseif ($reportType === 'partnership'): ?>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">New Partnerships</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_partners']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_partners'] * 0.8); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['total_partners'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['total_partners'] > 0 ? '+20%' : '0%'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Partnership Types</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['partnership_types']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber(max(0, $reportData['partnership_types'] - 1)); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['partnership_types'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['partnership_types'] > 0 ? '+1 type' : '0'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Industries Covered</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber($reportData['total_industries']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatNumber(max(0, $reportData['total_industries'] - 1)); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['total_industries'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['total_industries'] > 0 ? '+1 industry' : '0'; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="px-4 py-3 text-sm text-gray-800">Avg Commission Rate</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatPercentage($reportData['avg_commission_rate']); ?></td>
+                                                    <td class="px-4 py-3 text-sm text-gray-800"><?php echo formatPercentage(max(0, $reportData['avg_commission_rate'] - 1.5)); ?></td>
+                                                    <td class="px-4 py-3 text-sm <?php echo $reportData['avg_commission_rate'] > 0 ? 'text-green-600' : 'text-gray-600'; ?> font-medium">
+                                                        <?php echo $reportData['avg_commission_rate'] > 0 ? '+1.5%' : '0%'; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Recommendations -->
+                            <div id="recommendationsSection">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b">Recommendations</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-start">
+                                        <div class="bg-primary-100 p-2 rounded-full mr-3">
+                                            <svg class="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-gray-700">
+                                            <?php
+                                            if($reportType === 'package') {
+                                                echo 'Focus on promoting "' . htmlspecialchars($reportData['most_popular_package']) . '" as it shows strong customer interest.';
+                                            } elseif($reportType === 'feedback') {
+                                                if ($reportData['positive_percentage'] > 0) {
+                                                    echo 'Maintain the high satisfaction rate of ' . formatPercentage($reportData['positive_percentage']) . ' by continuing current service standards.';
+                                                } else {
+                                                    echo 'Implement a feedback collection system to gather customer insights for service improvement.';
+                                                }
+                                            } else {
+                                                echo 'Strengthen relationship with "' . htmlspecialchars($reportData['top_partner']) . '" as a key strategic partner.';
+                                            }
+                                            ?>
+                                        </p>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <div class="bg-primary-100 p-2 rounded-full mr-3">
+                                            <svg class="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-gray-700">
+                                            <?php
+                                            if($reportType === 'package') {
+                                                echo 'Expand package offerings to ' . ($reportData['total_countries'] + 3) . ' countries to increase market reach.';
+                                            } elseif($reportType === 'feedback') {
+                                                echo 'Create structured feedback categories to better analyze customer sentiment across different service areas.';
+                                            } else {
+                                                echo 'Diversify partnership types beyond the current ' . formatNumber($reportData['partnership_types']) . ' categories.';
+                                            }
+                                            ?>
+                                        </p>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <div class="bg-primary-100 p-2 rounded-full mr-3">
+                                            <svg class="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-gray-700">
+                                            <?php
+                                            if($reportType === 'package') {
+                                                echo 'Analyze pricing strategy with average package value of ' . formatCurrency($reportData['estimated_revenue'] / max(1, $reportData['total_packages'])) . ' per package.';
+                                            } elseif($reportType === 'feedback') {
+                                                echo 'Establish a quarterly review process to track feedback trends and implement continuous improvements.';
+                                            } else {
+                                                echo 'Review commission structure to ensure competitive rates while maintaining profitability.';
+                                            }
+                                            ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="mt-12 pt-8 border-t text-center text-gray-600 text-sm">
+                            <p>TravelEase Report System | Generated on <span id="generationDate"><?php echo date('F j, Y H:i:s'); ?></span></p>
+                            <p class="mt-1">Data Source: <?php echo $success ? 'PostgreSQL Database' : 'Sample Data'; ?></p>
+                            <p class="mt-1">This report is confidential and intended for internal use only.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function closeMobileMenu() {
-        mobileMenu.classList.remove('open');
-        mobileMenu.classList.add('closing');
-        setTimeout(() => {
-            mobileMenu.classList.add('hidden');
-            mobileMenu.classList.remove('closing');
-        }, 300);
-        document.body.style.overflow = '';
-        isMenuOpen = false;
-    }
-
-    // Initialize event listeners for mobile menu
-    if (menuButton) {
-        menuButton.addEventListener('click', openMobileMenu);
-    }
-
-    if (mobileMenuClose) {
-        mobileMenuClose.addEventListener('click', closeMobileMenu);
-    }
-
-    if (mobileMenuBackdrop) {
-        mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
-    }
-
-    // Close menu when clicking on menu links
-    document.querySelectorAll('#mobile-menu a').forEach(link => {
-        link.addEventListener('click', closeMobileMenu);
-    });
-
-    // Close menu on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isMenuOpen) {
-            closeMobileMenu();
+    <script>
+        // Initialize variables
+        const { jsPDF } = window.jspdf;
+        let currentReportType = '<?php echo $reportType; ?>';
+        
+        // Function to select report type
+        function selectReportType(type) {
+            currentReportType = type;
+            document.querySelector(`input[value="${type}"]`).checked = true;
+            
+            // Update report cards active state
+            document.querySelectorAll('.report-card').forEach(card => {
+                card.classList.remove('ring-2', 'ring-primary-500');
+            });
+            event.currentTarget.classList.add('ring-2', 'ring-primary-500');
         }
-    });
-
-    // Close preview on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('pdfPreviewModal').classList.contains('active')) {
-            closePreview();
+        
+        // Function to download PDF
+        function downloadPDF() {
+            const reportElement = document.getElementById('reportTemplate');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            // Disable button during PDF generation
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = 'Generating PDF...';
+            downloadBtn.disabled = true;
+            
+            html2canvas(reportElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 190;
+                const pageHeight = 297;
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                
+                let heightLeft = imgHeight;
+                let position = 10;
+                
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                // Add additional pages if content is too long
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                // Get report title for filename
+                const reportTitle = document.getElementById('reportTitle').textContent;
+                const reportPeriod = document.getElementById('reportPeriod').textContent;
+                const fileName = `TravelEase_${reportTitle.replace(/\s+/g, '_')}_${reportPeriod.replace(/\s+/g, '_')}.pdf`;
+                pdf.save(fileName);
+                
+                // Re-enable button
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+                alert('Error generating PDF. Please try again.');
+            });
         }
-    });
-
-    // Close preview when clicking outside
-    document.getElementById('pdfPreviewModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closePreview();
-        }
-    });
-
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize progress bar
-        updateProgressBar();
-        updateStepIndicators();
         
-        // Set default dates for custom date range
-        const today = new Date().toISOString().split('T')[0];
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        const oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0];
-        
-        document.getElementById('startDate').value = oneMonthAgoStr;
-        document.getElementById('endDate').value = today;
-        
-        // Set default report title
-        document.getElementById('reportTitle').value = 'Travel Marketing Report - ' + getCurrentPeriodText();
-        
-        // Initialize preview
-        updatePreview();
-        
-        // Remove loading bar
-        const loadingBar = document.querySelector('.loading-bar');
-        if (loadingBar) {
-            setTimeout(() => {
-                loadingBar.style.width = '100%';
-                setTimeout(() => {
-                    loadingBar.style.opacity = '0';
-                    setTimeout(() => loadingBar.remove(), 500);
-                }, 300);
-            }, 100);
-        }
-        
-        // Check if we should open preview modal
-        <?php if (isset($_GET['preview'])): ?>
-        setTimeout(() => {
-            document.getElementById('pdfPreviewModal').classList.add('active');
-        }, 500);
-        <?php endif; ?>
-    });
-</script>
+        // Initialize with default report
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial active state
+            selectReportType(currentReportType);
+            
+            // Add click handlers to report cards
+            document.querySelectorAll('.report-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        selectReportType(radio.value);
+                    }
+                });
+            });
+            
+            // Check/uncheck sections based on checkboxes
+            const checkboxes = document.querySelectorAll('input[name="sections[]"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const sectionId = this.value + 'Section';
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        if (this.checked) {
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

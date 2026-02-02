@@ -337,6 +337,10 @@ $footerLinks = [
             background-color: #f0f9ff;
             color: #0369a1;
         }
+        .type-travel_agent {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -606,39 +610,41 @@ $footerLinks = [
             <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow mb-8">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-semibold text-gray-900">Partnership Categories</h3>
-                    <button onclick="showNewPartnershipModal()" class="px-4 py-2 rounded-lg gold-gradient text-white font-semibold hover:shadow-lg text-sm">
+                    <a href="add_partnership.php" class="px-4 py-2 rounded-lg gold-gradient text-white font-semibold hover:shadow-lg text-sm">
                         <i class="fas fa-plus mr-1"></i> Add Partnership
-                    </button>
+                    </a>
                 </div>
-                
+    
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    <?php foreach ($partnershipTypes as $key => $type): 
-                        $icons = [
-                            'hotel' => 'fa-hotel',
-                            'airline' => 'fa-plane',
-                            'tour_operator' => 'fa-map-marked-alt',
-                            'influencer' => 'fa-users',
-                            'tourism_board' => 'fa-landmark',
-                            'travel_agent' => 'fa-suitcase',
-                        ];
-                        $counts = [
-                            'hotel' => 8,
-                            'airline' => 6,
-                            'tour_operator' => 5,
-                            'influencer' => 12,
-                            'tourism_board' => 3,
-                            'travel_agent' => 15,
-                        ];
-                    ?>
-                    <div class="text-center cursor-pointer hover:scale-105 transition-transform" onclick="filterPartnerships('<?= $key ?>')">
-                        <div class="type-icon <?= 'type-' . $key ?> mx-auto mb-2">
-                            <i class="fas <?= $icons[$key] ?>"></i>
-                        </div>
+                  <?php foreach ($partnershipTypes as $key => $type): 
+                    $icons = [
+                        'hotel' => 'fa-hotel',
+                        'airline' => 'fa-plane',
+                        'tour_operator' => 'fa-map-marked-alt',
+                        'influencer' => 'fa-users',
+                        'tourism_board' => 'fa-landmark',
+                        'travel_agent' => 'fa-suitcase',
+                
+                    ];
+                    $counts = [
+                        'hotel' => 8,
+                        'airline' => 6,
+                        'tour_operator' => 5,
+                        'influencer' => 12,
+                        'tourism_board' => 3,
+                        'travel_agent' => 15,
+                    ];
+                  ?>
+                 <div class="text-center cursor-pointer hover:scale-105 transition-transform" onclick="filterPartnerships('<?= $key ?>')">
+                    <div class="type-icon <?= 'type-' . $key ?> mx-auto mb-2">
+                        <i class="fas <?= $icons[$key] ?>"></i>
+                    </div>
                         <div class="text-xs font-medium text-gray-900"><?= $type ?></div>
                         <div class="text-xs text-gray-600"><?= $counts[$key] ?> partners</div>
-                    </div>
-                    <?php endforeach; ?>
+                 </div>
+                 <?php endforeach; ?>
                 </div>
+        
             </div>
 
             <!-- Partnerships Table -->
@@ -912,113 +918,6 @@ $footerLinks = [
         </div>
     </main>
 
-    <!-- New Partnership Modal -->
-    <div id="newPartnershipModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-900">Add New Partnership</h3>
-                    <button onclick="closeModal()" class="p-2 rounded-xl text-gray-600 hover:bg-amber-50">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-
-                <form id="partnershipForm" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                            <input type="text" id="companyName" required
-                                   class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Partnership Type *</label>
-                            <select id="partnershipType" class="w-full p-3 rounded-xl border border-amber-200 bg-white" required>
-                                <option value="">Select type</option>
-                                <?php foreach ($partnershipTypes as $value => $label): ?>
-                                <option value="<?= $value ?>"><?= $label ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person *</label>
-                            <input type="text" id="contactPerson" required
-                                   class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                            <input type="email" id="contactEmail" required
-                                   class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                            <input type="tel" id="contactPhone"
-                                   class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
-                            <input type="url" id="companyWebsite" placeholder="https://"
-                                   class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Commission Rate *</label>
-                            <div class="flex items-center">
-                                <input type="number" id="commissionRate" step="0.1" min="0" max="100" required
-                                       class="flex-1 p-3 rounded-l-xl border border-amber-200 bg-white">
-                                <span class="px-4 py-3 bg-amber-50 border border-amber-200 border-l-0 rounded-r-xl text-amber-700">%</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Partnership Tier</label>
-                            <select id="partnershipTier" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                                <option value="">Select tier</option>
-                                <?php foreach ($partnershipTiers as $value => $label): ?>
-                                <option value="<?= $value ?>"><?= $label ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-                        <select id="industry" class="w-full p-3 rounded-xl border border-amber-200 bg-white">
-                            <option value="">Select industry</option>
-                            <?php foreach ($industries as $value => $label): ?>
-                            <option value="<?= $value ?>"><?= $label ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes & Collaboration Ideas</label>
-                        <textarea id="partnerNotes" rows="3" 
-                                  placeholder="Describe potential collaboration opportunities, joint promotions, or special arrangements..."
-                                  class="w-full p-3 rounded-xl border border-amber-200 bg-white"></textarea>
-                    </div>
-
-                    <div class="flex justify-end gap-3">
-                        <button type="button" onclick="closeModal()" 
-                                class="px-5 py-2.5 rounded-xl border border-amber-300 text-amber-700 font-semibold hover:bg-amber-50">
-                            Cancel
-                        </button>
-                        <button type="button" onclick="savePartnership()" 
-                                class="px-5 py-2.5 rounded-xl gold-gradient text-white font-semibold hover:shadow-lg">
-                            <i class="fas fa-handshake mr-2"></i> Create Partnership
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Footer -->
     <footer class="border-t border-amber-100 bg-amber-50 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -1091,32 +990,6 @@ $footerLinks = [
                     cutout: '70%'
                 }
             });
-
-            // Set default commission rate
-            document.getElementById('commissionRate').value = '15';
-        });
-
-        // Modal functions
-        function showNewPartnershipModal() {
-            document.getElementById('newPartnershipModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('newPartnershipModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('newPartnershipModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && document.getElementById('newPartnershipModal').style.display === 'flex') {
-                closeModal();
-            }
         });
 
         // Mobile menu functionality
@@ -1211,38 +1084,6 @@ $footerLinks = [
         function viewContractTemplates() {
             alert('Opening contract templates library...');
         }
-
-        // Save partnership
-        function savePartnership() {
-            const companyName = document.getElementById('companyName').value;
-            const contactPerson = document.getElementById('contactPerson').value;
-            const contactEmail = document.getElementById('contactEmail').value;
-            const commissionRate = document.getElementById('commissionRate').value;
-            
-            if (!companyName || !contactPerson || !contactEmail || !commissionRate) {
-                alert('Please fill in all required fields.');
-                return;
-            }
-
-            // Show loading
-            const btn = document.querySelector('#partnershipForm button[onclick="savePartnership()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating...';
-            btn.disabled = true;
-
-            setTimeout(() => {
-                alert(`✅ Partnership with "${companyName}" created successfully!\n\nAn invitation has been sent to ${contactEmail}`);
-                closeModal();
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                
-                // In a real app, this would refresh the partnerships list
-                // location.reload();
-            }, 1500);
-        }
-
-        // New partnership button event listener
-        document.getElementById('new-partnership-btn')?.addEventListener('click', showNewPartnershipModal);
     </script>
 </body>
 </html>

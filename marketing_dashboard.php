@@ -407,6 +407,58 @@ $currentYear = date('Y');
       transform: translateY(-5px);
       box-shadow: 0 15px 30px -10px rgba(245, 158, 11, 0.15);
     }
+    .newsletter-section {
+  background:   linear-gradient(135deg, #fef7e5 50%,  #fef3c7 100%);
+  text-align: center;
+}
+
+.newsletter-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.newsletter-form {
+  margin: 2rem 0;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.checkbox-label input {
+  margin-right: 8px;
+}
+
+.submit-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.privacy-text {
+  font-size: 12px;
+  color: #666;
+  margin-top: 1rem;
+}
   </style>
 </head>
 <body class="min-h-screen">
@@ -779,6 +831,31 @@ $currentYear = date('Y');
     </div>
   </section>
 
+<section class="newsletter-section">
+  <div class="newsletter-container">
+    <h2>Stay Updated</h2>
+    <p>Get the latest news and updates directly in your inbox.</p>
+    
+    <form id="newsletterForm" class="newsletter-form">
+      <div class="form-group">
+        <input type="text" name="name" placeholder="Your Name" class="form-input">
+      </div>
+      <div class="form-group">
+        <input type="email" name="email" placeholder="Email Address" class="form-input" required>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" required>
+          I agree to receive newsletter emails
+        </label>
+      </div>
+      <button type="submit" class="submit-btn">Subscribe</button>
+    </form>
+    
+    <p class="privacy-text">We respect your privacy. Unsubscribe at any time.</p>
+  </div>
+</section>
+
   <!--footer-->
   <footer class="border-t border-amber-100 bg-amber-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -916,6 +993,17 @@ $currentYear = date('Y');
         });
       }
     }
+    document.getElementById('newsletterForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const email = formData.get('email');
+  
+  // Here you would typically send to your server
+  // For now, just show a success message
+  alert(`Thank you for subscribing! A confirmation has been sent to ${email}`);
+  this.reset();
+});
   </script>
 </body>
 </html>
