@@ -18,7 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email     = trim($_POST['email'] ?? '');
         $role      = trim($_POST['role'] ?? 'user');
 
-        if ($userId <= 0 || $fullName === '' || $email === '' || !in_array($role, ['user', 'admin'], true)) {
+        // ✅ allow roles: user, admin, marketing
+        if (
+            $userId <= 0 ||
+            $fullName === '' ||
+            $email === '' ||
+            !in_array($role, ['user', 'admin', 'marketing'], true)
+        ) {
             $_SESSION['flash_error'] = 'Please fill all required fields correctly.';
         } else {
             try {
@@ -69,20 +75,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // --- Filters: search & role ---
-$search    = trim($_GET['q'] ?? '');
+$search     = trim($_GET['q'] ?? '');
 $roleFilter = $_GET['role'] ?? 'all';
 
 $where  = [];
 $params = [];
 
 if ($search !== '') {
-    $where[]             = "(full_name ILIKE :search OR email ILIKE :search)";
-    $params[':search']   = '%' . $search . '%';
+    $where[]           = "(full_name ILIKE :search OR email ILIKE :search)";
+    $params[':search'] = '%' . $search . '%';
 }
 
-if ($roleFilter === 'admin' || $roleFilter === 'user') {
-    $where[]            = "role = :role";
-    $params[':role']    = $roleFilter;
+// ✅ filter supports admin, user, marketing
+if (in_array($roleFilter, ['admin', 'user', 'marketing'], true)) {
+    $where[]         = "role = :role";
+    $params[':role'] = $roleFilter;
 }
 
 $whereSql = '';
@@ -225,9 +232,11 @@ $adminName = $_SESSION['full_name'] ?? 'Admin';
           <label class="block text-xs font-semibold text-ink mb-1">Role</label>
           <select name="role"
                   class="border border-yellow-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
-            <option value="all"   <?= $roleFilter === 'all'   ? 'selected' : '' ?>>All</option>
-            <option value="user"  <?= $roleFilter === 'user'  ? 'selected' : '' ?>>User</option>
-            <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>Admin</option>
+            <option value="all"       <?= $roleFilter === 'all'       ? 'selected' : '' ?>>All</option>
+            <option value="user"      <?= $roleFilter === 'user'      ? 'selected' : '' ?>>User</option>
+            <option value="admin"     <?= $roleFilter === 'admin'     ? 'selected' : '' ?>>Admin</option>
+            <!-- ✅ New marketing role in filter -->
+            <option value="marketing" <?= $roleFilter === 'marketing' ? 'selected' : '' ?>>Marketing</option>
           </select>
         </div>
         <div>
@@ -273,8 +282,10 @@ $adminName = $_SESSION['full_name'] ?? 'Admin';
             <label class="block text-xs font-semibold text-ink mb-1">Role</label>
             <select name="role"
                     class="w-full border border-yellow-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary bg-white">
-              <option value="user"  <?= $editUser['role'] === 'user'  ? 'selected' : '' ?>>User</option>
-              <option value="admin" <?= $editUser['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
+              <option value="user"      <?= $editUser['role'] === 'user'      ? 'selected' : '' ?>>User</option>
+              <option value="admin"     <?= $editUser['role'] === 'admin'     ? 'selected' : '' ?>>Admin</option>
+              <!-- ✅ marketing role in edit form -->
+              <option value="marketing" <?= $editUser['role'] === 'marketing' ? 'selected' : '' ?>>Marketing</option>
             </select>
           </div>
 
@@ -332,6 +343,11 @@ $adminName = $_SESSION['full_name'] ?? 'Admin';
                   <?php if ($u['role'] === 'admin'): ?>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-700">
                       Admin
+                    </span>
+                  <?php elseif ($u['role'] === 'marketing'): ?>
+                    <!-- ✅ nice badge for marketing -->
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700">
+                      Marketing
                     </span>
                   <?php else: ?>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700">

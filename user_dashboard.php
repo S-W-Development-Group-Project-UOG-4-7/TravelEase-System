@@ -32,7 +32,6 @@ $profileImageUrl = 'img/default-avatar.png';
 $badgeLabel = 'Traveler';
 
 // ---------- Fetch data from database ----------
-
 $savedCount            = 0;
 $tripsCount            = 0;
 $wishlistCount         = 0;
@@ -42,6 +41,11 @@ $savedTours            = [];
 $countriesVisitedCount = 0;   // distinct completed-trip countries
 $recentTrips           = [];  // recent trip history
 $dbError               = '';
+
+// ---------- Reviews & Ratings ----------
+$reviewEligiblePackages = [];
+$latestReviews = [];
+$avgRatings = [];
 
 try {
     // Get last_login + profile_image from users table
@@ -82,7 +86,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT t.start_date, t.end_date, t.status,
                p.title AS package_title,
-               c.name AS country_name
+               c.name AS country_name,
+               p.id AS package_id
         FROM trips t
         JOIN packages p   ON t.package_id = p.id
         JOIN countries c  ON p.country_id = c.id
@@ -116,7 +121,8 @@ try {
         SELECT p.title,
                c.name AS country_name,
                p.duration_days,
-               p.duration_nights
+               p.duration_nights,
+               p.id AS package_id
         FROM saved_tours s
         JOIN packages p  ON s.package_id = p.id
         JOIN countries c ON p.country_id = c.id
@@ -156,6 +162,52 @@ try {
     $stmt->execute([':uid' => $userId]);
     $recentTrips = $stmt->fetchAll();
 
+    // ---------- Review + rating data ----------
+    // Packages user booked (for dropdown)
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT p.id, p.title, c.name AS country_name
+        FROM trips t
+        JOIN packages p ON t.package_id = p.id
+        JOIN countries c ON p.country_id = c.id
+        WHERE t.user_id = :uid
+        ORDER BY c.name, p.title
+    ");
+    $stmt->execute([':uid' => $userId]);
+    $reviewEligiblePackages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Latest reviews for packages user booked (initial render)
+    $stmt = $pdo->prepare("
+        SELECT
+            r.id, r.user_id, r.rating, r.review_text, r.created_at,
+            u.full_name AS reviewer_name,
+            p.title AS package_title,
+            c.name AS country_name
+        FROM package_reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN packages p ON r.package_id = p.id
+        JOIN countries c ON p.country_id = c.id
+        WHERE r.package_id IN (
+            SELECT DISTINCT package_id FROM trips WHERE user_id = :uid
+        )
+        ORDER BY r.id DESC
+        LIMIT 6
+    ");
+    $stmt->execute([':uid' => $userId]);
+    $latestReviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Avg ratings per package (used in Recommended Packages cards)
+    $stmt = $pdo->prepare("
+        SELECT package_id,
+               ROUND(AVG(rating)::numeric, 1) AS avg_rating,
+               COUNT(*) AS total
+        FROM package_reviews
+        GROUP BY package_id
+    ");
+    $stmt->execute();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $avgRatings[(int)$r['package_id']] = $r;
+    }
+
     // Badge logic
     if ($tripsCount >= 5 || $savedCount >= 10 || $countriesVisitedCount >= 5) {
         $badgeLabel = 'VIP Explorer';
@@ -175,472 +227,1632 @@ try {
     <meta charset="UTF-8">
     <title>TravelEase | User Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Tailwind configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            200: '#e9d5ff',
+                            300: '#d8b4fe',
+                            400: '#c084fc',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7e22ce',
+                            800: '#6b21a8',
+                            900: '#581c87',
+                        },
+                        secondary: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f9a8d4',
+                            400: '#f472b6',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            800: '#9d174d',
+                            900: '#831843',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'slide-down': 'slideDown 0.6s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                        'shimmer': 'shimmer 2s infinite',
+                        'gradient': 'gradient 3s ease infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        slideDown: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-1000px 0' },
+                            '100%': { backgroundPosition: '1000px 0' },
+                        },
+                        gradient: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 25%, #a855f7 50%, #c084fc 75%, #f3e8ff 100%);
+            background-attachment: fixed;
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
         }
-        .country-region.active {
-            outline: 3px solid #fbbf24;
-            outline-offset: 2px;
-        }
-        @keyframes fadeInUp {
+        
+        @keyframes gradient {
             0% {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .welcome-animate {
-            animation: fadeInUp 0.6s ease-out;
-        }
-        /* Glow effect for welcome heading */
-        @keyframes glowText {
-            0% {
-                text-shadow: 0 0 0 rgba(250, 174, 50, 0.0);
+                background-position: 0% 50%;
             }
             50% {
-                text-shadow: 0 0 12px rgba(250, 174, 50, 0.8);
+                background-position: 100% 50%;
             }
             100% {
-                text-shadow: 0 0 0 rgba(250, 174, 50, 0.0);
+                background-position: 0% 50%;
             }
         }
-        .glow-welcome {
-            animation: glowText 2.5s ease-in-out infinite;
+        
+        .country-region.active {
+            outline: 3px solid #c084fc;
+            outline-offset: 2px;
+            transform: scale(1.05);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(108, 43, 217, 0.1);
+        }
+        
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(108, 43, 217, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(168, 85, 247, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+            color: #db2777;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
+        }
+        
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.7s ease;
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
+        }
+        
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
+            animation: pulse-ring 2s infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        .dashboard-card {
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .dashboard-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #c084fc, #a855f7, #7c3aed);
+        }
+        
+        .quick-action-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quick-action-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        .quick-action-btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+        
+        .map-country {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .map-country:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+        
+        .notification-dot {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        .theme-toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            border-radius: 13px;
+            background: #e5e7eb;
+            transition: background 0.3s ease;
+        }
+        
+        .theme-toggle.active {
+            background: #a855f7;
+        }
+        
+        .theme-toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            transition: transform 0.3s ease;
+        }
+        
+        .theme-toggle.active .theme-toggle-slider {
+            transform: translateX(24px);
+        }
+        
+        .dark-mode {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #5b21b6 75%, #7c3aed 100%);
+            color: #f9fafb;
+            background-attachment: fixed;
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        .dark-mode .glass-card {
+            background: rgba(30, 27, 75, 0.85);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.5);
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.7);
+        }
+        
+        .dark-mode .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 27, 75, 0.5);
+        }
+        
+        .dark-mode .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(199, 210, 254, 0.5);
+        }
+        
+        .dark-mode .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(199, 210, 254, 0.7);
+        }
+        
+        /* Purple theme enhancements */
+        header.glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(216, 180, 254, 0.3);
+        }
+        
+        .dark-mode header.glass-card {
+            background: rgba(30, 27, 75, 0.95);
+            border-bottom: 1px solid rgba(129, 140, 248, 0.3);
+        }
+        
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid rgba(216, 180, 254, 0.3);
+        }
+        
+        .dark-mode footer {
+            background: rgba(30, 27, 75, 0.95);
+            border-top: 1px solid rgba(129, 140, 248, 0.3);
+        }
+        
+        /* Map country colors */
+        .map-country rect {
+            fill: #f3e8ff;
+            stroke: #c084fc;
+        }
+
+        .map-country rect,
+        .map-country path {
+            transition: all 0.2s ease;
+        }
+
+        .map-wrap {
+            position: relative;
+            background: radial-gradient(120% 120% at 10% 10%, #f5f3ff 0%, #eef2ff 45%, #fdf2f8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(124,58,237,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(124,58,237,0.06) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .map-country:hover rect,
+        .map-country:hover path {
+            fill: #ede9fe;
+            stroke: #7c3aed;
+        }
+
+        .map-country.active rect,
+        .map-country.active path {
+            fill: #ddd6fe;
+            stroke: #6d28d9;
+            stroke-width: 2.5;
+        }
+
+        .map-label {
+            font-size: 11px;
+            font-weight: 700;
+            fill: #5b21b6;
+        }
+
+        .map-pin {
+            fill: #a855f7;
+            animation: mapPulse 2s infinite;
+        }
+
+        @keyframes mapPulse {
+            0% { r: 3; opacity: 0.9; }
+            50% { r: 5; opacity: 0.6; }
+            100% { r: 3; opacity: 0.9; }
+        }
+        
+        .dark-mode .map-country rect {
+            fill: #4c1d95;
+            stroke: #a855f7;
+        }
+
+        .dark-mode .map-wrap {
+            background: radial-gradient(120% 120% at 10% 10%, #1e1b4b 0%, #312e81 45%, #4c1d95 100%);
+        }
+
+        .dark-mode .map-wrap::before {
+            background-image:
+                linear-gradient(to right, rgba(199,210,254,0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(199,210,254,0.08) 1px, transparent 1px);
+        }
+
+        .dark-mode .map-label {
+            fill: #e9d5ff;
+        }
+
+        .globe-object {
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            transition: transform 0.3s ease;
+            display: block;
+        }
+        
+        /* Text colors for better contrast */
+        .dark-mode .text-gray-900 {
+            color: #f3f4f6;
+        }
+        
+        .dark-mode .text-gray-700 {
+            color: #d1d5db;
+        }
+        
+        .dark-mode .text-gray-500 {
+            color: #9ca3af;
+        }
+        
+        .dark-mode .text-gray-600 {
+            color: #d1d5db;
+        }
+        
+        /* Button hover states for dark mode */
+        .dark-mode .btn-primary {
+            background: linear-gradient(135deg, #7c3aed 0%, #6b21a8 100%);
+        }
+        
+        .dark-mode .btn-primary:hover {
+            background: linear-gradient(135deg, #6b21a8 0%, #581c87 100%);
+            box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4);
+        }
+        
+        .dark-mode .btn-secondary {
+            background: linear-gradient(135deg, #831843 0%, #9d174d 100%);
+            color: #fbcfe8;
+        }
+        
+        .dark-mode .btn-secondary:hover {
+            background: linear-gradient(135deg, #9d174d 0%, #be185d 100%);
+            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3);
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-
+<body class="min-h-screen transition-colors duration-300" id="body">
     <!-- Top Navbar -->
-    <header class="bg-white shadow-sm">
+    <header class="glass-card shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-            <div class="flex items-center gap-2">
-                <img src="img/Logo.png" alt="TravelEase Logo" class="h-10 w-auto">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <img src="img/Logo.png" alt="TravelEase Logo" class="h-12 w-auto animate-float">
+                    <div class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
+                        <span class="text-xs font-bold text-white">✓</span>
+                    </div>
+                </div>
                 <div class="flex flex-col leading-tight">
-                    <span class="text-xl font-bold text-yellow-500">TravelEase</span>
+                    <span class="text-xl font-bold text-primary-600">TravelEase</span>
                     <span class="text-xs text-gray-500">Full Asia Travel Experience</span>
                 </div>
             </div>
 
             <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-                <a href="user_dashboard.php" class="text-yellow-500">Dashboard</a>
-                <a href="packages.php" class="text-gray-700 hover:text-yellow-500 transition">Packages</a>
-                <a href="countries.php" class="text-gray-700 hover:text-yellow-500 transition">Countries</a>
-                <a href="user_profile.php" class="text-gray-700 hover:text-yellow-500 transition">Profile</a>
+                <a href="user_dashboard.php" class="text-primary-600 font-bold flex items-center gap-2">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="packages.php" class="text-gray-700 hover:text-primary-500 transition flex items-center gap-2">
+                    <i class="fas fa-suitcase"></i>
+                    <span>Packages</span>
+                </a>
+                <a href="countries.php" class="text-gray-700 hover:text-primary-500 transition flex items-center gap-2">
+                    <i class="fas fa-globe-asia"></i>
+                    <span>Countries</span>
+                </a>
+                <a href="user_profile.php" class="text-gray-700 hover:text-primary-500 transition flex items-center gap-2">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Profile</span>
+                </a>
+                
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button id="notification-btn" type="button" class="text-gray-700 hover:text-primary-500 transition">
+                        <i class="fas fa-bell text-lg"></i>
+                        <div class="notification-dot hidden" id="notification-dot"></div>
+                    </button>
+                    
+                    <!-- Notification Dropdown -->
+                    <div id="notification-dropdown" class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 p-4 hidden z-50">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-gray-800">Notifications</h3>
+                            <button class="text-xs text-primary-600 hover:text-primary-800">Mark all read</button>
+                        </div>
+                        <div class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                            <div class="flex gap-3 p-2 rounded-lg bg-primary-50">
+                                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
+                                    <i class="fas fa-gift text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">Special offer available!</p>
+                                    <p class="text-xs text-gray-500">20% off on Thailand packages</p>
+                                    <p class="text-xs text-gray-400 mt-1">2 hours ago</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3 p-2 rounded-lg hover:bg-gray-50">
+                                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                    <i class="fas fa-check text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">Trip confirmed</p>
+                                    <p class="text-xs text-gray-500">Japan adventure package</p>
+                                    <p class="text-xs text-gray-400 mt-1">Yesterday</p>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#" class="block text-center mt-3 text-sm text-primary-600 hover:text-primary-800 font-medium">
+                            View all notifications
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Theme Toggle removed -->
             </nav>
 
             <div class="flex items-center gap-3">
-                <!-- User avatar -->
-                <a href="user_profile.php" class="flex items-center gap-2">
-                    <img
-                        src="<?= htmlspecialchars($profileImageUrl); ?>"
-                        alt="Profile Picture"
-                        class="w-9 h-9 rounded-full object-cover border border-gray-200"
-                    >
-                    <span class="hidden sm:inline text-sm font-bold text-gray-900">
-                        <?= htmlspecialchars($userName); ?>
-                    </span>
+                <!-- Quick Action Menu -->
+                <div class="hidden md:flex items-center gap-2">
+                    <button onclick="window.location.href='book_trip.php'" 
+                            class="quick-action-btn btn-primary px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        <span>Book Trip</span>
+                    </button>
+                    <a href="client_map.php"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-blue-600 text-white shadow hover:bg-blue-700 transition">
+                        <i class="fas fa-map"></i>
+                        <span>Map View</span>
+                    </a>
+                    <div class="relative">
+                        <button id="quick-menu-btn" type="button"
+                                class="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700 hover:text-primary-500 hover:border-primary-300">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <div id="quick-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-2 hidden z-40">
+                            <a href="travel_tips.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                                <i class="fas fa-lightbulb text-primary-500"></i>
+                                <span>Travel Tips</span>
+                            </a>
+                            <a href="https://www.xe.com/currencyconverter/" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-exchange-alt text-primary-500"></i>
+                                <span>Currency Converter</span>
+                            </a>
+                            <a href="https://www.weather.com/" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-cloud-sun text-primary-500"></i>
+                                <span>Weather Check</span>
+                            </a>
+                            <hr class="my-1">
+                            <a href="help_center.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                                <i class="fas fa-question-circle text-primary-500"></i>
+                                <span>Help Center</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User avatar with dropdown -->
+                <div class="relative">
+                    <button id="user-menu-btn" type="button" class="flex items-center gap-2">
+                        <div class="relative">
+                            <img
+                                src="<?= htmlspecialchars($profileImageUrl); ?>"
+                                alt="Profile Picture"
+                                class="w-10 h-10 rounded-full object-cover border-2 border-primary-300"
+                            >
+                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <span class="hidden sm:inline text-sm font-bold text-gray-900">
+                            <?= htmlspecialchars($userName); ?>
+                        </span>
+                        <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                    </button>
+                    
+                    <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-2 hidden z-40">
+                        <div class="p-3 border-b">
+                            <p class="font-medium text-gray-800"><?= htmlspecialchars($userName); ?></p>
+                            <p class="text-xs text-gray-500"><?= htmlspecialchars($badgeLabel); ?></p>
+                        </div>
+                        <a href="user_profile.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                            <i class="fas fa-user text-primary-500"></i>
+                            <span>My Profile</span>
+                        </a>
+                        <a href="my_trips.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                            <i class="fas fa-suitcase-rolling text-primary-500"></i>
+                            <span>My Trips</span>
+                        </a>
+                        <a href="settings.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 text-sm">
+                            <i class="fas fa-cog text-primary-500"></i>
+                            <span>Settings</span>
+                        </a>
+                        <hr class="my-1">
+                        <a href="logout.php" class="flex items-center gap-2 p-3 rounded-lg hover:bg-red-50 text-sm text-red-600">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <button id="mobile-menu-btn" type="button" class="md:hidden text-gray-700">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden hidden bg-white border-t px-4 py-3">
+            <div class="space-y-2">
+                <a href="user_dashboard.php" class="flex items-center gap-3 p-3 rounded-lg bg-primary-50 text-primary-600 font-medium">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
                 </a>
-
-                <a href="logout.php"
-                   class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition">
-                    Logout
+                <a href="packages.php" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
+                    <i class="fas fa-suitcase"></i>
+                    <span>Packages</span>
                 </a>
+                <a href="countries.php" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
+                    <i class="fas fa-globe-asia"></i>
+                    <span>Countries</span>
+                </a>
+                <a href="client_map.php" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
+                    <i class="fas fa-map"></i>
+                    <span>Map View</span>
+                </a>
+                <a href="user_profile.php" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Profile</span>
+                </a>
+                <hr>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="window.location.href='book_trip.php'" 
+                            class="btn-primary py-2 rounded-lg text-sm font-semibold">
+                        Book Trip
+                    </button>
+                    <button onclick="window.location.href='client_map.php'"
+                            class="bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                        Map View
+                    </button>
+                    <button onclick="window.location.href='travel_tips.php'"
+                            class="btn-secondary py-2 rounded-lg text-sm font-semibold">
+                        Travel Tips
+                    </button>
+                </div>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <?php if (!empty($dbError)): ?>
-            <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-                Database error: <?= htmlspecialchars($dbError); ?>
+            <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-4 flex items-center gap-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Database error: <?= htmlspecialchars($dbError); ?></span>
             </div>
         <?php endif; ?>
+        
+        <!-- Welcome Banner + Quick Stats -->
+        <section class="grid gap-6 lg:grid-cols-3 animate-fade-in">
+            <!-- Welcome Banner -->
+            <div class="lg:col-span-2 dashboard-card glass-card p-6 relative overflow-hidden">
+                <!-- Background decorative elements -->
+                <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-100 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-secondary-100 to-transparent rounded-full translate-y-16 -translate-x-16"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex-1">
+                            <!-- Time-based greeting -->
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="p-2 rounded-full bg-primary-100">
+                                    <i class="fas fa-sun text-primary-600"></i>
+                                </div>
+                                <p id="time-greeting-text"
+                                   class="text-sm font-semibold text-primary-600 uppercase tracking-wide"
+                                   data-php-greeting="<?= htmlspecialchars($timeGreeting); ?>">
+                                   <span class="greeting-text"><?= htmlspecialchars($timeGreeting); ?></span>,
+                                   <span class="font-bold text-gray-900"><?= htmlspecialchars($userName); ?></span>
+                                </p>
+                            </div>
 
-        <!-- Welcome + Quick stats -->
-        <section class="grid gap-6 lg:grid-cols-3">
-            <!-- Welcome card -->
-            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 flex flex-col justify-between">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <!-- Time-based greeting (JS will adjust using local time) -->
-                        <p id="time-greeting-text"
-                           class="text-sm font-semibold text-yellow-500 uppercase tracking-wide welcome-animate"
-                           data-php-greeting="<?= htmlspecialchars($timeGreeting); ?>">
-                            <?= htmlspecialchars($timeGreeting); ?>,
-                            <span class="text-gray-900"><?= htmlspecialchars($userName); ?></span>
-                        </p>
+                            <div class="mb-4">
+                                <h1 id="main-welcome-text"
+                                    class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2"
+                                    data-full-text="Welcome back! Ready to explore Asia again?">
+                                    Welcome back! Ready to explore Asia again?
+                                </h1>
+                                <p class="text-sm text-gray-600">
+                                    Discover new destinations, plan your next trip, and manage everything right here in your TravelEase dashboard.
+                                </p>
+                            </div>
 
-                        <div class="mt-1 welcome-animate">
-                            <h1 id="main-welcome-text"
-                                class="text-2xl sm:text-3xl font-bold text-gray-900 glow-welcome"
-                                data-full-text="Welcome back! Ready to explore Asia again?">
-                                Welcome back! Ready to explore Asia again?
-                            </h1>
-                            <p class="text-sm text-gray-600 mt-2">
-                                Discover new destinations, plan your next trip, and manage everything right here in your TravelEase dashboard.
-                            </p>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <!-- Badge with icon -->
+                                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary-50 to-purple-50 border border-primary-200">
+                                    <div class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <i class="fas fa-crown text-primary-600 text-xs"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-primary-800">
+                                        <?= htmlspecialchars($badgeLabel); ?>
+                                    </span>
+                                </div>
+
+                                <!-- Last login info -->
+                                <?php if (!empty($lastLoginDisplay)): ?>
+                                    <div class="flex items-center gap-2 text-sm text-gray-500">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Last login: <?= htmlspecialchars($lastLoginDisplay); ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="flex items-center gap-2 text-sm text-primary-600">
+                                        <i class="fas fa-gift"></i>
+                                        <span>First time here? Welcome aboard! 🎒</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
 
-                        <div class="mt-3 flex flex-wrap items-center gap-3 welcome-animate">
-                            <!-- Badge -->
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
-                                ✨ <?= htmlspecialchars($badgeLabel); ?>
-                            </span>
-
-                            <!-- Last login info -->
-                            <?php if (!empty($lastLoginDisplay)): ?>
-                                <span class="text-xs text-gray-500">
-                                    Last login:
-                                    <?= htmlspecialchars($lastLoginDisplay); ?>
-                                </span>
-                            <?php else: ?>
-                                <span class="text-xs text-gray-500">
-                                    First time here? Welcome aboard! 🎒
-                                </span>
-                            <?php endif; ?>
+                        <div class="flex flex-col gap-3 sm:items-end">
+                            <button onclick="window.location.href='packages.php'"
+                                   class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 group">
+                                <i class="fas fa-search"></i>
+                                <span>Find New Packages</span>
+                                <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                            <button onclick="window.location.href='user_profile.php'"
+                                   class="btn-secondary px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-3">
+                                <i class="fas fa-user-edit"></i>
+                                <span>Edit Profile</span>
+                            </button>
                         </div>
-                    </div>
-
-                    <div class="flex flex-col gap-2 sm:items-end">
-                        <a href="packages.php"
-                           class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-yellow-500 text-white text-sm font-semibold hover:bg-yellow-600 transition">
-                            🔍 Find New Packages
-                        </a>
-                        <a href="user_profile.php"
-                           class="inline-flex items-center justify-center px-4 py-2 rounded-full border border-gray-200 text-xs text-gray-700 hover:border-yellow-500 hover:text-yellow-600 transition">
-                            ⚙️ Edit Profile
-                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick stats -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-2 gap-3">
-                <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col justify-between">
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Saved Tours</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?= $savedCount; ?></p>
-                    <p class="text-xs text-green-600 mt-1">Your wishlist</p>
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-2 gap-4">
+                <!-- Saved Tours Card -->
+                <div class="stat-card glass-card rounded-2xl p-5 hover-lift cursor-pointer" onclick="window.location.href='saved_tours.php'">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Saved Tours</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2"><?= $savedCount; ?></p>
+                            <div class="flex items-center gap-1 mt-2">
+                                <i class="fas fa-heart text-red-500 text-xs"></i>
+                                <p class="text-xs text-green-600">Your wishlist</p>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-full bg-red-50">
+                            <i class="fas fa-heart text-red-500"></i>
+                        </div>
+                    </div>
+                    <!-- Progress indicator -->
+                    <div class="mt-4 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-red-500 rounded-full" style="width: <?= min($savedCount * 10, 100); ?>%"></div>
+                    </div>
                 </div>
-                <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col justify-between">
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Booked Trips</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?= $tripsCount; ?></p>
-                    <p class="text-xs text-blue-600 mt-1">Plan & manage</p>
+
+                <!-- Booked Trips Card -->
+                <div class="stat-card glass-card rounded-2xl p-5 hover-lift cursor-pointer" onclick="window.location.href='my_trips.php'">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Booked Trips</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2"><?= $tripsCount; ?></p>
+                            <div class="flex items-center gap-1 mt-2">
+                                <i class="fas fa-calendar-check text-blue-500 text-xs"></i>
+                                <p class="text-xs text-blue-600">Plan & manage</p>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-full bg-blue-50">
+                            <i class="fas fa-suitcase-rolling text-blue-500"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: <?= min($tripsCount * 20, 100); ?>%"></div>
+                    </div>
                 </div>
-                <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col justify-between col-span-2 sm:col-span-1 lg:col-span-2 xl:col-span-2">
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Countries Visited</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?= $countriesVisitedCount; ?></p>
-                    <p class="text-xs text-purple-600 mt-1">Completed trip destinations</p>
+
+                <!-- Countries Visited Card -->
+                <div class="stat-card glass-card rounded-2xl p-5 hover-lift col-span-2 sm:col-span-1 lg:col-span-2 xl:col-span-2 cursor-pointer" onclick="window.location.href='my_trips.php'">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Countries Visited</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2"><?= $countriesVisitedCount; ?></p>
+                            <div class="flex items-center gap-1 mt-2">
+                                <i class="fas fa-passport text-purple-500 text-xs"></i>
+                                <p class="text-xs text-purple-600">Completed destinations</p>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-full bg-purple-50">
+                            <i class="fas fa-globe-asia text-purple-500"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center gap-2">
+                        <div class="flex-1 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" style="width: <?= min($countriesVisitedCount * 20, 100); ?>%"></div>
+                        </div>
+                        <span class="text-xs font-medium text-purple-600"><?= min($countriesVisitedCount * 20, 100); ?>%</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Map + Upcoming Trips -->
-        <section class="grid gap-6 lg:grid-cols-3">
+        <!-- Interactive Map + Upcoming Trips -->
+        <section class="grid gap-6 lg:grid-cols-3 animate-fade-in">
             <!-- Interactive Asia Map Panel -->
-            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Explore Asia</h2>
-                        <p class="text-xs text-gray-500 mt-1">
-                            Click a country on the map to filter recommended packages.
-                        </p>
+            <div class="lg:col-span-2 dashboard-card glass-card p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-primary-50">
+                            <i class="fas fa-map-marked-alt text-primary-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Explore Asia</h2>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Full Asia map view (globe projection).
+                            </p>
+                        </div>
                     </div>
-                    <button id="clear-map-filter"
-                            class="text-xs font-semibold text-yellow-600 hover:text-yellow-700">
-                        Clear filter
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button id="clear-map-filter"
+                                class="text-xs font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1">
+                            <i class="fas fa-times"></i>
+                            Reset view
+                        </button>
+                        <button id="zoom-in" class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center">
+                            <i class="fas fa-search-plus text-gray-600"></i>
+                        </button>
+                        <button id="zoom-out" class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center">
+                            <i class="fas fa-search-minus text-gray-600"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="relative w-full h-64 sm:h-80 rounded-2xl border border-yellow-200 bg-gradient-to-br from-yellow-50 to-white overflow-hidden flex items-center justify-center">
-                    <!-- Simple abstract Asia map using SVG blocks -->
-                    <svg viewBox="0 0 800 400" class="w-full h-full">
-                        <!-- India -->
-                        <g class="country-region cursor-pointer" data-country-region="India">
-                            <rect x="320" y="200" width="90" height="60" fill="#FEF3C7" stroke="#FBBF24"></rect>
-                            <text x="330" y="235" font-size="12" fill="#92400E">India</text>
-                        </g>
+                <div class="relative w-full h-64 sm:h-80 rounded-2xl border-2 border-primary-100 overflow-hidden map-wrap">
+                    <object
+                        id="asia-map"
+                        type="image/svg+xml"
+                        data="assets/blankmap-world.svg"
+                        aria-label="Clickable map of Asia"
+                        class="globe-object"
+                    ></object>
 
-                        <!-- Sri Lanka -->
-                        <g class="country-region cursor-pointer" data-country-region="Sri Lanka">
-                            <rect x="360" y="270" width="40" height="40" fill="#FFFBEB" stroke="#FBBF24"></rect>
-                            <text x="362" y="295" font-size="11" fill="#92400E">Sri Lanka</text>
-                        </g>
+                    <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-full bg-primary-500"></div>
+                        <div class="text-sm">
+                            Filter: <span id="active-country-label" class="font-semibold text-primary-700">All Asia</span>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-globe-asia text-primary-600"></i>
+                            <span>Click a country</span>
+                        </div>
+                    </div>
 
-                        <!-- Japan -->
-                        <g class="country-region cursor-pointer" data-country-region="Japan">
-                            <rect x="550" y="130" width="60" height="60" fill="#FEF3C7" stroke="#FBBF24"></rect>
-                            <text x="560" y="160" font-size="12" fill="#92400E">Japan</text>
-                        </g>
-
-                        <!-- Thailand -->
-                        <g class="country-region cursor-pointer" data-country-region="Thailand">
-                            <rect x="400" y="220" width="70" height="50" fill="#FFFBEB" stroke="#FBBF24"></rect>
-                            <text x="405" y="250" font-size="11" fill="#92400E">Thailand</text>
-                        </g>
-
-                        <!-- Maldives -->
-                        <g class="country-region cursor-pointer" data-country-region="Maldives">
-                            <rect x="340" y="310" width="25" height="25" fill="#FEF3C7" stroke="#FBBF24"></rect>
-                            <text x="305" y="306" font-size="10" fill="#92400E">Maldives</text>
-                        </g>
-
-                        <!-- Nepal -->
-                        <g class="country-region cursor-pointer" data-country-region="Nepal">
-                            <rect x="335" y="170" width="70" height="25" fill="#FFFBEB" stroke="#FBBF24"></rect>
-                            <text x="345" y="187" font-size="11" fill="#92400E">Nepal</text>
-                        </g>
-
-                        <!-- Bangladesh -->
-                        <g class="country-region cursor-pointer" data-country-region="Bangladesh">
-                            <rect x="410" y="190" width="55" height="35" fill="#FEF3C7" stroke="#FBBF24"></rect>
-                            <text x="412" y="210" font-size="10" fill="#92400E">Bangladesh</text>
-                        </g>
-
-                        <!-- Pakistan -->
-                        <g class="country-region cursor-pointer" data-country-region="Pakistan">
-                            <rect x="260" y="190" width="55" height="45" fill="#FFFBEB" stroke="#FBBF24"></rect>
-                            <text x="262" y="210" font-size="10" fill="#92400E">Pakistan</text>
-                        </g>
-
-                        <!-- Bhutan -->
-                        <g class="country-region cursor-pointer" data-country-region="Bhutan">
-                            <rect x="380" y="175" width="40" height="20" fill="#FEF3C7" stroke="#FBBF24"></rect>
-                            <text x="382" y="190" font-size="10" fill="#92400E">Bhutan</text>
-                        </g>
-                    </svg>
-
-                    <div class="absolute bottom-3 left-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs text-gray-700">
-                        Filter: <span id="active-country-label" class="font-semibold">All Asia</span>
+                    <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-[11px] text-gray-600">
+                        Map: "BlankMap-World.svg" by SVG_blank_map_world2, CC BY-SA 3.0, via Wikimedia Commons
                     </div>
                 </div>
             </div>
 
             <!-- Upcoming Trips -->
-            <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-gray-900">Your Upcoming Trips</h2>
-                    <a href="my_trips.php" class="text-xs font-semibold text-yellow-600 hover:text-yellow-700">
+            <div class="dashboard-card glass-card p-6 flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-blue-50">
+                            <i class="fas fa-plane-departure text-blue-600"></i>
+                        </div>
+                        <h2 class="text-lg font-semibold text-gray-900">Your Upcoming Trips</h2>
+                    </div>
+                    <a href="my_trips.php" class="text-sm font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1">
                         View all
+                        <i class="fas fa-arrow-right text-xs"></i>
                     </a>
                 </div>
 
-                <div class="space-y-4 text-sm">
+                <div class="space-y-4 text-sm flex-1 overflow-y-auto custom-scrollbar max-h-64">
                     <?php if (empty($upcomingTrips)): ?>
-                        <p class="text-xs text-gray-500">
-                            You don’t have any upcoming trips yet. Start by booking a package!
-                        </p>
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-calendar-plus text-gray-400 text-2xl"></i>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4">
+                                You don't have any upcoming trips yet.
+                            </p>
+                            <button onclick="window.location.href='packages.php'"
+                                    class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">
+                                Book Your First Trip
+                            </button>
+                        </div>
                     <?php else: ?>
-                        <?php foreach ($upcomingTrips as $trip): ?>
-                            <div class="border rounded-xl p-3 flex flex-col gap-1">
+                        <?php foreach ($upcomingTrips as $trip): 
+                            $daysToTrip = floor((strtotime($trip['start_date']) - time()) / (60 * 60 * 24));
+                            $statusColor = $trip['status'] === 'Confirmed' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                        ?>
+                            <div class="border border-gray-100 rounded-xl p-4 flex flex-col gap-2 hover:border-primary-200 hover-lift cursor-pointer" 
+                                 onclick="window.location.href='package_details.php?id=<?= (int)$trip['package_id']; ?>'">
                                 <div class="flex items-center justify-between">
-                                    <p class="font-semibold text-gray-900">
+                                    <p class="font-semibold text-gray-900 truncate">
                                         <?= htmlspecialchars($trip['package_title']); ?>
                                     </p>
-                                    <span class="text-xs px-2 py-1 rounded-full
-                                        <?= $trip['status'] === 'Confirmed'
-                                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                                            : 'bg-gray-50 text-gray-700 border-gray-200 border'; ?>">
+                                    <span class="text-xs px-2 py-1 rounded-full font-medium <?= $statusColor; ?>">
                                         <?= htmlspecialchars($trip['status']); ?>
                                     </span>
                                 </div>
-                                <p class="text-xs text-gray-500">
-                                    <?= htmlspecialchars($trip['country_name']); ?>
-                                </p>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    📅
-                                    <?= htmlspecialchars($trip['start_date']); ?> –
-                                    <?= htmlspecialchars($trip['end_date']); ?>
-                                </p>
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <i class="fas fa-globe-asia"></i>
+                                    <span><?= htmlspecialchars($trip['country_name']); ?></span>
+                                </div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <div class="flex items-center gap-1 text-gray-600">
+                                            <i class="fas fa-calendar-day"></i>
+                                            <span><?= htmlspecialchars($trip['start_date']); ?></span>
+                                        </div>
+                                        <i class="fas fa-arrow-right text-gray-400 text-xs"></i>
+                                        <div class="flex items-center gap-1 text-gray-600">
+                                            <i class="fas fa-calendar-day"></i>
+                                            <span><?= htmlspecialchars($trip['end_date']); ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700 font-medium">
+                                        <?= $daysToTrip > 0 ? "In $daysToTrip days" : "Soon"; ?>
+                                    </div>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
 
-                <a href="packages.php"
-                   class="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-semibold border border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition">
-                    + Book a new trip
-                </a>
+                <button onclick="window.location.href='book_trip.php'"
+                   class="mt-6 btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    Book a New Trip
+                </button>
             </div>
         </section>
 
         <!-- Recommended Packages + Saved Tours -->
-        <section class="grid gap-6 lg:grid-cols-3">
+        <section class="grid gap-6 lg:grid-cols-3 animate-fade-in">
             <!-- Recommended Packages -->
-            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-gray-900">Recommended for You</h2>
-                    <a href="packages.php" class="text-xs font-semibold text-yellow-600 hover:text-yellow-700">
-                        View all packages →</a>
+            <div class="lg:col-span-2 dashboard-card glass-card p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-green-50">
+                            <i class="fas fa-star text-green-600"></i>
+                        </div>
+                        <h2 class="text-lg font-semibold text-gray-900">Recommended for You</h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="prev-packages" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+                            <i class="fas fa-chevron-left text-gray-600"></i>
+                        </button>
+                        <button id="next-packages" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+                            <i class="fas fa-chevron-right text-gray-600"></i>
+                        </button>
+                        <a href="packages.php" class="text-sm font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1">
+                            View all
+                            <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
                 </div>
 
-                <div id="packages-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                    <?php if (empty($recommendedPkgs)): ?>
-                        <p class="text-xs text-gray-500">
-                            No recommended packages available yet. Please check back later.
-                        </p>
-                    <?php else: ?>
-                        <?php foreach ($recommendedPkgs as $pkg): ?>
-                            <div class="border rounded-2xl p-4 flex flex-col gap-2"
-                                 data-package-country="<?= htmlspecialchars($pkg['country_name']); ?>">
-                                <p class="text-xs font-semibold text-yellow-500 uppercase tracking-wide">
-                                    <?= htmlspecialchars($pkg['country_name']); ?>
-                                </p>
-                                <h3 class="font-semibold text-gray-900">
-                                    <?= htmlspecialchars($pkg['title']); ?>
-                                </h3>
-                                <p class="text-xs text-gray-500">
-                                    <?= htmlspecialchars($pkg['short_description']); ?>
-                                </p>
-                                <div class="flex items-center justify-between mt-2">
-                                    <p class="text-sm font-bold text-gray-900">
-                                        $<?= htmlspecialchars($pkg['price']); ?>
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        <?= (int)$pkg['duration_days'] . 'D / ' . (int)$pkg['duration_nights'] . 'N'; ?>
-                                    </p>
+                <div id="packages-carousel" class="relative overflow-hidden">
+                    <div id="packages-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm transition-transform duration-300">
+                        <?php if (empty($recommendedPkgs)): ?>
+                            <div class="col-span-3 text-center py-8">
+                                <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-compass text-gray-400 text-2xl"></i>
                                 </div>
-                                <a href="package_details.php?id=<?= (int)$pkg['id']; ?>"
-                                   class="mt-2 inline-flex items-center justify-center px-3 py-2 rounded-full text-xs font-semibold bg-yellow-500 text-white hover:bg-yellow-600 transition">
-                                    View details
-                                </a>
+                                <p class="text-sm text-gray-500">
+                                    No recommended packages available yet. Please check back later.
+                                </p>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <?php foreach ($recommendedPkgs as $pkg): 
+                                $pkgId = (int)$pkg['id'];
+                                if (isset($avgRatings[$pkgId])) {
+                                    $rating = (float)$avgRatings[$pkgId]['avg_rating'];
+                                    $ratingTotal = (int)$avgRatings[$pkgId]['total'];
+                                } else {
+                                    $rating = mt_rand(40, 50) / 10;
+                                    $ratingTotal = 0;
+                                }
+                                $ratingWidth = ($rating / 5) * 100;
+                            ?>
+                                <div class="border border-gray-100 rounded-2xl p-5 flex flex-col gap-3 hover-lift cursor-pointer group"
+                                     data-package-country="<?= htmlspecialchars($pkg['country_name']); ?>"
+                                     onclick="window.location.href='package_details.php?id=<?= (int)$pkg['id']; ?>'">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-semibold text-primary-600 uppercase tracking-wide">
+                                                <?= htmlspecialchars($pkg['country_name']); ?>
+                                            </span>
+                                        </div>
+                                        <button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500">
+                                            <i class="fas fa-heart text-sm"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <h3 class="font-bold text-gray-900 text-base group-hover:text-primary-700">
+                                        <?= htmlspecialchars($pkg['title']); ?>
+                                    </h3>
+                                    
+                                    <p class="text-xs text-gray-500 line-clamp-2">
+                                        <?= htmlspecialchars($pkg['short_description']); ?>
+                                    </p>
+                                    
+                                    <!-- Rating - Using real average rating if available -->
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex">
+                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                <i class="fas fa-star text-<?= $i <= floor($rating) ? 'yellow-400' : 'gray-300'; ?> text-xs"></i>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <span class="text-xs text-gray-500">
+                                            <?= number_format($rating, 1); ?><?= $ratingTotal > 0 ? " (" . $ratingTotal . ")" : ""; ?>
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between mt-2 pt-3 border-t border-gray-100">
+                                        <div>
+                                            <p class="text-lg font-bold text-gray-900">
+                                                $<?= number_format($pkg['price'], 2); ?>
+                                            </p>
+                                            <p class="text-xs text-gray-500">
+                                                <?= (int)$pkg['duration_days'] . 'D / ' . (int)$pkg['duration_nights'] . 'N'; ?>
+                                            </p>
+                                        </div>
+                                        <button class="btn-primary px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 group-hover:scale-105 transition-transform">
+                                            <span>View Details</span>
+                                            <i class="fas fa-arrow-right text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
             <!-- Saved Tours -->
-            <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-gray-900">Saved Tours</h2>
-                    <a href="saved_tours.php" class="text-xs font-semibold text-yellow-600 hover:text-yellow-700">
+            <div class="dashboard-card glass-card p-6 flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-pink-50">
+                            <i class="fas fa-bookmark text-pink-600"></i>
+                        </div>
+                        <h2 class="text-lg font-semibold text-gray-900">Saved Tours</h2>
+                    </div>
+                    <a href="saved_tours.php" class="text-sm font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1">
                         Manage
+                        <i class="fas fa-cog text-xs"></i>
                     </a>
                 </div>
 
-                <div class="space-y-3 text-sm">
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto custom-scrollbar max-h-64">
                     <?php if (empty($savedTours)): ?>
-                        <p class="text-xs text-gray-500">
-                            You haven’t saved any tours yet. Click the heart icon on a package to add it here.
-                        </p>
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                <i class="far fa-heart text-gray-400 text-2xl"></i>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2">
+                                You haven't saved any tours yet.
+                            </p>
+                            <p class="text-xs text-gray-400">
+                                Click the heart icon on a package to add it here.
+                            </p>
+                        </div>
                     <?php else: ?>
                         <?php foreach ($savedTours as $tour): ?>
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <p class="font-semibold text-gray-900 text-sm">
-                                        <?= htmlspecialchars($tour['title']); ?>
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        <?= htmlspecialchars($tour['country_name']); ?>
-                                        •
-                                        <?= (int)$tour['duration_days'] . 'D / ' . (int)$tour['duration_nights'] . 'N'; ?>
-                                    </p>
+                            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift cursor-pointer" 
+                                 onclick="window.location.href='package_details.php?id=<?= (int)$tour['package_id']; ?>'">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-map-marked-alt text-primary-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 text-sm">
+                                            <?= htmlspecialchars($tour['title']); ?>
+                                        </p>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <p class="text-xs text-gray-500">
+                                                <i class="fas fa-globe-asia"></i>
+                                                <?= htmlspecialchars($tour['country_name']); ?>
+                                            </p>
+                                            <span class="text-xs text-gray-400">•</span>
+                                            <p class="text-xs text-gray-500">
+                                                <i class="far fa-clock"></i>
+                                                <?= (int)$tour['duration_days'] . 'D / ' . (int)$tour['duration_nights'] . 'N'; ?>
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <a href="packages.php"
-                                   class="text-xs text-yellow-600 hover:text-yellow-700">
-                                    View
-                                </a>
+                                <button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
 
-                <a href="saved_tours.php"
-                   class="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-semibold border border-gray-200 text-gray-700 hover:border-yellow-500 hover:text-yellow-600 transition">
-                    See all saved tours
-                </a>
+                <div class="mt-6 flex gap-3">
+                    <button onclick="window.location.href='saved_tours.php'"
+                           class="flex-1 btn-secondary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                        <i class="fas fa-list"></i>
+                        See All Saved
+                    </button>
+                    <button onclick="window.location.href='packages.php'"
+                           class="flex-1 btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        Add More
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reviews & Ratings Section -->
+        <section class="animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Submit Review -->
+                <div class="dashboard-card glass-card p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <span class="p-2 rounded-lg bg-primary-50"><i class="fas fa-star text-primary-600"></i></span>
+                            Submit a Review
+                        </h2>
+                        <span id="review-status" class="text-xs font-semibold text-gray-500"></span>
+                    </div>
+
+                    <p class="text-sm text-gray-600 mt-2">Rate a package you booked. Updates appear instantly.</p>
+
+                    <form id="reviewForm" class="mt-5 space-y-4" action="javascript:void(0)" method="POST" onsubmit="return false;">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Package</label>
+                            <select name="package_id"
+                                    class="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-primary-500 focus:ring-primary-500"
+                                    required>
+                                <option value="">-- Select a package --</option>
+                                <?php foreach ($reviewEligiblePackages as $p): ?>
+                                    <option value="<?= (int)$p['id']; ?>">
+                                        <?= htmlspecialchars($p['country_name'] . ' - ' . $p['title']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                                <?php if (empty($reviewEligiblePackages)): ?>
+                                    <option value="" disabled>No packages available</option>
+                                <?php endif; ?>
+                            </select>
+                            <?php if (empty($reviewEligiblePackages)): ?>
+                                <p class="text-xs text-gray-500 mt-2">Book a trip first to leave a review.</p>
+                            <?php endif; ?>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Rating</label>
+                            <select name="rating"
+                                    class="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-primary-500 focus:ring-primary-500"
+                                    required>
+                                <option value="">-- Choose --</option>
+                                <option value="5">★★★★★ (5)</option>
+                                <option value="4">★★★★☆ (4)</option>
+                                <option value="3">★★★☆☆ (3)</option>
+                                <option value="2">★★☆☆☆ (2)</option>
+                                <option value="1">★☆☆☆☆ (1)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Review</label>
+                            <textarea name="review_text" rows="4"
+                                      class="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-primary-500 focus:ring-primary-500"
+                                      placeholder="Share your experience..." required></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Min 5 characters. Max 1000 characters.</p>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                                <?= empty($reviewEligiblePackages) ? 'disabled' : ''; ?>>
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Review
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Live Reviews -->
+                <div class="dashboard-card glass-card p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <span class="p-2 rounded-lg bg-secondary-50"><i class="fas fa-bolt text-secondary-600"></i></span>
+                            Live Reviews
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-500">Auto-refresh</span>
+                    </div>
+
+                    <div id="reviewsList" class="mt-5 space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                        <?php if (empty($latestReviews)): ?>
+                            <div class="text-sm text-gray-600 bg-white/60 border border-gray-100 rounded-2xl p-4">
+                                No reviews yet. Be the first to review a package you booked!
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($latestReviews as $rv): ?>
+                                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="<?= (int)$rv['id']; ?>">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="font-bold text-gray-900 text-sm">
+                                            <?= htmlspecialchars($rv['package_title']); ?>
+                                            <span class="text-xs text-gray-500 font-semibold">· <?= htmlspecialchars($rv['country_name']); ?></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                                <?= (int)$rv['rating']; ?>/5
+                                            </div>
+                                            <?php if ((int)$rv['user_id'] === (int)$userId): ?>
+                                                <button type="button" data-review-delete="<?= (int)$rv['id']; ?>" class="text-xs text-red-600 hover:underline">
+                                                    Delete
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-700 mt-2"><?= htmlspecialchars($rv['review_text']); ?></p>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        by <?= htmlspecialchars($rv['reviewer_name']); ?> · <?= htmlspecialchars($rv['created_at']); ?>
+                                    </p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </section>
 
         <!-- Recent Trip History -->
-        <section class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-900">Recent Trip History</h2>
-                <a href="my_trips.php" class="text-xs font-semibold text-yellow-600 hover:text-yellow-700">
-                    Manage all trips →</a>
+        <section class="dashboard-card glass-card p-6 animate-fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-indigo-50">
+                        <i class="fas fa-history text-indigo-600"></i>
+                    </div>
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Trip History</h2>
+                </div>
+                <a href="my_trips.php" class="text-sm font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1">
+                    Manage all trips
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
             </div>
 
             <div class="space-y-3 text-sm">
                 <?php if (empty($recentTrips)): ?>
-                    <p class="text-xs text-gray-500">
-                        Once you book and complete trips, your latest journeys will appear here.
-                    </p>
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-plane text-gray-400 text-2xl"></i>
+                        </div>
+                        <p class="text-sm text-gray-500">
+                            Once you book and complete trips, your latest journeys will appear here.
+                        </p>
+                        <button onclick="window.location.href='packages.php'"
+                                class="mt-4 btn-primary px-4 py-2 rounded-lg text-sm font-semibold">
+                            Book Your First Trip
+                        </button>
+                    </div>
                 <?php else: ?>
-                    <?php foreach ($recentTrips as $trip): ?>
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-xl p-3">
-                            <div>
-                                <p class="font-semibold text-gray-900">
-                                    <?= htmlspecialchars($trip['package_title']); ?>
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    <?= htmlspecialchars($trip['country_name']); ?>
-                                    •
-                                    📅 <?= htmlspecialchars($trip['start_date']); ?>
-                                    – <?= htmlspecialchars($trip['end_date']); ?>
-                                </p>
+                    <?php foreach ($recentTrips as $trip): 
+                        $statusColor = '';
+                        $statusIcon = '';
+                        switch ($trip['status']) {
+                            case 'Completed':
+                                $statusColor = 'bg-green-100 text-green-800 border-green-200';
+                                $statusIcon = 'fa-check-circle';
+                                break;
+                            case 'Cancelled':
+                                $statusColor = 'bg-red-100 text-red-800 border-red-200';
+                                $statusIcon = 'fa-times-circle';
+                                break;
+                            case 'Confirmed':
+                                $statusColor = 'bg-blue-100 text-blue-800 border-blue-200';
+                                $statusIcon = 'fa-check-circle';
+                                break;
+                            default:
+                                $statusColor = 'bg-gray-100 text-gray-800 border-gray-200';
+                                $statusIcon = 'fa-clock';
+                                break;
+                        }
+                    ?>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center">
+                                    <i class="fas <?= $statusIcon; ?> text-primary-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900">
+                                        <?= htmlspecialchars($trip['package_title']); ?>
+                                    </p>
+                                    <div class="flex flex-wrap items-center gap-3 mt-1">
+                                        <p class="text-xs text-gray-500 flex items-center gap-1">
+                                            <i class="fas fa-globe-asia"></i>
+                                            <?= htmlspecialchars($trip['country_name']); ?>
+                                        </p>
+                                        <span class="text-xs text-gray-400">•</span>
+                                        <p class="text-xs text-gray-500 flex items-center gap-1">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <?= htmlspecialchars($trip['start_date']); ?>
+                                            –
+                                            <?= htmlspecialchars($trip['end_date']); ?>
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold
-                                <?php
-                                switch ($trip['status']) {
-                                    case 'Completed':
-                                        echo 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-                                        break;
-                                    case 'Cancelled':
-                                        echo 'bg-red-50 text-red-700 border border-red-200';
-                                        break;
-                                    default:
-                                        echo 'bg-gray-50 text-gray-700 border-gray-200';
-                                        break;
-                                }
-                                ?>">
-                                <?= htmlspecialchars($trip['status']); ?>
-                            </span>
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold <?= $statusColor; ?> gap-2">
+                                    <i class="fas <?= $statusIcon; ?>"></i>
+                                    <?= htmlspecialchars($trip['status']); ?>
+                                </span>
+                                <button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-primary-50 hover:border-primary-300 hover:text-primary-600">
+                                    <i class="fas fa-redo text-xs"></i>
+                                </button>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </section>
+        
+        <!-- Quick Tips Section -->
+        <section class="dashboard-card glass-card p-6 animate-fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-amber-50">
+                        <i class="fas fa-lightbulb text-amber-600"></i>
+                    </div>
+                    <h2 class="text-lg font-semibold text-gray-900">Travel Tips & Quick Actions</h2>
+                </div>
+                <a href="travel_tips.php" class="text-sm font-semibold text-primary-600 hover:text-primary-800">
+                    More Tips →
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button onclick="window.location.href='https://www.xe.com/currencyconverter/'" 
+                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-exchange-alt text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Currency Converter</p>
+                        <p class="text-xs text-gray-500 mt-1">Check exchange rates</p>
+                    </div>
+                </button>
+                
+                <button onclick="window.open('https://www.weather.com/','_blank','noopener')"
+                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cloud-sun text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Weather Check</p>
+                        <p class="text-xs text-gray-500 mt-1">Plan with weather info</p>
+                    </div>
+                </button>
+                
+                <button onclick="window.open('https://www.travelers-checklist.com/','_blank','noopener')"
+                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-clipboard-check text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Travel Checklist</p>
+                        <p class="text-xs text-gray-500 mt-1">Don't forget anything</p>
+                    </div>
+                </button>
+                
+                <button onclick="window.open('https://www.withlocals.com/', '_blank', 'noopener')"
+                        class="group p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover-lift bg-white flex flex-col items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-map-signs text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Local Guides</p>
+                        <p class="text-xs text-gray-500 mt-1">Find expert guides</p>
+                    </div>
+                </button>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
-    <footer class="mt-8 border-t border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
-            <p>© <?= date('Y'); ?> TravelEase · Full Asia Travel Experience</p>
-            <div class="flex items-center gap-4">
-                <a href="#" class="hover:text-yellow-600">Support</a>
-                <a href="#" class="hover:text-yellow-600">Terms</a>
-                <a href="#" class="hover:text-yellow-600">Privacy</a>
+    <footer class="mt-8 border-t border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <img src="img/Logo.png" alt="TravelEase Logo" class="h-10 w-auto">
+                        <span class="text-xl font-bold text-primary-600">TravelEase</span>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        Your gateway to unforgettable Asian adventures. Quality travel experiences since 2010.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="packages.php" class="text-gray-600 hover:text-primary-600">All Packages</a></li>
+                        <li><a href="countries.php" class="text-gray-600 hover:text-primary-600">Destinations</a></li>
+                        <li><a href="my_trips.php" class="text-gray-600 hover:text-primary-600">My Trips</a></li>
+                        <li><a href="saved_tours.php" class="text-gray-600 hover:text-primary-600">Saved Tours</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 mb-4">Support</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="help_center.php" class="text-gray-600 hover:text-primary-600">Help Center</a></li>
+                        <li><a href="faq.php" class="text-gray-600 hover:text-primary-600">FAQ</a></li>
+                        <li><a href="contact.php" class="text-gray-600 hover:text-primary-600">Contact Us</a></li>
+                        <li><a href="privacy.php" class="text-gray-600 hover:text-primary-600">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 mb-4">Stay Connected</h3>
+                    <p class="text-sm text-gray-600 mb-4">Subscribe for travel deals and tips</p>
+                    <div class="flex gap-2">
+                        <input type="email" placeholder="Your email" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <button class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <a href="#" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-primary-100 hover:text-primary-600">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-primary-100 hover:text-primary-600">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-primary-100 hover:text-primary-600">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-primary-100 hover:text-primary-600">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 mt-8 pt-6 text-center text-sm text-gray-500">
+                <p>© <?= date('Y'); ?> TravelEase · Full Asia Travel Experience. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
+    <!-- Chatbot Access Button + Panel -->
+    <div id="chatLauncher" class="fixed bottom-5 right-5 z-[9999]">
+        <button id="chatOpenBtn" class="flex items-center gap-2 rounded-full px-4 py-3 bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition focus-ring">
+            <i class="fas fa-robot"></i>
+            <span class="text-sm font-semibold">Chat</span>
+        </button>
+    </div>
+
+    <div id="chatPanel" class="fixed bottom-20 right-5 w-[92vw] max-w-sm z-[9999] hidden">
+        <div class="md:rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white flex flex-col max-h-[70vh]">
+            <div class="px-4 py-3 flex items-center justify-between bg-primary-600 text-white">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-comment-dots"></i>
+                    <span class="text-sm font-bold">TravelEase Assistant</span>
+                </div>
+                <button id="chatCloseBtn" class="h-9 w-9 rounded-full bg-white/20 hover:bg-white/30 transition focus-ring" aria-label="Close chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="chatBody" class="flex-1 p-3 space-y-2 overflow-y-auto bg-gray-50">
+                <div class="mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-gray-200 bg-white p-2 text-sm text-gray-800">
+                    Hi! I’m your TravelEase assistant. Ask me about packages, bookings, or your trips.
+                </div>
+            </div>
+
+            <div class="p-3 border-t bg-white">
+                <div class="flex gap-2">
+                    <input id="chatInput" class="flex-1 rounded-xl px-3 py-2 text-sm border border-gray-200 focus:ring-2 focus:ring-primary-300 focus-ring" placeholder="Type a message..." />
+                    <button id="chatSendBtn" class="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition focus-ring">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chatbot open/close (standalone to avoid dependency on other scripts)
+        (function () {
+            const chatOpenBtn = document.getElementById('chatOpenBtn');
+            const chatCloseBtn = document.getElementById('chatCloseBtn');
+            const chatPanel = document.getElementById('chatPanel');
+            const chatLauncher = document.getElementById('chatLauncher');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            function showChat() {
+                if (!chatPanel || !chatLauncher) return;
+                chatPanel.classList.remove('hidden');
+                chatLauncher.classList.add('hidden');
+                setTimeout(() => chatInput && chatInput.focus(), 50);
+            }
+
+            function hideChat() {
+                if (!chatPanel || !chatLauncher) return;
+                chatPanel.classList.add('hidden');
+                chatLauncher.classList.remove('hidden');
+            }
+
+            if (chatOpenBtn && !chatOpenBtn.dataset.bound) {
+                chatOpenBtn.dataset.bound = '1';
+                chatOpenBtn.addEventListener('click', showChat);
+            }
+            if (chatCloseBtn && !chatCloseBtn.dataset.bound) {
+                chatCloseBtn.dataset.bound = '1';
+                chatCloseBtn.addEventListener('click', hideChat);
+            }
+            if (chatSendBtn && !chatSendBtn.dataset.bound) {
+                chatSendBtn.dataset.bound = '1';
+                chatSendBtn.addEventListener('click', () => {});
+            }
+        })();
+    </script>
+
     <!-- Interactive map + greeting / typing script -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const currentUserId = <?= (int)$userId; ?>;
+            // ----- Toast helper -----
+            function showToast(message, type = 'info', duration = 2200) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                const colorMap = {
+                    success: 'bg-green-600',
+                    error: 'bg-red-600',
+                    info: 'bg-gray-900'
+                };
+                toast.className = `text-white ${colorMap[type] || colorMap.info} px-4 py-3 rounded-xl shadow-lg text-sm`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
             // ----- Map filter -----
-            const regions = document.querySelectorAll('.country-region');
             const packageCards = document.querySelectorAll('[data-package-country]');
             const activeLabel = document.getElementById('active-country-label');
             const clearBtn = document.getElementById('clear-map-filter');
-
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const mapObj = document.getElementById('asia-map');
+            let mapSvg = null;
+            let asiaElements = [];
+            
             let activeCountry = '';
+            let currentScale = 1;
 
             function applyFilter(country) {
                 packageCards.forEach(card => {
                     const cardCountry = card.getAttribute('data-package-country');
                     if (!country || cardCountry === country) {
                         card.style.display = '';
+                        card.classList.remove('hidden');
                     } else {
                         card.style.display = 'none';
+                        card.classList.add('hidden');
                     }
                 });
 
@@ -651,32 +1863,247 @@ try {
                 }
             }
 
-            regions.forEach(region => {
-                region.addEventListener('click', () => {
-                    const country = region.getAttribute('data-country-region');
+            function setActiveCountry(country, el) {
+                // Toggle selection
+                if (activeCountry === country) {
+                    activeCountry = '';
+                } else {
+                    activeCountry = country;
+                }
 
-                    // Toggle selection
-                    if (activeCountry === country) {
-                        activeCountry = '';
-                    } else {
-                        activeCountry = country;
-                    }
+                // Update active styles
+                asiaElements.forEach(r => r.classList.remove('active'));
+                if (activeCountry && el) {
+                    el.classList.add('active');
+                }
 
-                    // Update active styles
-                    regions.forEach(r => r.classList.remove('active'));
-                    if (activeCountry) {
-                        region.classList.add('active');
-                    }
-
-                    applyFilter(activeCountry);
-                });
-            });
+                applyFilter(activeCountry);
+            }
 
             clearBtn.addEventListener('click', () => {
                 activeCountry = '';
-                regions.forEach(r => r.classList.remove('active'));
+                asiaElements.forEach(r => r.classList.remove('active'));
                 applyFilter('');
             });
+            
+            // Zoom functionality
+            zoomInBtn.addEventListener('click', () => {
+                currentScale = Math.min(currentScale + 0.1, 1.5);
+                if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
+            });
+            
+            zoomOutBtn.addEventListener('click', () => {
+                currentScale = Math.max(currentScale - 0.1, 0.8);
+                if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
+            });
+
+            const asiaCountryMap = {
+                af: "Afghanistan",
+                am: "Armenia",
+                az: "Azerbaijan",
+                bh: "Bahrain",
+                bd: "Bangladesh",
+                bt: "Bhutan",
+                bn: "Brunei",
+                kh: "Cambodia",
+                cn: "China",
+                cy: "Cyprus",
+                ge: "Georgia",
+                in: "India",
+                id: "Indonesia",
+                ir: "Iran",
+                iq: "Iraq",
+                il: "Israel",
+                jp: "Japan",
+                jo: "Jordan",
+                kz: "Kazakhstan",
+                kw: "Kuwait",
+                kg: "Kyrgyzstan",
+                la: "Laos",
+                lb: "Lebanon",
+                my: "Malaysia",
+                hk: "Hong Kong",
+                mo: "Macau",
+                mv: "Maldives",
+                mn: "Mongolia",
+                mm: "Myanmar",
+                np: "Nepal",
+                kp: "North Korea",
+                kr: "South Korea",
+                om: "Oman",
+                pk: "Pakistan",
+                ph: "Philippines",
+                qa: "Qatar",
+                ru: "Russia",
+                sa: "Saudi Arabia",
+                sg: "Singapore",
+                lk: "Sri Lanka",
+                sy: "Syria",
+                tw: "Taiwan",
+                tj: "Tajikistan",
+                th: "Thailand",
+                tl: "Timor-Leste",
+                tr: "Turkey",
+                tm: "Turkmenistan",
+                ae: "United Arab Emirates",
+                uz: "Uzbekistan",
+                vn: "Vietnam",
+                ye: "Yemen",
+                ps: "Palestine"
+            };
+
+            function initAsiaMap() {
+                if (!mapObj || !mapObj.contentDocument) return;
+                mapSvg = mapObj.contentDocument.documentElement;
+                if (!mapSvg) return;
+
+                mapSvg.setAttribute('viewBox', '0 0 2754 1398');
+                mapSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+                const styleEl = mapObj.contentDocument.createElementNS('http://www.w3.org/2000/svg', 'style');
+                styleEl.textContent = `
+                    .asia-country { stroke: #ffffff !important; stroke-width: 1.1; cursor: pointer; }
+                    .asia-country:hover { filter: brightness(1.05); }
+                    .asia-country.active { stroke: #111827 !important; stroke-width: 2; }
+                    .non-asia { display: none !important; }
+                    #ocean { display: none !important; }
+                `;
+                mapSvg.appendChild(styleEl);
+
+                const allLand = mapSvg.querySelectorAll('.landxx, .coastxx');
+                allLand.forEach(el => el.classList.add('non-asia'));
+
+                const colorMap = {
+                    ru: "#4aaed1", kz: "#a8c43a", mn: "#e45a5a", cn: "#f5cf3b", jp: "#d93b3b",
+                    kp: "#f0a45b", kr: "#9cc85a", tw: "#58c1b8",
+                    in: "#f2a24a", pk: "#63b4c6", af: "#7b67b8", ir: "#57c389", iq: "#2f98b9",
+                    sa: "#f3cc4b", ye: "#6fa6db", om: "#8bc34a", ae: "#7fd3e1", qa: "#f7c04a",
+                    kw: "#69c6b1", bh: "#f5a65a", jo: "#7bc96f", sy: "#e57373", il: "#5aa9e6",
+                    tr: "#f7c04a", az: "#f48fb1", am: "#ef5350", ge: "#7e57c2", cy: "#f6d365",
+                    tm: "#ffb74d", uz: "#ba68c8", tj: "#64b5f6", kg: "#81c784",
+                    th: "#6cbf7a", vn: "#4db6ac", la: "#ffb74d", kh: "#5c6bc0", mm: "#4fc3f7",
+                    my: "#ef6c00", sg: "#ff7043", id: "#4caf50", ph: "#ab47bc", bn: "#66bb6a",
+                    lk: "#5aa9e6", np: "#ce93d8", bt: "#fbc02d", bd: "#f6a57b", mv: "#4db6ac",
+                    ps: "#90caf9", lb: "#f48fb1", hk: "#ffa726", mo: "#ffcc80", tl: "#ff8a65"
+                };
+
+                asiaElements = [];
+                Object.entries(asiaCountryMap).forEach(([code, name]) => {
+                    const el = mapSvg.getElementById(code);
+                    if (!el) return;
+                    el.classList.remove('non-asia');
+                    el.classList.add('asia-country', 'country-region');
+                    el.setAttribute('data-country-region', name);
+                    el.setAttribute('title', name);
+                    if (colorMap[code]) {
+                        el.style.fill = colorMap[code];
+                    }
+                    el.addEventListener('click', () => setActiveCountry(name, el));
+                    asiaElements.push(el);
+                });
+
+                // Add labels for all Asia countries
+                const labelsGroup = mapObj.contentDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+                labelsGroup.setAttribute('id', 'asia-labels');
+                labelsGroup.setAttribute('pointer-events', 'none');
+                mapSvg.appendChild(labelsGroup);
+
+                asiaElements.forEach(el => {
+                    try {
+                        const name = el.getAttribute('data-country-region') || '';
+                        if (!name) return;
+                        const b = el.getBBox();
+                        const cx = b.x + b.width / 2;
+                        const cy = b.y + b.height / 2;
+                        const size = Math.max(6, Math.min(12, Math.floor(Math.min(b.width, b.height) / 3)));
+
+                        const text = mapObj.contentDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', cx.toFixed(2));
+                        text.setAttribute('y', cy.toFixed(2));
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'middle');
+                        text.setAttribute('font-size', String(size));
+                        text.setAttribute('font-family', 'Arial, sans-serif');
+                        text.setAttribute('fill', '#111827');
+                        text.setAttribute('stroke', 'rgba(255,255,255,0.8)');
+                        text.setAttribute('stroke-width', '2');
+                        text.setAttribute('paint-order', 'stroke');
+                        text.textContent = name.toUpperCase();
+                        labelsGroup.appendChild(text);
+                    } catch (e) {
+                        // skip label if bbox fails
+                    }
+                });
+
+                // Auto-fit to Asia bounds (show Asia only) and center in panel
+                function fitAsiaToPanel() {
+                    try {
+                        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                        asiaElements.forEach(el => {
+                            const b = el.getBBox();
+                            minX = Math.min(minX, b.x);
+                            minY = Math.min(minY, b.y);
+                            maxX = Math.max(maxX, b.x + b.width);
+                            maxY = Math.max(maxY, b.y + b.height);
+                        });
+                        if (!isFinite(minX)) return;
+
+                        const width = maxX - minX;
+                        const height = maxY - minY;
+                        const pad = 0.06;
+                        let vbW = width * (1 + pad);
+                        let vbH = height * (1 + pad);
+
+                        const rect = mapObj.getBoundingClientRect();
+                        const parentRect = mapObj.parentElement ? mapObj.parentElement.getBoundingClientRect() : rect;
+                        const w = rect.width || parentRect.width;
+                        const h = rect.height || parentRect.height;
+                        const panelRatio = (w && h) ? (w / h) : (vbW / vbH);
+                        const vbRatio = vbW / vbH;
+
+                        if (vbRatio > panelRatio) {
+                            vbH = vbW / panelRatio;
+                        } else {
+                            vbW = vbH * panelRatio;
+                        }
+
+                        const cx = minX + width / 2;
+                        const cy = minY + height / 2;
+                        const x = cx - vbW / 2;
+                        const y = cy - vbH / 2;
+                        mapSvg.setAttribute('viewBox', `${x} ${y} ${vbW} ${vbH}`);
+                    } catch (e) {
+                        // If getBBox fails, keep full viewBox
+                    }
+                }
+
+                try {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    asiaElements.forEach(el => {
+                        const b = el.getBBox();
+                        minX = Math.min(minX, b.x);
+                        minY = Math.min(minY, b.y);
+                        maxX = Math.max(maxX, b.x + b.width);
+                        maxY = Math.max(maxY, b.y + b.height);
+                    });
+                    if (isFinite(minX)) {
+                        // initial fit
+                        fitAsiaToPanel();
+                        // re-fit after layout settles
+                        setTimeout(fitAsiaToPanel, 50);
+                        setTimeout(fitAsiaToPanel, 250);
+                    }
+                } catch (e) {
+                    // If getBBox fails, keep full viewBox
+                }
+            }
+
+            if (mapObj) {
+                mapObj.addEventListener('load', initAsiaMap);
+                if (mapObj.contentDocument?.readyState === 'complete') {
+                    initAsiaMap();
+                }
+            }
 
             // ----- Local-time based greeting (browser time) -----
             const greetingEl = document.getElementById('time-greeting-text');
@@ -684,20 +2111,29 @@ try {
                 const date = new Date();
                 const hour = date.getHours();
                 let greeting;
+                let greetingIcon;
+                
                 if (hour >= 5 && hour < 12) {
                     greeting = 'Good morning';
+                    greetingIcon = 'fa-sun';
                 } else if (hour >= 12 && hour < 18) {
                     greeting = 'Good afternoon';
+                    greetingIcon = 'fa-cloud-sun';
                 } else {
                     greeting = 'Good evening';
+                    greetingIcon = 'fa-moon';
                 }
-
-                // Update only the greeting text, keep username span
-                const span = greetingEl.querySelector('span');
-                if (span) {
-                    greetingEl.innerHTML = greeting + ', ' + span.outerHTML;
-                } else {
-                    greetingEl.textContent = greeting;
+                
+                // Update the greeting text
+                const greetingText = greetingEl.querySelector('.greeting-text');
+                if (greetingText) {
+                    greetingText.textContent = greeting;
+                }
+                
+                // Update icon
+                const iconContainer = greetingEl.closest('.flex.items-center').querySelector('.p-2');
+                if (iconContainer) {
+                    iconContainer.innerHTML = `<i class="fas ${greetingIcon} text-primary-600"></i>`;
                 }
             }
 
@@ -716,9 +2152,435 @@ try {
                     }
                 }
 
-                typeNext();
+                // Start typing after a short delay
+                setTimeout(typeNext, 500);
             }
+            
+            // ----- Carousel navigation for packages -----
+            const prevBtn = document.getElementById('prev-packages');
+            const nextBtn = document.getElementById('next-packages');
+            const packagesGrid = document.getElementById('packages-grid');
+            
+            if (prevBtn && nextBtn && packagesGrid) {
+                let currentSlide = 0;
+                const totalSlides = Math.ceil(packageCards.length / 3); // Assuming 3 per slide
+                
+                prevBtn.addEventListener('click', () => {
+                    if (currentSlide > 0) {
+                        currentSlide--;
+                        updateCarousel();
+                    }
+                });
+                
+                nextBtn.addEventListener('click', () => {
+                    if (currentSlide < totalSlides - 1) {
+                        currentSlide++;
+                        updateCarousel();
+                    }
+                });
+                
+                function updateCarousel() {
+                    const translateX = -currentSlide * 100;
+                    packagesGrid.style.transform = `translateX(${translateX}%)`;
+                    
+                    // Update button states
+                    prevBtn.disabled = currentSlide === 0;
+                    nextBtn.disabled = currentSlide === totalSlides - 1;
+                }
+            }
+            
+            // ----- Theme toggle -----
+            const themeToggle = document.getElementById('theme-toggle');
+            const body = document.getElementById('body');
+            
+            if (themeToggle) {
+                // Check for saved theme preference
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                if (savedTheme === 'dark') {
+                    body.classList.add('dark-mode');
+                    themeToggle.classList.add('active');
+                }
+                
+                themeToggle.addEventListener('click', () => {
+                    themeToggle.classList.toggle('active');
+                    body.classList.toggle('dark-mode');
+                    
+                    // Save preference
+                    const theme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+                    localStorage.setItem('theme', theme);
+                });
+            }
+            
+            // ----- Dropdown menus -----
+            const notificationBtn = document.getElementById('notification-btn');
+            const notificationDropdown = document.getElementById('notification-dropdown');
+            const notificationDot = document.getElementById('notification-dot');
+            const userMenuBtn = document.getElementById('user-menu-btn');
+            const userDropdown = document.getElementById('user-dropdown');
+            const quickMenuBtn = document.getElementById('quick-menu-btn');
+            const quickMenu = document.getElementById('quick-menu');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            // Show notification dot (simulate new notifications)
+            if (notificationDot) {
+                setTimeout(() => {
+                    notificationDot.classList.remove('hidden');
+                }, 1000);
+            }
+            
+            // Toggle dropdowns
+            function toggleDropdown(button, dropdown, closeOthers = true) {
+                if (!button || !dropdown) return;
+                
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    if (closeOthers) {
+                        // Close all other dropdowns
+                        [notificationDropdown, userDropdown, quickMenu, mobileMenu].forEach(d => {
+                            if (d && d !== dropdown) d.classList.add('hidden');
+                        });
+                    }
+                    
+                    dropdown.classList.toggle('hidden');
+                });
+            }
+            
+            toggleDropdown(notificationBtn, notificationDropdown);
+            toggleDropdown(userMenuBtn, userDropdown);
+            toggleDropdown(quickMenuBtn, quickMenu);
+            toggleDropdown(mobileMenuBtn, mobileMenu, false);
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!notificationBtn?.contains(e.target) && !notificationDropdown?.contains(e.target)) {
+                    notificationDropdown?.classList.add('hidden');
+                }
+                
+                if (!userMenuBtn?.contains(e.target) && !userDropdown?.contains(e.target)) {
+                    userDropdown?.classList.add('hidden');
+                }
+                
+                if (!quickMenuBtn?.contains(e.target) && !quickMenu?.contains(e.target)) {
+                    quickMenu?.classList.add('hidden');
+                }
+                
+                if (!mobileMenuBtn?.contains(e.target) && !mobileMenu?.contains(e.target)) {
+                    mobileMenu?.classList.add('hidden');
+                }
+            });
+            
+            // Add ripple effect to buttons
+            document.querySelectorAll('.quick-action-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.cssText = `
+                        position: absolute;
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.7);
+                        transform: scale(0);
+                        animation: ripple 0.6s linear;
+                        width: ${size}px;
+                        height: ${size}px;
+                        top: ${y}px;
+                        left: ${x}px;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+            
+            // Animate stat cards on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-slide-up');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.stat-card, .dashboard-card').forEach(card => {
+                observer.observe(card);
+            });
+            
+            // ----- Reviews functionality -----
+            // Real-time update
+            let lastReviewId = <?php
+                $maxId = 0;
+                foreach ($latestReviews as $rv) { $maxId = max($maxId, (int)$rv['id']); }
+                echo (int)$maxId;
+            ?>;
+
+            function escapeHtml(str) {
+                return String(str ?? '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            function reviewCardHTML(rv) {
+                const canDelete = parseInt(rv.user_id, 10) === currentUserId;
+                return `
+                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="${parseInt(rv.id, 10)}">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="font-bold text-gray-900 text-sm">
+                            ${escapeHtml(rv.package_title)}
+                            <span class="text-xs text-gray-500 font-semibold">· ${escapeHtml(rv.country_name)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                ${parseInt(rv.rating, 10)}/5
+                            </div>
+                            ${canDelete ? `<button type="button" data-review-delete="${parseInt(rv.id, 10)}" class="text-xs text-red-600 hover:underline">Delete</button>` : ''}
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-2">${escapeHtml(rv.review_text)}</p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        by ${escapeHtml(rv.reviewer_name)} · ${escapeHtml(rv.created_at)}
+                    </p>
+                </div>`;
+            }
+
+            async function fetchNewReviews() {
+                try {
+                    const res = await fetch(`review_feed.php?since_id=${lastReviewId}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (!data.ok) return;
+
+                    if (Array.isArray(data.reviews) && data.reviews.length) {
+                        const list = document.getElementById('reviewsList');
+                        data.reviews.reverse().forEach(rv => {
+                            list.insertAdjacentHTML('afterbegin', reviewCardHTML(rv));
+                        });
+                        lastReviewId = data.last_id || lastReviewId;
+
+                        while (list.children.length > 12) list.removeChild(list.lastElementChild);
+                    }
+                } catch (e) {
+                    console.error('Error fetching reviews:', e);
+                }
+            }
+
+            // Fetch new reviews every 5 seconds
+            setInterval(fetchNewReviews, 5000);
+
+            // Handle review form submission
+            const reviewForm = document.getElementById('reviewForm');
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    const statusEl = document.getElementById('review-status');
+                    if (statusEl) {
+                        statusEl.textContent = 'Submitting...';
+                        statusEl.className = 'text-xs font-semibold text-gray-500';
+                    }
+                    showToast('Submitting your review...', 'info', 1800);
+
+                    const fd = new FormData(e.target);
+
+                    try {
+                        const res = await fetch('review_submit.php', { method: 'POST', body: fd });
+                        const data = await res.json();
+
+                        if (!data.ok) {
+                            if (statusEl) {
+                                statusEl.textContent = data.message || 'Failed';
+                                statusEl.className = 'text-xs font-semibold text-red-600';
+                            }
+                            showToast(data.message || 'Failed to submit review.', 'error');
+                            return;
+                        }
+
+                        if (statusEl) {
+                            statusEl.textContent = data.message || 'Submitted!';
+                            statusEl.className = 'text-xs font-semibold text-green-600';
+                        }
+                        showToast(data.message || 'Review submitted successfully!', 'success');
+
+                        if (data.review) {
+                            const list = document.getElementById('reviewsList');
+                            list.insertAdjacentHTML('afterbegin', reviewCardHTML(data.review));
+                            lastReviewId = Math.max(lastReviewId, parseInt(data.review.id, 10) || lastReviewId);
+                            while (list.children.length > 12) list.removeChild(list.lastElementChild);
+                        }
+
+                        e.target.reset();
+                    } catch (err) {
+                        console.error('Error submitting review:', err);
+                        if (statusEl) {
+                            statusEl.textContent = 'Network error';
+                            statusEl.className = 'text-xs font-semibold text-red-600';
+                        }
+                        showToast('Network error. Please try again.', 'error');
+                    }
+                });
+            }
+
+            // Handle review delete (event delegation)
+            const reviewsList = document.getElementById('reviewsList');
+            if (reviewsList) {
+                reviewsList.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('[data-review-delete]');
+                    if (!btn) return;
+                    const id = parseInt(btn.getAttribute('data-review-delete'), 10);
+                    if (!id) return;
+                    if (!confirm('Delete this review?')) return;
+                    try {
+                        const res = await fetch('review_delete.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ id })
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || !data.ok) {
+                            showToast?.(data.message || 'Delete failed', 'error');
+                            return;
+                        }
+                        const card = reviewsList.querySelector(`[data-review-card="${id}"]`);
+                        if (card) card.remove();
+                        showToast?.('Review deleted', 'success');
+                    } catch (err) {
+                        showToast?.('Network error. Please try again.', 'error');
+                    }
+                });
+            }
+
+            // ----- Chatbot access -----
+            const chatOpenBtn = document.getElementById('chatOpenBtn');
+            const chatCloseBtn = document.getElementById('chatCloseBtn');
+            const chatPanel = document.getElementById('chatPanel');
+            const chatLauncher = document.getElementById('chatLauncher');
+            const chatBody = document.getElementById('chatBody');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            function showChat() {
+                chatPanel.classList.remove('hidden');
+                chatLauncher.classList.add('hidden');
+                setTimeout(() => chatInput && chatInput.focus(), 50);
+            }
+
+            function hideChat() {
+                chatPanel.classList.add('hidden');
+                chatLauncher.classList.remove('hidden');
+            }
+
+            function addChatMsg(text, who) {
+                const div = document.createElement('div');
+                div.className = (who === 'user')
+                    ? 'ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-primary-600 text-white p-2 text-sm'
+                    : 'mr-auto max-w-[90%] rounded-2xl rounded-bl-md border border-gray-200 bg-white p-2 text-sm text-gray-800';
+                div.textContent = text;
+                chatBody.appendChild(div);
+                chatBody.scrollTop = chatBody.scrollHeight;
+                return div;
+            }
+
+            async function sendChatMsg() {
+                const msg = (chatInput.value || '').trim();
+                if (!msg) return;
+
+                addChatMsg(msg, 'user');
+                chatInput.value = '';
+
+                const typing = addChatMsg('Typing...', 'bot');
+
+                try {
+                    const res = await fetch('chat_api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: msg })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    typing.remove();
+
+                    const botText = (typeof data.reply === 'string' && data.reply.trim() !== '')
+                        ? data.reply
+                        : (typeof data.error === 'string' && data.error.trim() !== '')
+                            ? data.error
+                            : 'Sorry, something went wrong.';
+
+                    addChatMsg(botText, 'bot');
+                } catch (e) {
+                    typing.remove();
+                    addChatMsg('Network error connecting to chatbot.', 'bot');
+                }
+            }
+
+            chatOpenBtn && chatOpenBtn.addEventListener('click', showChat);
+            chatCloseBtn && chatCloseBtn.addEventListener('click', hideChat);
+            chatSendBtn && chatSendBtn.addEventListener('click', sendChatMsg);
+            chatInput && chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') sendChatMsg();
+            });
         });
     </script>
+
+    <script>
+        // Fallback dropdown wiring in case the main script fails earlier
+        (function () {
+            const pairs = [
+                ['notification-btn', 'notification-dropdown'],
+                ['user-menu-btn', 'user-dropdown'],
+                ['quick-menu-btn', 'quick-menu'],
+                ['mobile-menu-btn', 'mobile-menu']
+            ];
+
+            function closeAll(exceptId) {
+                pairs.forEach(([btnId, ddId]) => {
+                    if (ddId === exceptId) return;
+                    const dd = document.getElementById(ddId);
+                    if (dd) dd.classList.add('hidden');
+                });
+            }
+
+            pairs.forEach(([btnId, ddId]) => {
+                const btn = document.getElementById(btnId);
+                const dd = document.getElementById(ddId);
+                if (!btn || !dd || btn.dataset.ddBound) return;
+                btn.dataset.ddBound = '1';
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeAll(ddId);
+                    dd.classList.toggle('hidden');
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                pairs.forEach(([btnId, ddId]) => {
+                    const btn = document.getElementById(btnId);
+                    const dd = document.getElementById(ddId);
+                    if (!btn || !dd) return;
+                    if (!btn.contains(e.target) && !dd.contains(e.target)) {
+                        dd.classList.add('hidden');
+                    }
+                });
+            });
+        })();
+    </script>
+    <!-- Toast notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
 </body>
 </html>
