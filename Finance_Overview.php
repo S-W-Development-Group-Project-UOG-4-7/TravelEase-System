@@ -337,6 +337,49 @@ $currentYear = date('Y');
       color: #f59e0b;
       background: rgba(245, 158, 11, 0.1);
     }
+    
+    /* Custom chart styles */
+    .chart-container {
+      position: relative;
+    }
+    
+    .chart-grid-line {
+      position: absolute;
+      width: 100%;
+      height: 1px;
+      background: rgba(245, 158, 11, 0.1);
+    }
+    
+    .revenue-line {
+      stroke: #f59e0b;
+      stroke-width: 3;
+      fill: none;
+    }
+    
+    .booking-line {
+      stroke: #8b5cf6;
+      stroke-width: 3;
+      fill: none;
+    }
+    
+    .chart-tooltip {
+      position: absolute;
+      background: white;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    
+    /* Pie chart colors */
+    .pie-color-1 { background-color: #f59e0b; }
+    .pie-color-2 { background-color: #10b981; }
+    .pie-color-3 { background-color: #3b82f6; }
+    .pie-color-4 { background-color: #8b5cf6; }
+    .pie-color-5 { background-color: #ef4444; }
+    .pie-color-6 { background-color: #fbbf24; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -458,17 +501,17 @@ $currentYear = date('Y');
           <a href="Finance_Packages.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-box mr-2"></i>
             Packages
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+            <span class="absolute -bottom-1 left 0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <a href="Finance_Statements.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-file-invoice mr-2"></i>
             Statements
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+            <span class="absolute -bottom-1 left:0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
           <a href="Finance_Payments.php" class="text-gray-700 hover:text-amber-600 transition-all duration-300 relative group">
             <i class="fas fa-credit-card mr-2"></i>
             Payments
-            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
+            <span class="absolute -bottom-1 left:0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
           </a>
         </div>
 
@@ -573,153 +616,236 @@ $currentYear = date('Y');
         </div>
       </div>
 
-      <!-- Charts and Detailed Metrics -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- Revenue and Bookings Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <!-- Revenue Trend Chart -->
-        <div class="lg:col-span-2 glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-gray-900">Revenue vs Discount Costs (Last 6 Months)</h3>
-            <select class="text-sm border border-amber-200 rounded-lg px-3 py-1 bg-amber-50">
-              <option>Last 6 Months</option>
-              <option>Last Year</option>
-              <option>Last Quarter</option>
-            </select>
+            <h3 class="text-xl font-bold text-gray-900">Revenue Trend</h3>
+            <div class="text-xs font-semibold px-3 py-1 rounded-full revenue-badge">Aug - Feb</div>
           </div>
-          <div class="h-64 flex items-end gap-4">
-            <?php 
-            $monthlyRevenue = [3.2, 3.8, 4.1, 3.9, 4.5, 5.2];
-            $monthlyDiscounts = [0.18, 0.22, 0.25, 0.21, 0.28, 0.32];
-            $months = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'];
-            foreach ($monthlyRevenue as $index => $revenue): 
-              $height = ($revenue / max($monthlyRevenue)) * 100;
-              $discountHeight = ($monthlyDiscounts[$index] / max($monthlyDiscounts)) * 100;
-            ?>
-            <div class="flex flex-col items-center flex-1">
-              <div class="w-full flex justify-center gap-1">
-                <div class="chart-bar w-2/5 bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-lg" 
-                     style="height: <?php echo $height; ?>%"></div>
-                <div class="chart-bar w-1/5 bg-gradient-to-t from-purple-500 to-purple-300 rounded-t-lg" 
-                     style="height: <?php echo $discountHeight; ?>%"></div>
-              </div>
-              <span class="text-xs text-gray-600 mt-2"><?php echo $months[$index]; ?></span>
-              <div class="text-xs">
-                <span class="text-amber-700 font-semibold">$<?php echo $revenue * 100; ?>K</span>
-                <span class="text-purple-600 ml-1">($<?php echo $monthlyDiscounts[$index] * 100; ?>K)</span>
-              </div>
+          <div class="chart-container relative h-64">
+            <!-- Y-axis labels -->
+            <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500">
+              <span>$240,000</span>
+              <span>$180,000</span>
+              <span>$120,000</span>
+              <span>$60,000</span>
+              <span>$0</span>
             </div>
-            <?php endforeach; ?>
-          </div>
-          <div class="flex items-center justify-center gap-4 mt-4 text-xs">
-            <div class="flex items-center gap-1">
-              <div class="w-3 h-3 bg-amber-500 rounded"></div>
-              <span>Revenue</span>
+            
+            <!-- Grid lines -->
+            <div class="absolute left-8 right-0 top-0 h-full">
+              <?php for ($i = 0; $i < 4; $i++): ?>
+                <div class="chart-grid-line" style="top: <?php echo $i * 25; ?>%"></div>
+              <?php endfor; ?>
             </div>
-            <div class="flex items-center gap-1">
-              <div class="w-3 h-3 bg-purple-500 rounded"></div>
-              <span>Discount Costs</span>
+            
+            <!-- Chart bars -->
+            <div class="absolute left-8 right-0 bottom-8 h-48 flex items-end justify-between px-4">
+              <?php
+              $revenueData = [180000, 120000, 150000, 210000, 180000, 190000, 220000];
+              $months = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
+              $maxRevenue = max($revenueData);
+              ?>
+              <?php foreach ($revenueData as $index => $revenue): ?>
+                <div class="flex flex-col items-center flex-1 mx-1">
+                  <div class="chart-bar w-3/4 bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-lg" 
+                       style="height: <?php echo ($revenue / $maxRevenue) * 100; ?>%"
+                       data-value="$<?php echo number_format($revenue); ?>">
+                  </div>
+                  <span class="text-xs text-gray-600 mt-2"><?php echo $months[$index]; ?></span>
+                </div>
+              <?php endforeach; ?>
+            </div>
+            
+            <!-- X-axis label -->
+            <div class="absolute left-8 right-0 bottom-0 h-8 text-center text-xs text-gray-600">
+              Revenue ($)
             </div>
           </div>
         </div>
 
-        <!-- Season Status -->
+        <!-- Monthly Bookings Chart -->
         <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
-          <h3 class="text-xl font-bold text-gray-900 mb-6">Seasonal Pricing Status</h3>
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-900">Monthly Bookings</h3>
+            <div class="text-xs font-semibold px-3 py-1 rounded-full revenue-badge">Aug - Feb</div>
+          </div>
+          <div class="chart-container relative h-64">
+            <!-- Y-axis labels -->
+            <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500">
+              <span>180</span>
+              <span>135</span>
+              <span>90</span>
+              <span>45</span>
+              <span>0</span>
+            </div>
+            
+            <!-- Grid lines -->
+            <div class="absolute left-8 right-0 top-0 h-full">
+              <?php for ($i = 0; $i < 4; $i++): ?>
+                <div class="chart-grid-line" style="top: <?php echo $i * 25; ?>%"></div>
+              <?php endfor; ?>
+            </div>
+            
+            <!-- Chart bars -->
+            <div class="absolute left-8 right-0 bottom-8 h-48 flex items-end justify-between px-4">
+              <?php
+              $bookingData = [120, 90, 110, 150, 130, 140, 160];
+              $months = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
+              $maxBookings = max($bookingData);
+              ?>
+              <?php foreach ($bookingData as $index => $bookings): ?>
+                <div class="flex flex-col items-center flex-1 mx-1">
+                  <div class="chart-bar w-3/4 bg-gradient-to-t from-blue-500 to-blue-300 rounded-t-lg" 
+                       style="height: <?php echo ($bookings / $maxBookings) * 100; ?>%"
+                       data-value="<?php echo $bookings; ?> bookings">
+                  </div>
+                  <span class="text-xs text-gray-600 mt-2"><?php echo $months[$index]; ?></span>
+                </div>
+              <?php endforeach; ?>
+            </div>
+            
+            <!-- X-axis label -->
+            <div class="absolute left-8 right-0 bottom-0 h-8 text-center text-xs text-gray-600">
+              Bookings
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Destination Distribution and Top Packages -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Destination Distribution -->
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
+          <h3 class="text-xl font-bold text-gray-900 mb-6">Destination Distribution</h3>
+          <div class="flex flex-col lg:flex-row items-center gap-8">
+            <!-- Pie Chart -->
+            <div class="relative w-48 h-48">
+              <svg viewBox="0 0 100 100" class="w-full h-full">
+                <?php
+                $destinations = [
+                  ['name' => 'Japan', 'percentage' => 35, 'color' => '#f59e0b'],
+                  ['name' => 'Thailand', 'percentage' => 25, 'color' => '#10b981'],
+                  ['name' => 'Singapore', 'percentage' => 15, 'color' => '#3b82f6'],
+                  ['name' => 'Vietnam', 'percentage' => 12, 'color' => '#8b5cf6'],
+                  ['name' => 'South Korea', 'percentage' => 8, 'color' => '#ef4444'],
+                  ['name' => 'Others', 'percentage' => 5, 'color' => '#fbbf24']
+                ];
+                
+                $total = 0;
+                foreach ($destinations as $index => $dest) {
+                  $startAngle = $total * 3.6;
+                  $endAngle = ($total + $dest['percentage']) * 3.6;
+                  $total += $dest['percentage'];
+                  
+                  $x1 = 50 + 40 * cos(deg2rad($startAngle - 90));
+                  $y1 = 50 + 40 * sin(deg2rad($startAngle - 90));
+                  $x2 = 50 + 40 * cos(deg2rad($endAngle - 90));
+                  $y2 = 50 + 40 * sin(deg2rad($endAngle - 90));
+                  
+                  $largeArc = $dest['percentage'] > 50 ? 1 : 0;
+                  
+                  echo "<path d='M50,50 L$x1,$y1 A40,40 0 $largeArc,1 $x2,$y2 Z' 
+                        fill='{$dest['color']}' 
+                        class='transition-all duration-300 hover:opacity-80'
+                        data-name='{$dest['name']}'
+                        data-percentage='{$dest['percentage']}%'></path>";
+                }
+                ?>
+                <circle cx="50" cy="50" r="15" fill="white"></circle>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-2xl font-black text-gray-900">100%</div>
+                  <div class="text-xs text-gray-600">Total</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="flex-1">
+              <div class="space-y-3">
+                <?php foreach ($destinations as $index => $dest): ?>
+                  <div class="flex items-center justify-between p-2 rounded-lg hover:bg-amber-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                      <div class="w-4 h-4 rounded" style="background-color: <?php echo $dest['color']; ?>"></div>
+                      <span class="font-medium text-gray-900"><?php echo $dest['name']; ?></span>
+                    </div>
+                    <span class="font-bold text-amber-700"><?php echo $dest['percentage']; ?>%</span>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Performing Packages -->
+        <div class="glass-effect rounded-2xl p-6 border border-amber-100 shadow-gold">
+          <h3 class="text-xl font-bold text-gray-900 mb-6">Top Performing Packages</h3>
           <div class="space-y-4">
-            <?php 
-            $seasons = [
-              ['name' => 'Spring 2024', 'status' => 'Active', 'multiplier' => '1.2x', 'ends' => 'Jun 15'],
-              ['name' => 'Summer 2024', 'status' => 'Upcoming', 'multiplier' => '1.3x', 'starts' => 'Jun 16'],
-              ['name' => 'Fall 2023', 'status' => 'Expired', 'multiplier' => '1.1x', 'ended' => 'Nov 30'],
-              ['name' => 'Winter 2023', 'status' => 'Expired', 'multiplier' => '1.25x', 'ended' => 'Feb 28'],
+            <?php
+            $packages = [
+              ['name' => 'Tokyo Adventure - 7 Days', 'bookings' => 45, 'revenue' => 67500],
+              ['name' => 'Bangkok & Phuket Combo', 'bookings' => 38, 'revenue' => 45600],
+              ['name' => 'Singapore City Escape', 'bookings' => 32, 'revenue' => 38400],
+              ['name' => 'Vietnam Heritage Tour', 'bookings' => 28, 'revenue' => 33900]
             ];
-            foreach ($seasons as $season): 
-              $statusClass = $season['status'] == 'Active' ? 'status-active' : 
-                           ($season['status'] == 'Upcoming' ? 'status-pending' : 'status-expired');
+            
+            foreach ($packages as $index => $package):
             ?>
-            <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50/50">
-              <div>
-                <p class="font-medium text-gray-900"><?php echo $season['name']; ?></p>
-                <span class="text-xs <?php echo $statusClass; ?> px-2 py-1 rounded-full">
-                  <?php echo $season['status']; ?>
-                </span>
+            <div class="flex items-center justify-between p-4 rounded-xl bg-amber-50/50 hover:bg-amber-50 transition-colors">
+              <div class="flex items-center gap-4">
+                <div class="h-10 w-10 rounded-lg gold-gradient flex items-center justify-center font-bold text-white">
+                  <?php echo $index + 1; ?>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-900"><?php echo $package['name']; ?></h4>
+                  <div class="flex items-center gap-4 mt-1">
+                    <span class="text-xs text-gray-600">
+                      <i class="fas fa-calendar-alt mr-1"></i>
+                      <?php echo $package['bookings']; ?> bookings
+                    </span>
+                    <span class="text-xs text-amber-600 font-semibold">
+                      <i class="fas fa-dollar-sign mr-1"></i>
+                      $<?php echo number_format($package['revenue']); ?>
+                    </span>
+                  </div>
+                </div>
               </div>
               <div class="text-right">
-                <p class="font-bold text-amber-700"><?php echo $season['multiplier']; ?></p>
-                <p class="text-xs text-gray-600">
-                  <?php echo isset($season['ends']) ? 'Ends '.$season['ends'] : 'Starts '.$season['starts']; ?>
-                </p>
+                <div class="text-sm font-bold text-amber-700">
+                  $<?php echo number_format($package['revenue'] / $package['bookings']); ?>/booking
+                </div>
+                <div class="text-xs text-gray-600">Avg. revenue</div>
               </div>
             </div>
             <?php endforeach; ?>
           </div>
-          <button onclick="openSeasonalModal()" class="w-full mt-4 px-4 py-2 rounded-xl gold-gradient text-sm font-semibold text-white">
-            <i class="fas fa-plus mr-2"></i>Extend Seasonal Pricing
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- Seasonal Modal -->
-  <div id="seasonalModal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-bold text-gray-900">Extend Seasonal Pricing</h3>
-          <button onclick="closeModal('seasonalModal')" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <form id="seasonalForm">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Season</label>
-              <select class="w-full px-4 py-2 rounded-xl border border-amber-200">
-                <option>Spring 2024</option>
-                <option>Summer 2024</option>
-                <option>Fall 2024</option>
-                <option>Winter 2024</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Current End Date</label>
-              <input type="text" class="w-full px-4 py-2 rounded-xl border border-amber-200 bg-amber-50" value="June 15, 2024" readonly>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">New End Date</label>
-              <input type="date" class="w-full px-4 py-2 rounded-xl border border-amber-200" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Price Multiplier</label>
-              <div class="flex items-center gap-2">
-                <input type="range" min="0.8" max="1.8" step="0.05" value="1.2" class="flex-1">
-                <span id="multiplierValue" class="font-bold text-amber-700">1.20x</span>
+          
+          <!-- Performance Summary -->
+          <div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold text-gray-900">Total Performance</h4>
+                <p class="text-sm text-gray-600">All top packages combined</p>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-black text-amber-700">$185,400</div>
+                <div class="text-sm text-gray-600">Total Revenue</div>
               </div>
             </div>
-            <div class="p-4 rounded-xl bg-amber-50/50 border border-amber-200">
-              <h4 class="font-semibold text-gray-900 mb-2">Affected Packages</h4>
-              <ul class="text-sm text-gray-700 space-y-1">
-                <li>• Japan Luxury Experience (24 bookings)</li>
-                <li>• Bali Premium Retreat (18 bookings)</li>
-                <li>• Thailand Elite Adventure (12 bookings)</li>
-                <li>• Vietnam Cultural Journey (8 bookings)</li>
-              </ul>
-              <p class="text-xs text-gray-600 mt-2">Total estimated additional revenue: <span class="font-semibold text-green-600">$42,000</span></p>
+            <div class="mt-2 text-xs text-gray-600 flex items-center gap-4">
+              <span><i class="fas fa-check-circle text-green-500 mr-1"></i> 143 total bookings</span>
+              <span><i class="fas fa-chart-line text-blue-500 mr-1"></i> +18% from last period</span>
             </div>
           </div>
-          <div class="mt-8 flex justify-end gap-3">
-            <button type="button" onclick="closeModal('seasonalModal')" class="px-4 py-2 rounded-xl border border-amber-200 text-gray-700 hover:bg-amber-50">
-              Cancel
-            </button>
-            <button type="submit" class="px-4 py-2 rounded-xl gold-gradient text-white font-semibold">
-              Extend Season
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
+
     </div>
-  </div>
+  </section>
 
   <!-- Footer -->
   <footer class="border-t border-amber-200 bg-gradient-to-b from-white to-amber-40">
@@ -874,9 +1000,6 @@ $currentYear = date('Y');
   </div>
 </footer>
 
-             
-
-
   <!-- JavaScript -->
   <script>
     // Loading screen
@@ -948,30 +1071,51 @@ $currentYear = date('Y');
           card.style.transform = 'translateY(0)';
         });
       });
+
+      // Add tooltips to chart bars
+      document.querySelectorAll('.chart-bar[data-value]').forEach(bar => {
+        bar.addEventListener('mouseenter', (e) => {
+          const tooltip = document.createElement('div');
+          tooltip.className = 'chart-tooltip';
+          tooltip.textContent = e.target.getAttribute('data-value');
+          tooltip.style.left = e.target.getBoundingClientRect().left + 'px';
+          tooltip.style.top = e.target.getBoundingClientRect().top - 40 + 'px';
+          document.body.appendChild(tooltip);
+          
+          e.target.addEventListener('mouseleave', () => {
+            if (tooltip.parentNode) {
+              tooltip.parentNode.removeChild(tooltip);
+            }
+          });
+        });
+      });
+
+      // Pie chart interaction
+      document.querySelectorAll('svg path[data-name]').forEach(path => {
+        path.addEventListener('mouseenter', (e) => {
+          const name = e.target.getAttribute('data-name');
+          const percentage = e.target.getAttribute('data-percentage');
+          
+          const tooltip = document.createElement('div');
+          tooltip.className = 'chart-tooltip';
+          tooltip.innerHTML = `<strong>${name}</strong><br>${percentage}`;
+          tooltip.style.left = e.clientX + 10 + 'px';
+          tooltip.style.top = e.clientY - 10 + 'px';
+          document.body.appendChild(tooltip);
+          
+          e.target.addEventListener('mouseleave', () => {
+            if (tooltip.parentNode) {
+              tooltip.parentNode.removeChild(tooltip);
+            }
+          });
+          
+          e.target.addEventListener('mousemove', (moveEvent) => {
+            tooltip.style.left = moveEvent.clientX + 10 + 'px';
+            tooltip.style.top = moveEvent.clientY - 10 + 'px';
+          });
+        });
+      });
     });
-
-    // Modal functions
-    function openSeasonalModal() {
-      document.getElementById('seasonalModal').style.display = 'flex';
-    }
-
-    function closeModal(modalId) {
-      document.getElementById(modalId).style.display = 'none';
-    }
-
-    // Form submission handlers
-    document.getElementById('seasonalForm')?.addEventListener('submit', function(e) {
-      e.preventDefault();
-      alert('Seasonal pricing extended successfully!');
-      closeModal('seasonalModal');
-    });
-
-    // Close modals when clicking outside
-    window.onclick = function(event) {
-      if (event.target.classList.contains('modal-overlay')) {
-        event.target.style.display = 'none';
-      }
-    };
 
     // Service Worker Registration for PWA
     if ('serviceWorker' in navigator) {
