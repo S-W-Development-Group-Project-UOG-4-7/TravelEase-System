@@ -153,7 +153,7 @@ $currentYear = date('Y');
             <i class="fas fa-tachometer-alt mr-2"></i>
             Dashboard
           </a>
-          <a href="support_tickets.php" class="text-gray-700 hover:text-primary-600 transition-colors">
+          <a href="support_ticket.php" class="text-gray-700 hover:text-primary-600 transition-colors">
             <i class="fas fa-ticket-alt mr-2"></i>
             Tickets
           </a>
@@ -276,9 +276,7 @@ $currentYear = date('Y');
                 </div>
               </div>
               <div class="flex flex-col gap-2">
-                <a href="process_refund.php?id=4567" class="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors btn-link text-center">
-                  Process Refund
-                </a>
+                
                 <a href="contact_customer.php?email=sarah.j@email.com" class="px-4 py-2 rounded-xl border border-red-200 text-red-700 font-semibold hover:bg-red-50 transition-colors btn-link text-center">
                   Contact Customer
                 </a>
