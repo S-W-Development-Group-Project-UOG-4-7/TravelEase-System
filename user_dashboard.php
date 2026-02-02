@@ -1417,7 +1417,7 @@ try {
 
                     <p class="text-sm text-gray-600 mt-2">Rate a package you booked. Updates appear instantly.</p>
 
-                    <form id="reviewForm" class="mt-5 space-y-4" action="javascript:void(0)" method="POST" onsubmit="return false;">
+                    <form id="reviewForm" class="mt-5 space-y-4" action="javascript:void(0)" method="POST" onsubmit="return submitReviewForm(event);">
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Package</label>
                             <select name="package_id"
@@ -1809,6 +1809,163 @@ try {
         })();
     </script>
 
+    <!-- Review submit fallback (works even if main script fails) -->
+    <script>
+        const currentUserIdGlobal = <?= (int)$userId; ?>;
+        function renderReviewCard(rv) {
+            const safe = (str) => String(str ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+            const rating = parseInt(rv?.rating ?? 0, 10);
+            const title = safe(rv?.package_title ?? '');
+            const country = safe(rv?.country_name ?? '');
+            const text = safe(rv?.review_text ?? '');
+            const name = safe(rv?.reviewer_name ?? '');
+            const createdAt = safe(rv?.created_at ?? '');
+            const id = parseInt(rv?.id ?? 0, 10);
+            const canDelete = parseInt(rv?.user_id ?? 0, 10) === currentUserIdGlobal;
+            return `
+                <div class="bg-white/70 border border-gray-100 rounded-2xl p-4" data-review-card="${id}">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="font-bold text-gray-900 text-sm">
+                            ${title}
+                            <span class="text-xs text-gray-500 font-semibold">· ${country}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="text-xs font-bold text-primary-700 bg-primary-100 border border-primary-200 rounded-full px-3 py-1">
+                                ${rating}/5
+                            </div>
+                            ${canDelete ? `<button type="button" data-review-delete="${id}" class="text-xs text-red-600 hover:underline">Delete</button>` : ''}
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-2">${text}</p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        by ${name} · ${createdAt}
+                    </p>
+                </div>`;
+        }
+
+        async function submitReviewForm(e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            const form = e?.target || document.getElementById('reviewForm');
+            if (!form) return false;
+
+            const statusEl = document.getElementById('review-status');
+            const showToastLocal = (message, type = 'info', duration = 2200) => {
+                const container = document.getElementById('toast-container');
+                if (!container) {
+                    alert(message);
+                    return;
+                }
+                const toast = document.createElement('div');
+                const colorMap = {
+                    success: 'bg-green-600',
+                    error: 'bg-red-600',
+                    info: 'bg-gray-900'
+                };
+                toast.className = `text-white ${colorMap[type] || colorMap.info} px-4 py-3 rounded-xl shadow-lg text-sm`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            };
+
+            if (statusEl) {
+                statusEl.textContent = 'Submitting...';
+                statusEl.className = 'text-xs font-semibold text-gray-500';
+            }
+            showToastLocal('Submitting your review...', 'info', 1800);
+
+            try {
+                const fd = new FormData(form);
+                const res = await fetch('review_submit.php', { method: 'POST', body: fd });
+                const rawText = await res.text();
+                let data = null;
+                try {
+                    data = rawText ? JSON.parse(rawText) : null;
+                } catch (jsonErr) {
+                    throw new Error(rawText || 'Invalid server response');
+                }
+
+                if (!res.ok || !data?.ok) {
+                    const msg = data?.message || 'Failed to submit review.';
+                    if (statusEl) {
+                        statusEl.textContent = msg;
+                        statusEl.className = 'text-xs font-semibold text-red-600';
+                    }
+                    showToastLocal(msg, 'error');
+                    return false;
+                }
+
+                if (statusEl) {
+                    statusEl.textContent = data.message || 'Submitted!';
+                    statusEl.className = 'text-xs font-semibold text-green-600';
+                }
+                showToastLocal(data.message || 'Review submitted successfully!', 'success');
+
+                if (data.review) {
+                    const list = document.getElementById('reviewsList');
+                    if (list) {
+                        if (typeof reviewCardHTML === 'function') {
+                            list.insertAdjacentHTML('afterbegin', reviewCardHTML(data.review));
+                        } else {
+                            list.insertAdjacentHTML('afterbegin', renderReviewCard(data.review));
+                        }
+                        while (list.children.length > 12) list.removeChild(list.lastElementChild);
+                    }
+                }
+
+                form.reset();
+                return false;
+            } catch (err) {
+                console.error('Error submitting review:', err);
+                const msg = err?.message || 'Network error';
+                if (statusEl) {
+                    statusEl.textContent = msg;
+                    statusEl.className = 'text-xs font-semibold text-red-600';
+                }
+                showToastLocal(msg, 'error');
+                return false;
+            }
+        }
+
+        // Fallback delete handler for newly inserted reviews
+        document.addEventListener('DOMContentLoaded', () => {
+            const list = document.getElementById('reviewsList');
+            if (!list || list.dataset.deleteBound) return;
+            list.dataset.deleteBound = '1';
+            list.addEventListener('click', async (e) => {
+                const btn = e.target.closest('[data-review-delete]');
+                if (!btn) return;
+                const id = parseInt(btn.getAttribute('data-review-delete'), 10);
+                if (!id) return;
+                if (!confirm('Delete this review?')) return;
+                try {
+                    const res = await fetch('review_delete.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ id })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.ok) {
+                        alert(data.message || 'Delete failed');
+                        return;
+                    }
+                    const card = list.querySelector(`[data-review-card="${id}"]`);
+                    if (card) card.remove();
+                } catch (err) {
+                    alert('Network error. Please try again.');
+                }
+            });
+        });
+    </script>
+
     <!-- Interactive map + greeting / typing script -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -1856,10 +2013,12 @@ try {
                     }
                 });
 
-                if (!country) {
-                    activeLabel.textContent = 'All Asia';
-                } else {
-                    activeLabel.textContent = country;
+                if (activeLabel) {
+                    if (!country) {
+                        activeLabel.textContent = 'All Asia';
+                    } else {
+                        activeLabel.textContent = country;
+                    }
                 }
             }
 
@@ -1880,22 +2039,28 @@ try {
                 applyFilter(activeCountry);
             }
 
-            clearBtn.addEventListener('click', () => {
-                activeCountry = '';
-                asiaElements.forEach(r => r.classList.remove('active'));
-                applyFilter('');
-            });
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    activeCountry = '';
+                    asiaElements.forEach(r => r.classList.remove('active'));
+                    applyFilter('');
+                });
+            }
             
             // Zoom functionality
-            zoomInBtn.addEventListener('click', () => {
-                currentScale = Math.min(currentScale + 0.1, 1.5);
-                if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
-            });
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                    currentScale = Math.min(currentScale + 0.1, 1.5);
+                    if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
+                });
+            }
             
-            zoomOutBtn.addEventListener('click', () => {
-                currentScale = Math.max(currentScale - 0.1, 0.8);
-                if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
-            });
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                    currentScale = Math.max(currentScale - 0.1, 0.8);
+                    if (mapObj) mapObj.style.transform = `scale(${currentScale})`;
+                });
+            }
 
             const asiaCountryMap = {
                 af: "Afghanistan",
@@ -2384,55 +2549,9 @@ try {
 
             // Handle review form submission
             const reviewForm = document.getElementById('reviewForm');
-            if (reviewForm) {
-                reviewForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-
-                    const statusEl = document.getElementById('review-status');
-                    if (statusEl) {
-                        statusEl.textContent = 'Submitting...';
-                        statusEl.className = 'text-xs font-semibold text-gray-500';
-                    }
-                    showToast('Submitting your review...', 'info', 1800);
-
-                    const fd = new FormData(e.target);
-
-                    try {
-                        const res = await fetch('review_submit.php', { method: 'POST', body: fd });
-                        const data = await res.json();
-
-                        if (!data.ok) {
-                            if (statusEl) {
-                                statusEl.textContent = data.message || 'Failed';
-                                statusEl.className = 'text-xs font-semibold text-red-600';
-                            }
-                            showToast(data.message || 'Failed to submit review.', 'error');
-                            return;
-                        }
-
-                        if (statusEl) {
-                            statusEl.textContent = data.message || 'Submitted!';
-                            statusEl.className = 'text-xs font-semibold text-green-600';
-                        }
-                        showToast(data.message || 'Review submitted successfully!', 'success');
-
-                        if (data.review) {
-                            const list = document.getElementById('reviewsList');
-                            list.insertAdjacentHTML('afterbegin', reviewCardHTML(data.review));
-                            lastReviewId = Math.max(lastReviewId, parseInt(data.review.id, 10) || lastReviewId);
-                            while (list.children.length > 12) list.removeChild(list.lastElementChild);
-                        }
-
-                        e.target.reset();
-                    } catch (err) {
-                        console.error('Error submitting review:', err);
-                        if (statusEl) {
-                            statusEl.textContent = 'Network error';
-                            statusEl.className = 'text-xs font-semibold text-red-600';
-                        }
-                        showToast('Network error. Please try again.', 'error');
-                    }
-                });
+            if (reviewForm && !reviewForm.dataset.bound) {
+                reviewForm.dataset.bound = '1';
+                reviewForm.addEventListener('submit', submitReviewForm);
             }
 
             // Handle review delete (event delegation)
