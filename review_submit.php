@@ -15,6 +15,7 @@ $userId = (int)$_SESSION['user_id'];
 $packageId  = (int)($_POST['package_id'] ?? 0);
 $rating     = (int)($_POST['rating'] ?? 0);
 $reviewText = trim($_POST['review_text'] ?? '');
+$textLen = function_exists('mb_strlen') ? mb_strlen($reviewText) : strlen($reviewText);
 
 if ($packageId <= 0) {
     echo json_encode(['ok' => false, 'message' => 'Invalid package.']);
@@ -24,11 +25,11 @@ if ($rating < 1 || $rating > 5) {
     echo json_encode(['ok' => false, 'message' => 'Rating must be between 1 and 5.']);
     exit();
 }
-if ($reviewText === '' || mb_strlen($reviewText) < 5) {
+if ($reviewText === '' || $textLen < 5) {
     echo json_encode(['ok' => false, 'message' => 'Review must be at least 5 characters.']);
     exit();
 }
-if (mb_strlen($reviewText) > 1000) {
+if ($textLen > 1000) {
     echo json_encode(['ok' => false, 'message' => 'Review is too long (max 1000 chars).']);
     exit();
 }
