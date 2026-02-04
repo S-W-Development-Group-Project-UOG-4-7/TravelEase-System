@@ -1,4 +1,5 @@
 <?php
+
 // config/secrets.php
 // IMPORTANT: Do NOT commit this file to git.
 return [
